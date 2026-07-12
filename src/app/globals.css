@@ -1,0 +1,226 @@
+@import "tailwindcss";
+
+/* ============================================================
+   Ember — design tokens
+   Mood: mission control at midnight — embers on black glass.
+   ============================================================ */
+
+:root {
+  --bg: oklch(0.115 0 0);
+  --bg-deep: oklch(0.08 0 0);
+  --ink: oklch(0.935 0.004 27);
+  --muted: oklch(0.705 0.008 27);
+  --faint: oklch(0.60 0.006 27);
+
+  --primary: oklch(0.60 0.185 27);
+  --primary-bright: oklch(0.67 0.185 27);
+  --accent: oklch(0.80 0.13 75);
+
+  --success: oklch(0.74 0.145 155);
+  --warning: oklch(0.80 0.14 85);
+  --danger: oklch(0.62 0.19 25);
+  --info: oklch(0.72 0.11 230);
+
+  /* category ramp (calendar, tags, finance) */
+  --c-ember: oklch(0.62 0.17 27);
+  --c-amber: oklch(0.78 0.13 75);
+  --c-sage: oklch(0.72 0.11 150);
+  --c-sky: oklch(0.72 0.11 230);
+  --c-lilac: oklch(0.70 0.11 300);
+  --c-rose: oklch(0.70 0.13 350);
+
+  /* glass recipe */
+  --glass-bg: oklch(1 0 0 / 0.045);
+  --glass-bg-strong: oklch(0.17 0.004 27 / 0.78);
+  --glass-border: oklch(1 0 0 / 0.09);
+  --glass-border-strong: oklch(1 0 0 / 0.14);
+
+  /* z-scale */
+  --z-sticky: 20;
+  --z-dropdown: 30;
+  --z-backdrop: 40;
+  --z-modal: 50;
+  --z-palette: 60;
+  --z-toast: 70;
+  --z-tooltip: 80;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-deep: var(--bg-deep);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-primary: var(--primary);
+  --color-primary-bright: var(--primary-bright);
+  --color-accent: var(--accent);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --radius-card: 1.125rem;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg-deep);
+  color: var(--ink);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-feature-settings: "cv11", "ss01";
+  overflow-x: hidden;
+}
+
+::selection {
+  background: oklch(0.60 0.185 27 / 0.35);
+}
+
+h1, h2, h3 {
+  text-wrap: balance;
+}
+
+/* ---- scrollbars ---- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(1 0 0 / 0.14) transparent;
+}
+
+/* ---- focus ---- */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ---- glass utilities ---- */
+.glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(16px) saturate(1.3);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+}
+
+.glass-strong {
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border-strong);
+  backdrop-filter: blur(28px) saturate(1.5);
+  -webkit-backdrop-filter: blur(28px) saturate(1.5);
+}
+
+/* panel: the standard content surface — subtle, not glassy */
+.panel {
+  background: oklch(1 0 0 / 0.035);
+  border: 1px solid oklch(1 0 0 / 0.07);
+  border-radius: var(--radius-card);
+  position: relative;
+}
+
+.panel-hover {
+  transition: border-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.panel-hover:hover {
+  background: oklch(1 0 0 / 0.055);
+  border-color: oklch(1 0 0 / 0.12);
+}
+
+/* top light-catch edge on glass chrome */
+.glass-edge::before {
+  content: "";
+  position: absolute;
+  inset: 0 8% auto 8%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, oklch(1 0 0 / 0.22), transparent);
+  pointer-events: none;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- ambient background ---- */
+.ambient {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(52rem 36rem at 12% 108%, oklch(0.30 0.09 27 / 0.32), transparent 62%),
+    radial-gradient(44rem 30rem at 92% -8%, oklch(0.30 0.06 75 / 0.20), transparent 60%),
+    radial-gradient(60rem 44rem at 50% 46%, oklch(0.145 0.004 27), transparent 74%),
+    var(--bg-deep);
+}
+.ambient::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.35;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---- markdown preview ---- */
+.prose-ember {
+  line-height: 1.7;
+  max-width: 72ch;
+  text-wrap: pretty;
+}
+.prose-ember h1 { font-size: 1.5rem; font-weight: 650; margin: 1.2em 0 0.5em; letter-spacing: -0.01em; }
+.prose-ember h2 { font-size: 1.2rem; font-weight: 650; margin: 1.2em 0 0.4em; letter-spacing: -0.01em; }
+.prose-ember h3 { font-size: 1.05rem; font-weight: 600; margin: 1em 0 0.35em; }
+.prose-ember p { margin: 0.6em 0; }
+.prose-ember ul { list-style: disc; padding-left: 1.4em; margin: 0.6em 0; }
+.prose-ember ol { list-style: decimal; padding-left: 1.4em; margin: 0.6em 0; }
+.prose-ember li { margin: 0.25em 0; }
+.prose-ember code {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.86em;
+  background: oklch(1 0 0 / 0.08);
+  border: 1px solid oklch(1 0 0 / 0.08);
+  border-radius: 5px;
+  padding: 0.1em 0.35em;
+}
+.prose-ember pre {
+  background: oklch(0.10 0 0 / 0.7);
+  border: 1px solid oklch(1 0 0 / 0.08);
+  border-radius: 10px;
+  padding: 0.9em 1em;
+  overflow-x: auto;
+  margin: 0.8em 0;
+}
+.prose-ember pre code { background: none; border: none; padding: 0; }
+.prose-ember blockquote {
+  border-top: 1px solid oklch(1 0 0 / 0.10);
+  border-bottom: 1px solid oklch(1 0 0 / 0.10);
+  padding: 0.5em 0.2em;
+  margin: 0.9em 0;
+  color: var(--muted);
+  font-style: italic;
+}
+.prose-ember a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.prose-ember strong { font-weight: 650; }
+.prose-ember hr { border: none; border-top: 1px solid oklch(1 0 0 / 0.10); margin: 1.2em 0; }
+
+/* ---- skeletons ---- */
+.skeleton {
+  border-radius: 8px;
+  background: linear-gradient(100deg, oklch(1 0 0 / 0.04) 40%, oklch(1 0 0 / 0.09) 50%, oklch(1 0 0 / 0.04) 60%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+@keyframes shimmer {
+  to { background-position: -200% 0; }
+}
+
+/* ---- motion safety ---- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
