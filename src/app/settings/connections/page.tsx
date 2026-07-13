@@ -12,7 +12,7 @@ import {
 import {
   lastSynced, markSynced, useBank, useGoogleStatus,
 } from "@/hooks/useIntegrations";
-import { cloudSignIn, cloudSignOut, cloudSyncNow, useCloudStatus } from "@/hooks/useCloudSync";
+import { cloudSignIn, cloudSignOut, cloudSyncNow, cloudVerifyCode, useCloudStatus } from "@/hooks/useCloudSync";
 import { invalidateApi, useApi } from "@/hooks/useApi";
 import type { BankInstitution } from "@/lib/integrations/types";
 import { Button } from "@/components/ui/Button";
@@ -502,6 +502,7 @@ function CloudCard() {
   const cloud = useCloudStatus();
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
+  const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
 
   const state: "on" | "off" | "warn" = cloud.signedIn ? (cloud.error ? "warn" : "on") : "off";
@@ -514,7 +515,20 @@ function CloudCard() {
     if (err) toast(err, "info");
     else {
       setSent(true);
-      toast("Magic link sent — check your inbox");
+      toast("Sign-in email sent — check your inbox");
+    }
+  };
+
+  const verifyCode = async () => {
+    if (code.replace(/\s/g, "").length < 6) return;
+    setBusy(true);
+    const err = await cloudVerifyCode(email, code);
+    setBusy(false);
+    if (err) toast(err, "info");
+    else {
+      setSent(false);
+      setCode("");
+      toast("Signed in — sync is live");
     }
   };
 
@@ -551,10 +565,34 @@ function CloudCard() {
       {cloud.configured && !cloud.signedIn && !cloud.authLoading && (
         <div className="mt-4 border-t border-white/[0.06] pt-4">
           {sent ? (
-            <p className="flex items-center gap-2 text-[13px] text-muted">
-              <MailCheck size={15} className="text-success" />
-              Link sent to <span className="font-medium text-ink">{email}</span> — open it on this device to finish signing in.
-            </p>
+            <div className="flex flex-col gap-3">
+              <p className="flex items-center gap-2 text-[13px] text-muted">
+                <MailCheck size={15} className="shrink-0 text-success" />
+                <span>
+                  Email sent to <span className="font-medium text-ink">{email}</span> — click the link,{" "}
+                  <span className="font-medium text-ink">or</span> type the 6-digit code from the same email
+                  (required in the iPhone home-screen app, where links open in Safari instead).
+                </span>
+              </p>
+              <div className="flex max-w-xs gap-2">
+                <Input
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && verifyCode()}
+                  placeholder="123456"
+                  aria-label="6-digit sign-in code"
+                  className="num tracking-[0.2em]"
+                />
+                <Button variant="primary" onClick={verifyCode} disabled={busy || code.replace(/\s/g, "").length < 6} className="shrink-0">
+                  {busy ? <Loader2 size={14} className="animate-spin" /> : null} Sign in
+                </Button>
+              </div>
+              <button onClick={() => setSent(false)} className="self-start text-xs text-faint underline underline-offset-2 hover:text-ink">
+                Different email
+              </button>
+            </div>
           ) : (
             <div className="flex max-w-md gap-2">
               <Input

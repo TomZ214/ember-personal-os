@@ -217,10 +217,21 @@ OAuth/bank tokens never leave the device at all).
 
    (The anon key is designed to be public — row-level security does the
    protecting.)
-4. Restart → **Settings → Connections → Cloud Sync** → enter your email →
-   click the **magic link** that lands in your inbox (no password, ever).
-   Repeat the sign-in on your other devices and they stay in sync
-   automatically.
+4. **One-time template tweak (for the iPhone app):** Supabase → your project →
+   **Authentication → Emails → Magic Link template** → add this line to the
+   email body, then save:
+
+   ```html
+   <p>Dein Anmelde-Code: {{ .Token }}</p>
+   ```
+
+   Why: on an iOS home-screen app, email links open in Safari — a separate
+   world that the app can't see. Typing the 6-digit code inside the app works
+   everywhere.
+5. Restart → **Settings → Connections → Cloud Sync** → enter your email →
+   click the **magic link** (desktop) or type the **6-digit code** from the
+   same email (iPhone app). No password, ever. Repeat the sign-in on your
+   other devices and they stay in sync automatically.
 
 ---
 

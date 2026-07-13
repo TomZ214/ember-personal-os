@@ -379,14 +379,16 @@ function TaskEditor({ open, task, onClose }: { open: boolean; task?: Task; onClo
             </Select>
           </label>
         </div>
-        <label>
-          <Label>Due date</Label>
-          <Input type="date" value={due} onChange={(e) => setDue(e.target.value)} />
-        </label>
-        <label>
-          <Label>Tags (comma separated)</Label>
-          <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="work, errands" />
-        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <label>
+            <Label>Due date</Label>
+            <Input type="date" value={due} onChange={(e) => setDue(e.target.value)} />
+          </label>
+          <label>
+            <Label>Tags</Label>
+            <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="work, errands" />
+          </label>
+        </div>
 
         <div>
           <Label>Subtasks</Label>

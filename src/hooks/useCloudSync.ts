@@ -58,6 +58,22 @@ export async function cloudSignIn(email: string): Promise<string | null> {
   return error ? error.message : null;
 }
 
+/**
+ * Sign in with the 6-digit code from the same email as the magic link.
+ * Needed on iOS home-screen apps: links open in Safari, whose sign-in the
+ * standalone app can't see — a code typed inside the app works everywhere.
+ */
+export async function cloudVerifyCode(email: string, code: string): Promise<string | null> {
+  const sb = supabase();
+  if (!sb) return "Cloud sync is not configured";
+  const { error } = await sb.auth.verifyOtp({
+    email: email.trim(),
+    token: code.replace(/\s/g, ""),
+    type: "email",
+  });
+  return error ? error.message : null;
+}
+
 export async function cloudSignOut(): Promise<void> {
   await supabase()?.auth.signOut();
   localStorage.removeItem(LAST_SYNC_KEY);

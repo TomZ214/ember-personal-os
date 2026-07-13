@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 
@@ -12,8 +13,20 @@ interface Props {
   wide?: boolean;
 }
 
-/** Centered dialog on desktop, bottom sheet on mobile. */
+/**
+ * Centered dialog on desktop, bottom sheet on mobile.
+ * Rendered through a portal onto <body>: page-transition transforms would
+ * otherwise become the containing block for position:fixed and drag the
+ * dialog off-screen.
+ */
 export function Modal({ open, onClose, title, children, wide }: Props) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(t);
+  }, []);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -25,7 +38,9 @@ export function Modal({ open, onClose, title, children, wide }: Props) {
     };
   }, [open, onClose]);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-(--z-modal) flex items-end justify-center sm:items-center">
@@ -64,6 +79,7 @@ export function Modal({ open, onClose, title, children, wide }: Props) {
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
