@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { format, parseISO, subMonths } from "date-fns";
-import { ArrowDownLeft, ArrowUpRight, Coins, Landmark, NotebookPen, Plus, Trash2 } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Coins, Eye, EyeOff, Landmark, NotebookPen, Plus, Trash2 } from "lucide-react";
 import { useEmber, useHydrated } from "@/lib/store";
 import { useBank } from "@/hooks/useIntegrations";
 import { eur, todayKey } from "@/lib/dates";
@@ -26,6 +26,8 @@ export default function FinancePage() {
   const deleteTxn = useEmber((s) => s.deleteTxn);
   const [adding, setAdding] = useState(false);
   const bank = useBank();
+  const privacy = useEmber((s) => s.privacy);
+  const togglePrivacy = useEmber((s) => s.togglePrivacy);
   const [tab, setTab] = useState<"bank" | "manual">("bank");
   const showBank = bank.connected && tab === "bank";
 
@@ -65,9 +67,19 @@ export default function FinancePage() {
     <div>
       <PageHeader
         title="Finance"
-        sub={showBank ? `${format(new Date(), "MMMM yyyy")} Â· live from ${bank.status?.account}` : format(new Date(), "MMMM yyyy")}
+        sub={showBank ? `${format(new Date(), "MMMM yyyy")} · live from ${bank.status?.account}` : format(new Date(), "MMMM yyyy")}
         actions={
           <>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={togglePrivacy}
+              aria-label={privacy ? "Show amounts" : "Hide amounts"}
+              title={privacy ? "Show amounts" : "Privacy screen"}
+              aria-pressed={privacy}
+            >
+              {privacy ? <EyeOff size={15} /> : <Eye size={15} />}
+            </Button>
             {bank.connected && (
               <div className="flex rounded-[11px] border border-white/[0.08] bg-white/[0.04] p-0.5">
                 {(["bank", "manual"] as const).map((v) => (
@@ -109,11 +121,11 @@ export default function FinancePage() {
       <>
       {/* month summary */}
       <div className="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <SummaryCard label="Income" value={eur(income)} tone="var(--success)" icon={<ArrowDownLeft size={15} />} />
-        <SummaryCard label="Expenses" value={eur(expenses)} tone="var(--c-ember)" icon={<ArrowUpRight size={15} />} />
-        <SummaryCard label="Net" value={`${income - expenses >= 0 ? "+" : ""}${eur(income - expenses)}`}
+        <SummaryCard blur={privacy} label="Income" value={eur(income)} tone="var(--success)" icon={<ArrowDownLeft size={15} />} />
+        <SummaryCard blur={privacy} label="Expenses" value={eur(expenses)} tone="var(--c-ember)" icon={<ArrowUpRight size={15} />} />
+        <SummaryCard blur={privacy} label="Net" value={`${income - expenses >= 0 ? "+" : ""}${eur(income - expenses)}`}
           tone={income - expenses >= 0 ? "var(--success)" : "var(--danger)"} />
-        <SummaryCard label="Subscriptions" value={`${eur(subsMonthly)}/mo`} tone="var(--c-lilac)" />
+        <SummaryCard blur={privacy} label="Subscriptions" value={`${eur(subsMonthly)}/mo`} tone="var(--c-lilac)" />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
@@ -128,7 +140,7 @@ export default function FinancePage() {
         <div className="panel p-5 lg:col-span-5">
           <p className="mb-1 text-[13px] font-medium text-muted">Where it went</p>
           <p className="mb-4 text-xs text-faint">This month&apos;s spending by category</p>
-          <Donut categories={categories} total={expenses} />
+          <Donut categories={categories} total={expenses} blur={privacy} />
         </div>
 
         {/* subscriptions */}
@@ -142,14 +154,14 @@ export default function FinancePage() {
                   {s.name[0]}
                 </span>
                 <span className="flex-1 text-sm">{s.name}</span>
-                <span className="num text-sm text-muted">
+                <span className={`num text-sm text-muted ${privacy ? "money-blur" : ""}`}>
                   {eur(s.amount)}<span className="text-faint">/{s.cycle === "monthly" ? "mo" : "yr"}</span>
                 </span>
               </li>
             ))}
           </ul>
           <p className="num mt-4 border-t border-white/[0.06] pt-3 text-right text-sm text-muted">
-            â‰ˆ {eur(subsMonthly)} per month
+            ≈ {eur(subsMonthly)} per month
           </p>
         </div>
 
@@ -182,9 +194,9 @@ export default function FinancePage() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm">{t.note || t.category}</p>
-                    <p className="text-[11px] text-faint">{t.category} Â· {format(parseISO(t.date), "MMM d")}</p>
+                    <p className="text-[11px] text-faint">{t.category} · {format(parseISO(t.date), "MMM d")}</p>
                   </div>
-                  <span className={`num text-sm font-medium ${t.kind === "income" ? "text-success" : ""}`}>
+                  <span className={`num text-sm font-medium ${t.kind === "income" ? "text-success" : ""} ${privacy ? "money-blur" : ""}`}>
                     {t.kind === "income" ? "+" : "âˆ’"}{eur(t.amount)}
                   </span>
                   <button

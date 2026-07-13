@@ -6,6 +6,7 @@ import { format, formatDistanceToNow, parseISO, subMonths } from "date-fns";
 import {
   ArrowDownLeft, ArrowUpRight, Landmark, Loader2, RefreshCw, TrendingDown, TrendingUp,
 } from "lucide-react";
+import { useEmber } from "@/lib/store";
 import { eur, todayKey } from "@/lib/dates";
 import type { useBank } from "@/hooks/useIntegrations";
 import { Donut, MonthBars, SummaryCard } from "./charts";
@@ -15,6 +16,7 @@ import { Button } from "@/components/ui/Button";
 const CAT_CSS = ["var(--c-ember)", "var(--c-amber)", "var(--c-sage)", "var(--c-sky)", "var(--c-lilac)", "var(--c-rose)"];
 
 export function BankPanel({ bank }: { bank: ReturnType<typeof useBank> }) {
+  const privacy = useEmber((s) => s.privacy);
   const monthKey = todayKey().slice(0, 7);
   const txns = bank.transactions;
 
@@ -92,10 +94,10 @@ export function BankPanel({ bank }: { bank: ReturnType<typeof useBank> }) {
     <div className="flex flex-col gap-4">
       {/* balances */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <SummaryCard label="Total balance" value={eur(Math.round(totalBalance * 100) / 100)} tone="var(--accent)" icon={<Landmark size={14} />} />
-        <SummaryCard label="Income (month)" value={eur(Math.round(income))} tone="var(--success)" icon={<ArrowDownLeft size={15} />} />
-        <SummaryCard label="Expenses (month)" value={eur(Math.round(expenses))} tone="var(--c-ember)" icon={<ArrowUpRight size={15} />} />
-        <SummaryCard label="Net (month)" value={`${income - expenses >= 0 ? "+" : ""}${eur(Math.round(income - expenses))}`}
+        <SummaryCard blur={privacy} label="Total balance" value={eur(Math.round(totalBalance * 100) / 100)} tone="var(--accent)" icon={<Landmark size={14} />} />
+        <SummaryCard blur={privacy} label="Income (month)" value={eur(Math.round(income))} tone="var(--success)" icon={<ArrowDownLeft size={15} />} />
+        <SummaryCard blur={privacy} label="Expenses (month)" value={eur(Math.round(expenses))} tone="var(--c-ember)" icon={<ArrowUpRight size={15} />} />
+        <SummaryCard blur={privacy} label="Net (month)" value={`${income - expenses >= 0 ? "+" : ""}${eur(Math.round(income - expenses))}`}
           tone={income - expenses >= 0 ? "var(--success)" : "var(--danger)"} />
       </div>
 
@@ -115,7 +117,7 @@ export function BankPanel({ bank }: { bank: ReturnType<typeof useBank> }) {
                     {a.iban ? `···${a.iban.slice(-4)}` : a.balanceType}
                   </p>
                 </div>
-                <span className="num text-[15px] font-semibold">{eur(a.balance)}</span>
+                <span className={`num text-[15px] font-semibold ${privacy ? "money-blur" : ""}`}>{eur(a.balance)}</span>
               </li>
             ))}
           </ul>
@@ -130,7 +132,7 @@ export function BankPanel({ bank }: { bank: ReturnType<typeof useBank> }) {
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.06 }}
-                className="flex items-center gap-2.5 text-sm text-muted"
+                className={`flex items-center gap-2.5 text-sm text-muted ${privacy ? "money-blur" : ""}`}
               >
                 {ins.icon === "down" ? (
                   <TrendingDown size={15} className="shrink-0 text-success" />
@@ -161,7 +163,7 @@ export function BankPanel({ bank }: { bank: ReturnType<typeof useBank> }) {
         <div className="panel p-5 lg:col-span-5">
           <p className="mb-1 text-[13px] font-medium text-muted">Where it went</p>
           <p className="mb-4 text-xs text-faint">Auto-categorized · this month</p>
-          <Donut categories={categories} total={expenses} />
+          <Donut categories={categories} total={expenses} blur={privacy} />
         </div>
 
         {/* detected subscriptions */}
@@ -181,7 +183,7 @@ export function BankPanel({ bank }: { bank: ReturnType<typeof useBank> }) {
                     <p className="truncate text-sm">{s.merchant}</p>
                     <p className="text-[11px] text-faint">{s.category} · seen {s.occurrences}×</p>
                   </div>
-                  <span className="num text-sm text-muted">{eur(s.amount)}<span className="text-faint">/mo</span></span>
+                  <span className={`num text-sm text-muted ${privacy ? "money-blur" : ""}`}>{eur(s.amount)}<span className="text-faint">/mo</span></span>
                 </li>
               ))}
             </ul>
@@ -206,7 +208,7 @@ export function BankPanel({ bank }: { bank: ReturnType<typeof useBank> }) {
                   </p>
                   <p className="truncate text-[11px] text-faint">{t.category} · {format(parseISO(t.date), "MMM d")}</p>
                 </div>
-                <span className={`num text-sm font-medium ${t.amount > 0 ? "text-success" : ""}`}>
+                <span className={`num text-sm font-medium ${t.amount > 0 ? "text-success" : ""} ${privacy ? "money-blur" : ""}`}>
                   {t.amount > 0 ? "+" : "−"}{eur(Math.abs(t.amount))}
                 </span>
               </div>

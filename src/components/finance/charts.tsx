@@ -3,14 +3,14 @@
 import { motion } from "framer-motion";
 import { eur } from "@/lib/dates";
 
-export function SummaryCard({ label, value, tone, icon }: { label: string; value: string; tone: string; icon?: React.ReactNode }) {
+export function SummaryCard({ label, value, tone, icon, blur }: { label: string; value: string; tone: string; icon?: React.ReactNode; blur?: boolean }) {
   return (
     <div className="panel p-4">
       <p className="flex items-center gap-1.5 text-xs font-medium text-muted">
         {icon && <span style={{ color: tone }}>{icon}</span>}
         {label}
       </p>
-      <p className="num mt-1.5 truncate text-xl font-semibold tracking-tight sm:text-2xl">{value}</p>
+      <p className={`num mt-1.5 truncate text-xl font-semibold tracking-tight sm:text-2xl ${blur ? "money-blur" : ""}`}>{value}</p>
     </div>
   );
 }
@@ -55,7 +55,7 @@ export function MonthBars({ months }: { months: { label: string; income: number;
   );
 }
 
-export function Donut({ categories, total }: { categories: { name: string; amount: number; color: string }[]; total: number }) {
+export function Donut({ categories, total, blur }: { categories: { name: string; amount: number; color: string }[]; total: number; blur?: boolean }) {
   const size = 150, stroke = 16;
   const r = (size - stroke) / 2;
   const circ = 2 * Math.PI * r;
@@ -83,7 +83,7 @@ export function Donut({ categories, total }: { categories: { name: string; amoun
           ))}
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="num text-lg font-semibold">{eur(Math.round(total))}</span>
+          <span className={`num text-lg font-semibold ${blur ? "money-blur" : ""}`}>{eur(Math.round(total))}</span>
           <span className="text-[10px] uppercase tracking-wide text-faint">spent</span>
         </div>
       </div>
@@ -92,7 +92,7 @@ export function Donut({ categories, total }: { categories: { name: string; amoun
           <li key={c.name} className="flex items-center gap-2.5 text-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: c.color }} />
             <span className="flex-1 truncate text-muted">{c.name}</span>
-            <span className="num">{eur(Math.round(c.amount))}</span>
+            <span className={`num ${blur ? "money-blur" : ""}`}>{eur(Math.round(c.amount))}</span>
           </li>
         ))}
       </ul>

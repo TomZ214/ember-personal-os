@@ -52,6 +52,10 @@ interface EmberState {
   setPaletteOpen: (v: boolean) => void;
   setHydrated: () => void;
 
+  /** privacy screen: blurs all money amounts (persisted per device, never synced) */
+  privacy: boolean;
+  togglePrivacy: () => void;
+
   /** replace the syncable slices with a cloud snapshot (realtime sync) */
   applyCloudState: (data: Partial<CloudData>) => void;
 
@@ -131,6 +135,9 @@ export const useEmber = create<EmberState>()(
       paletteOpen: false,
       setPaletteOpen: (v) => set({ paletteOpen: v }),
       setHydrated: () => set({ hydrated: true }),
+
+      privacy: false,
+      togglePrivacy: () => set((s) => ({ privacy: !s.privacy })),
 
       applyCloudState: (data) => {
         const slices = Object.fromEntries(

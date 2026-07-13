@@ -43,3 +43,4 @@ next-env.d.ts
 # Enable Banking signing key — never commit
 enablebanking_private.pem
 enablebanking_public.pem
+enablebanking_netlify_key.txt

@@ -20,7 +20,8 @@ export function TopBar() {
   const [time, date] = clock ? clock.split("|") : ["--:--", ""];
 
   return (
-    <header className="sticky top-0 z-(--z-sticky) border-b border-white/[0.06] bg-bg-deep/70 backdrop-blur-xl">
+    // pt-safe: in the iOS home-screen app the page runs under the status bar
+    <header className="sticky top-0 z-(--z-sticky) border-b border-white/[0.06] bg-bg-deep/70 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2.5">
           <span className="flex h-7 w-7 items-center justify-center rounded-[9px] bg-primary/15 text-primary-bright shadow-[0_0_18px_-2px_oklch(0.60_0.185_27_/_0.5)]">
