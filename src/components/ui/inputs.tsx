@@ -5,15 +5,20 @@ import { forwardRef } from "react";
 const base =
   "w-full rounded-[11px] border border-white/[0.09] bg-white/[0.05] px-3.5 text-sm text-ink placeholder:text-faint transition-colors duration-150 hover:border-white/[0.14] focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/20";
 
+/* on touch devices autofocus would pop the keyboard the instant a sheet opens,
+   which shoves the whole viewport up on iOS — only honor it with a mouse/trackpad */
+const allowAutoFocus = () =>
+  typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches;
+
 export const Input = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
-  function Input({ className = "", ...rest }, ref) {
-    return <input ref={ref} className={`${base} h-10 ${className}`} {...rest} />;
+  function Input({ className = "", autoFocus, ...rest }, ref) {
+    return <input ref={ref} autoFocus={autoFocus && allowAutoFocus()} className={`${base} h-10 ${className}`} {...rest} />;
   },
 );
 
 export const Textarea = forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
-  function Textarea({ className = "", ...rest }, ref) {
-    return <textarea ref={ref} className={`${base} py-2.5 leading-relaxed ${className}`} {...rest} />;
+  function Textarea({ className = "", autoFocus, ...rest }, ref) {
+    return <textarea ref={ref} autoFocus={autoFocus && allowAutoFocus()} className={`${base} py-2.5 leading-relaxed ${className}`} {...rest} />;
   },
 );
 

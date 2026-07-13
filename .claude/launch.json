@@ -7,6 +7,13 @@
       "runtimeArgs": ["run", "dev"],
       "cwd": "E:\\Claude\\personal-os",
       "port": 3000
+    },
+    {
+      "name": "ember-prod",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "start", "--", "-p", "3001"],
+      "cwd": "E:\\Claude\\personal-os",
+      "port": 3001
     }
   ]
 }

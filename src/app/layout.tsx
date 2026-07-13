@@ -25,6 +25,8 @@ export const metadata: Metadata = {
     title: "Ember",
     statusBarStyle: "black-translucent",
   },
+  // Next only emits the modern tag; older iOS wants the apple-prefixed one too
+  other: { "apple-mobile-web-app-capable": "yes" },
 };
 
 export const viewport: Viewport = {

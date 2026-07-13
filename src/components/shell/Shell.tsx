@@ -6,6 +6,7 @@ import { CommandPalette } from "./CommandPalette";
 import { Dock } from "./Dock";
 import { MobileTabs } from "./MobileTabs";
 import { TopBar } from "./TopBar";
+import { ViewportFix } from "./ViewportFix";
 
 export function Shell({ children }: { children: React.ReactNode }) {
   return (
@@ -20,6 +21,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <CommandPalette />
       <Toaster />
       <CloudSyncEngine />
+      <ViewportFix />
     </>
   );
 }
