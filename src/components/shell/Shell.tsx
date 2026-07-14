@@ -8,6 +8,7 @@ import { Dock } from "./Dock";
 import { MobileTabs } from "./MobileTabs";
 import { TopBar } from "./TopBar";
 import { ViewportFix } from "./ViewportFix";
+import { WelcomeAlert } from "./WelcomeAlert";
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -36,6 +37,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <Toaster />
       <CloudSyncEngine />
       <ViewportFix />
+      <WelcomeAlert />
     </>
   );
 }

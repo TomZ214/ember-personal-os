@@ -223,11 +223,16 @@ export function useCalendarSource() {
 
 export function useGmailUnread() {
   const google = useGoogleStatus();
-  const unread = useApi<{ unread: number }>(
+  const unread = useApi<{ unread: number; important?: number }>(
     google.data?.connected ? "/api/google/gmail/unread" : null,
     { refreshMs: 120_000 },
   );
-  return { connected: !!google.data?.connected, unread: unread.data?.unread ?? null };
+  return {
+    connected: !!google.data?.connected,
+    unread: unread.data?.unread ?? null,
+    /** unread mail from the Sparkasse — surfaced in the welcome alert */
+    important: unread.data?.important ?? 0,
+  };
 }
 
 /* ---------------- google contacts ---------------- */
