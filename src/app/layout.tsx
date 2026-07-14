@@ -16,9 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: { default: "Ember — Personal OS", template: "%s · Ember" },
   description: "Your entire life, organized in one calm, fast place.",
-  icons: {
-    apple: "/apple-touch-icon.png",
-  },
+  // browser-tab + iOS home-screen icons are generated from the file
+  // conventions: app/favicon.ico, app/icon.png, app/apple-icon.png
+  manifest: "/manifest.webmanifest",
   // "Add to Home Screen" on iOS launches Ember fullscreen, like a native app
   appleWebApp: {
     capable: true,
