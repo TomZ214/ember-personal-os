@@ -4,8 +4,8 @@ import { useEffect, useRef } from "react";
 import { create } from "zustand";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import {
-  applyCloudData, cloudConfigured, collectCloudData, deviceId, LAST_SYNC_KEY, pullCloud, pushCloud,
-  supabase, type CloudRow,
+  applyCloudData, claimInboxTasks, cloudConfigured, collectCloudData, deviceId, LAST_SYNC_KEY,
+  pullCloud, pushCloud, supabase, type CloudRow,
 } from "@/lib/cloud";
 import { useEmber } from "@/lib/store";
 import { toast } from "@/components/ui/toast";
@@ -123,6 +123,25 @@ export async function cloudSyncNow(): Promise<void> {
   set({ syncing: false });
 }
 
+/** turn pending family quick-add rows into real tasks (claim-then-add) */
+async function drainInbox(uid: string): Promise<void> {
+  try {
+    const pending = await claimInboxTasks(uid);
+    if (pending.length === 0) return;
+    const { addTask } = useEmber.getState();
+    for (const t of pending) {
+      addTask({
+        title: t.title,
+        notes: [t.notes, t.sender ? `Von ${t.sender}` : null].filter(Boolean).join("\n") || undefined,
+        tags: ["family"],
+      });
+    }
+    toast(pending.length === 1 ? "1 neue Aufgabe von der Familie" : `${pending.length} neue Aufgaben von der Familie`);
+  } catch {
+    // table may not exist yet (family.sql not run) — quick-add is optional
+  }
+}
+
 export function cloudItemCount(): number {
   const d = collectCloudData();
   return d.tasks.length + d.events.length + d.notes.length + d.habits.length +
@@ -167,10 +186,16 @@ export function CloudSyncEngine() {
       void reconcile(uid).catch((e) =>
         set({ error: e instanceof Error ? e.message : String(e) }),
       );
+      void drainInbox(uid);
 
       // realtime: other devices' pushes land here instantly
       channel = sb
         .channel(`os_state_${uid}`)
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "task_inbox", filter: `user_id=eq.${uid}` },
+          () => void drainInbox(uid),
+        )
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "os_state", filter: `user_id=eq.${uid}` },

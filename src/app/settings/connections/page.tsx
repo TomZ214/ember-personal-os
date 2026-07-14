@@ -6,13 +6,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import {
-  ArrowLeft, CalendarDays, ChevronRight, Cloud, Landmark, Loader2, LogOut, Mail, MailCheck,
-  RefreshCw, Search, ShieldCheck, Sparkles, Unplug, Users,
+  ArrowLeft, CalendarDays, ChevronRight, Cloud, Copy, HeartHandshake, Landmark, Loader2, LogOut,
+  Mail, MailCheck, Plus, RefreshCw, Search, ShieldCheck, Sparkles, Trash2, Unplug, Users,
 } from "lucide-react";
 import {
   lastSynced, markSynced, useBank, useGoogleStatus,
 } from "@/hooks/useIntegrations";
 import { cloudSignIn, cloudSignOut, cloudSyncNow, cloudVerifyCode, useCloudStatus } from "@/hooks/useCloudSync";
+import { createShareLink, deleteShareLink, listShareLinks, supabase, type ShareLink } from "@/lib/cloud";
 import { invalidateApi, useApi } from "@/hooks/useApi";
 import type { BankInstitution } from "@/lib/integrations/types";
 import { Button } from "@/components/ui/Button";
@@ -73,6 +74,7 @@ function Connections() {
         <ICloudCard />
         <BankCard />
         <CloudCard />
+        <FamilyCard />
         <AiCard />
       </div>
     </div>
@@ -624,6 +626,119 @@ function CloudCard() {
 
       {!cloud.configured && (
         <MissingEnv missing={["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"]} />
+      )}
+    </section>
+  );
+}
+
+/* ---------------- family quick-add ---------------- */
+
+function FamilyCard() {
+  const cloud = useCloudStatus();
+  const [links, setLinks] = useState<ShareLink[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [setupNeeded, setSetupNeeded] = useState(false);
+
+  useEffect(() => {
+    if (!cloud.signedIn) {
+      const t = setTimeout(() => setLinks(null), 0);
+      return () => clearTimeout(t);
+    }
+    let cancelled = false;
+    listShareLinks()
+      .then((l) => {
+        if (!cancelled) setLinks(l);
+      })
+      .catch((e) => {
+        // table missing → family.sql hasn't been run yet
+        if (!cancelled && e instanceof Error && /share_links/.test(e.message)) setSetupNeeded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [cloud.signedIn]);
+
+  const create = async () => {
+    setBusy(true);
+    try {
+      const uid = (await supabase()?.auth.getSession())?.data.session?.user.id;
+      if (!uid) throw new Error("Not signed in");
+      const link = await createShareLink(uid, "Familie");
+      setLinks([...(links ?? []), link]);
+      toast("Family link created — share it via WhatsApp or iMessage");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (/share_links/.test(msg)) setSetupNeeded(true);
+      else toast(msg, "info");
+    }
+    setBusy(false);
+  };
+
+  const copy = async (token: string) => {
+    await navigator.clipboard.writeText(`${window.location.origin}/add/${token}`);
+    toast("Link copied");
+  };
+
+  const remove = async (token: string) => {
+    try {
+      await deleteShareLink(token);
+      setLinks((links ?? []).filter((l) => l.token !== token));
+      toast("Link deleted — it stops working immediately", "info");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : String(e), "info");
+    }
+  };
+
+  return (
+    <section className="panel p-5">
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="flex h-11 w-11 items-center justify-center rounded-[14px] border border-white/[0.08] bg-white/[0.05]">
+          <HeartHandshake size={18} className="text-muted" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="flex items-center gap-2 text-[15px] font-semibold">
+            Family quick-add <StatusDot state={(links?.length ?? 0) > 0 ? "on" : "off"} />
+          </h2>
+          <p className="text-[13px] text-muted">
+            A link that lets family members send tasks to your list — they see a single form, never your data.
+          </p>
+        </div>
+        {cloud.signedIn && !setupNeeded && (
+          <Button size="sm" onClick={create} disabled={busy}>
+            {busy ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />} New link
+          </Button>
+        )}
+      </div>
+
+      {!cloud.signedIn && (
+        <p className="mt-4 border-t border-white/[0.06] pt-4 text-[13px] text-muted">
+          Sign in to Cloud Sync above first — tasks travel through your cloud inbox.
+        </p>
+      )}
+
+      {setupNeeded && (
+        <p className="mt-4 border-t border-white/[0.06] pt-4 text-[13px] text-muted">
+          One-time setup: run <span className="font-medium text-ink">supabase/family.sql</span> in the
+          Supabase SQL editor (same as the original schema), then reload this page.
+        </p>
+      )}
+
+      {cloud.signedIn && (links?.length ?? 0) > 0 && (
+        <ul className="mt-4 flex flex-col gap-2 border-t border-white/[0.06] pt-4">
+          {(links ?? []).map((l) => (
+            <li key={l.token} className="flex items-center gap-2.5 rounded-xl bg-white/[0.03] px-3.5 py-2.5">
+              <span className="min-w-0 flex-1 truncate font-mono text-xs text-muted">
+                /add/{l.token.slice(0, 8)}…
+              </span>
+              <Button size="sm" onClick={() => copy(l.token)}>
+                <Copy size={13} /> Copy link
+              </Button>
+              <Button size="sm" variant="ghost" aria-label="Delete link" onClick={() => remove(l.token)}>
+                <Trash2 size={13} />
+              </Button>
+            </li>
+          ))}
+        </ul>
       )}
     </section>
   );

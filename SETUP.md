@@ -233,6 +233,21 @@ OAuth/bank tokens never leave the device at all).
    same email (iPhone app). No password, ever. Repeat the sign-in on your
    other devices and they stay in sync automatically.
 
+### Family quick-add (optional)
+
+Give family members a link where they can send tasks to your list without
+seeing anything else — no account needed on their side.
+
+1. **SQL Editor → New query** → paste the contents of
+   [`supabase/family.sql`](supabase/family.sql) → **Run** (one-time, safe to
+   re-run).
+2. **Settings → Connections → Family quick-add → New link** → **Copy link** →
+   share it via WhatsApp/iMessage.
+3. Whoever opens the link sees a single "Aufgabe schicken" form. Sent tasks
+   appear in your Tasks (tagged `family`) on all synced devices within
+   seconds.
+4. Delete the link anytime — it stops working immediately.
+
 ---
 
 ## 5. Hosting on Netlify (or any server host)

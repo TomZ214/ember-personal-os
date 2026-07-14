@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { Toaster } from "@/components/ui/toast";
 import { CloudSyncEngine } from "@/hooks/useCloudSync";
 import { CommandPalette } from "./CommandPalette";
@@ -9,6 +10,19 @@ import { TopBar } from "./TopBar";
 import { ViewportFix } from "./ViewportFix";
 
 export function Shell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+
+  // /add/<token> is the public family quick-add page: no nav, no sync engine —
+  // visitors get a single form and zero access to anything else
+  if (pathname.startsWith("/add")) {
+    return (
+      <>
+        <div className="ambient" aria-hidden />
+        {children}
+      </>
+    );
+  }
+
   return (
     <>
       <div className="ambient" aria-hidden />

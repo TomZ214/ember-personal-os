@@ -103,3 +103,65 @@ export async function pullCloud(userId: string): Promise<CloudRow | null> {
   if (error) throw new Error(error.message);
   return (data as CloudRow | null) ?? null;
 }
+
+/* ---------------- family quick-add ---------------- */
+
+export interface ShareLink {
+  token: string;
+  label: string;
+  created_at: string;
+}
+
+export async function listShareLinks(): Promise<ShareLink[]> {
+  const sb = supabase();
+  if (!sb) throw new Error("cloud not configured");
+  const { data, error } = await sb
+    .from("share_links")
+    .select("token, label, created_at")
+    .order("created_at");
+  if (error) throw new Error(error.message);
+  return (data as ShareLink[]) ?? [];
+}
+
+export async function createShareLink(userId: string, label: string): Promise<ShareLink> {
+  const sb = supabase();
+  if (!sb) throw new Error("cloud not configured");
+  const { data, error } = await sb
+    .from("share_links")
+    .insert({ user_id: userId, label })
+    .select("token, label, created_at")
+    .single();
+  if (error) throw new Error(error.message);
+  return data as ShareLink;
+}
+
+export async function deleteShareLink(token: string): Promise<void> {
+  const sb = supabase();
+  if (!sb) throw new Error("cloud not configured");
+  const { error } = await sb.from("share_links").delete().eq("token", token);
+  if (error) throw new Error(error.message);
+}
+
+export interface InboxTask {
+  id: string;
+  title: string;
+  notes: string | null;
+  sender: string | null;
+}
+
+/**
+ * Claim pending quick-add tasks. Deleting first (and only keeping rows the
+ * delete actually returned) means two signed-in devices can never both turn
+ * the same inbox row into a task.
+ */
+export async function claimInboxTasks(userId: string): Promise<InboxTask[]> {
+  const sb = supabase();
+  if (!sb) throw new Error("cloud not configured");
+  const { data, error } = await sb
+    .from("task_inbox")
+    .delete()
+    .eq("user_id", userId)
+    .select("id, title, notes, sender");
+  if (error) throw new Error(error.message);
+  return (data as InboxTask[]) ?? [];
+}
