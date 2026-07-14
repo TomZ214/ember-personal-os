@@ -33,8 +33,9 @@ create table if not exists public.task_inbox (
   created_at timestamptz not null default now()
 );
 
--- upgrade path for databases created before priority existed
+-- upgrade path for databases created before these columns existed
 alter table public.task_inbox add column if not exists priority text not null default 'medium';
+alter table public.task_inbox add column if not exists due date;
 
 alter table public.task_inbox enable row level security;
 
@@ -47,15 +48,17 @@ create policy "own inbox: select" on public.task_inbox
 create policy "own inbox: delete" on public.task_inbox
   for delete using (auth.uid() = user_id);
 
--- older signature (without priority) must go, otherwise the call is ambiguous
+-- earlier signatures must go, otherwise the overloaded call is ambiguous
 drop function if exists public.inbox_add_task(uuid, text, text, text);
+drop function if exists public.inbox_add_task(uuid, text, text, text, text);
 
 create or replace function public.inbox_add_task(
   share_token   uuid,
   task_title    text,
   task_notes    text default null,
   sender_name   text default null,
-  task_priority text default 'medium'
+  task_priority text default 'medium',
+  task_due      date default null
 )
 returns void
 language plpgsql
@@ -78,13 +81,14 @@ begin
   if (select count(*) from public.task_inbox where user_id = uid) >= 200 then
     raise exception 'inbox full';
   end if;
-  insert into public.task_inbox (user_id, title, notes, sender, priority)
+  insert into public.task_inbox (user_id, title, notes, sender, priority, due)
   values (
     uid,
     trim(task_title),
     nullif(left(trim(coalesce(task_notes, '')), 2000), ''),
     nullif(left(trim(coalesce(sender_name, '')), 80), ''),
-    task_priority
+    task_priority,
+    task_due
   );
 end;
 $$;

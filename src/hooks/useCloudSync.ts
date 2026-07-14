@@ -139,6 +139,7 @@ async function drainInbox(uid: string): Promise<void> {
         notes: [t.notes, t.sender ? `Von ${t.sender}` : null].filter(Boolean).join("\n") || undefined,
         tags: ["family"],
         priority,
+        due: t.due ?? undefined,
       });
     }
     toast(pending.length === 1 ? "1 neue Aufgabe von der Familie" : `${pending.length} neue Aufgaben von der Familie`);

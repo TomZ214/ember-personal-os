@@ -49,6 +49,39 @@ export async function decryptVault(passphrase: string, blob: VaultBlob): Promise
   return dec.decode(data);
 }
 
+/* ---------- binary media encryption ----------
+   Photos/videos are far too large to travel in the synced vault blob, so
+   they live encrypted in IndexedDB on this device only. To avoid running
+   the 310k-iteration PBKDF2 for every single file, we derive ONE reusable
+   AES key from the master passphrase and a persistent per-device salt, then
+   encrypt each file with that key and a fresh random IV. */
+
+const MEDIA_SALT_KEY = "ember-vault-media-salt";
+
+function mediaSalt(): Uint8Array {
+  let s = localStorage.getItem(MEDIA_SALT_KEY);
+  if (!s) {
+    s = b64(crypto.getRandomValues(new Uint8Array(16)));
+    localStorage.setItem(MEDIA_SALT_KEY, s);
+  }
+  return unb64(s);
+}
+
+/** derive the reusable media key from the vault's master passphrase */
+export function deriveMediaKey(passphrase: string): Promise<CryptoKey> {
+  return deriveKey(passphrase, mediaSalt());
+}
+
+export async function encryptBytes(key: CryptoKey, data: ArrayBuffer): Promise<{ iv: string; cipher: ArrayBuffer }> {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const cipher = await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv as BufferSource }, key, data);
+  return { iv: b64(iv), cipher };
+}
+
+export function decryptBytes(key: CryptoKey, ivB64: string, cipher: ArrayBuffer): Promise<ArrayBuffer> {
+  return crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(ivB64) as BufferSource }, key, cipher);
+}
+
 export const VAULT_STORAGE_KEY = "ember-vault";
 
 export function loadVaultBlob(): VaultBlob | null {

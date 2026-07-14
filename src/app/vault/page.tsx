@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Copy, CreditCard, Eye, EyeOff, KeyRound, Lock, LockOpen, Plus, ShieldCheck, StickyNote, Trash2,
+  Copy, CreditCard, Eye, EyeOff, Images, KeyRound, Lock, LockOpen, Plus, ShieldCheck, StickyNote, Trash2,
 } from "lucide-react";
-import { decryptVault, encryptVault, loadVaultBlob, saveVaultBlob } from "@/lib/crypto";
+import { decryptVault, deriveMediaKey, encryptVault, loadVaultBlob, saveVaultBlob } from "@/lib/crypto";
 import type { VaultEntry } from "@/lib/types";
+import { MediaGallery } from "@/components/vault/MediaGallery";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input, Label, Select } from "@/components/ui/inputs";
@@ -22,7 +23,8 @@ const CATS = [
 export default function VaultPage() {
   const [entries, setEntries] = useState<VaultEntry[] | null>(null); // null = locked
   const [passphrase, setPassphrase] = useState<string | null>(null);
-  const [cat, setCat] = useState<VaultEntry["category"] | "all">("all");
+  const [mediaKey, setMediaKey] = useState<CryptoKey | null>(null);
+  const [cat, setCat] = useState<VaultEntry["category"] | "all" | "media">("all");
   const [adding, setAdding] = useState(false);
 
   const persist = async (next: VaultEntry[], pass: string) => {
@@ -33,6 +35,8 @@ export default function VaultPage() {
   const lock = () => {
     setEntries(null);
     setPassphrase(null);
+    setMediaKey(null);
+    setCat("all");
     toast("Vault locked", "info");
   };
 
@@ -45,14 +49,16 @@ export default function VaultPage() {
           entries !== null ? (
             <>
               <Button onClick={lock}><Lock size={15} /> Lock</Button>
-              <Button variant="primary" onClick={() => setAdding(true)}><Plus size={16} /> Add entry</Button>
+              {cat !== "media" && (
+                <Button variant="primary" onClick={() => setAdding(true)}><Plus size={16} /> Add entry</Button>
+              )}
             </>
           ) : undefined
         }
       />
 
       {entries === null ? (
-        <Gate onUnlock={(list, pass) => { setEntries(list); setPassphrase(pass); }} />
+        <Gate onUnlock={(list, pass, mkey) => { setEntries(list); setPassphrase(pass); setMediaKey(mkey); }} />
       ) : (
         <>
           <div className="mb-4 flex flex-wrap gap-2">
@@ -60,9 +66,12 @@ export default function VaultPage() {
             {CATS.map((c) => (
               <CatChip key={c.id} label={c.label} active={cat === c.id} onClick={() => setCat(c.id)} />
             ))}
+            <CatChip label="Photos & videos" active={cat === "media"} onClick={() => setCat("media")} />
           </div>
 
-          {entries.length === 0 ? (
+          {cat === "media" ? (
+            mediaKey && <MediaGallery mediaKey={mediaKey} />
+          ) : entries.length === 0 ? (
             <div className="panel">
               <EmptyState
                 icon={<ShieldCheck size={20} />}
@@ -111,7 +120,7 @@ function CatChip({ label, active, onClick }: { label: string; active: boolean; o
 
 /* ---------- gate: create or unlock ---------- */
 
-function Gate({ onUnlock }: { onUnlock: (entries: VaultEntry[], pass: string) => void }) {
+function Gate({ onUnlock }: { onUnlock: (entries: VaultEntry[], pass: string, mediaKey: CryptoKey) => void }) {
   const [exists] = useState(() => typeof window !== "undefined" && !!loadVaultBlob());
   const [pass, setPass] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -126,7 +135,7 @@ function Gate({ onUnlock }: { onUnlock: (entries: VaultEntry[], pass: string) =>
       if (exists) {
         const blob = loadVaultBlob()!;
         const plain = await decryptVault(pass, blob);
-        onUnlock(JSON.parse(plain) as VaultEntry[], pass);
+        onUnlock(JSON.parse(plain) as VaultEntry[], pass, await deriveMediaKey(pass));
         toast("Vault unlocked");
       } else {
         if (pass !== confirm) {
@@ -135,7 +144,7 @@ function Gate({ onUnlock }: { onUnlock: (entries: VaultEntry[], pass: string) =>
           return;
         }
         saveVaultBlob(await encryptVault(pass, "[]"));
-        onUnlock([], pass);
+        onUnlock([], pass, await deriveMediaKey(pass));
         toast("Vault created — remember that passphrase");
       }
     } catch {

@@ -28,6 +28,7 @@ export default function QuickAddPage() {
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
   const [priority, setPriority] = useState<Priority>("medium");
+  const [due, setDue] = useState("");
   const [sender, setSender] = useState("");
   const [phase, setPhase] = useState<"form" | "sending" | "done">("form");
   const [error, setError] = useState<string | null>(null);
@@ -56,6 +57,7 @@ export default function QuickAddPage() {
       task_notes: notes.trim() || null,
       sender_name: sender.trim() || null,
       task_priority: priority,
+      task_due: due || null,
     });
     if (err) {
       setPhase("form");
@@ -100,6 +102,7 @@ export default function QuickAddPage() {
                 setTitle("");
                 setNotes("");
                 setPriority("medium");
+                setDue("");
                 setPhase("form");
               }}
             >
@@ -153,6 +156,10 @@ export default function QuickAddPage() {
                 })}
               </div>
             </div>
+            <label>
+              <Label>Fällig bis (optional)</Label>
+              <Input type="date" value={due} onChange={(e) => setDue(e.target.value)} />
+            </label>
             <label>
               <Label>Dein Name</Label>
               <Input
