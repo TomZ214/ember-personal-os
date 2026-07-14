@@ -82,7 +82,7 @@ export function FocusTimer() {
             <motion.button
               whileTap={{ scale: 0.92 }}
               onClick={() => startFocus("focus")}
-              className="flex h-10 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-white shadow-[0_2px_18px_-2px_oklch(0.60_0.185_27_/_0.5)] hover:bg-primary-bright"
+              className="flex h-10 items-center gap-2 rounded-full bg-[image:var(--grad-sunset)] px-4 text-sm font-semibold text-(--on-sunset) shadow-[0_2px_18px_-2px_var(--primary-glow)] transition-[filter] hover:brightness-110"
             >
               <Play size={14} fill="currentColor" /> Focus
             </motion.button>

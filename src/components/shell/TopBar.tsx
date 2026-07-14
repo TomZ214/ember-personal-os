@@ -24,7 +24,7 @@ export function TopBar() {
     <header className="sticky top-0 z-(--z-sticky) border-b border-white/[0.06] bg-bg-deep/70 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2.5">
-          <span className="flex h-7 w-7 items-center justify-center rounded-[9px] bg-primary/15 text-primary-bright shadow-[0_0_18px_-2px_oklch(0.60_0.185_27_/_0.5)]">
+          <span className="flex h-7 w-7 items-center justify-center rounded-[9px] bg-primary/15 text-primary-bright shadow-[0_0_18px_-2px_var(--primary-glow)]">
             <Flame size={15} strokeWidth={2.2} />
           </span>
           <span className="text-[15px] font-semibold tracking-tight">Ember</span>

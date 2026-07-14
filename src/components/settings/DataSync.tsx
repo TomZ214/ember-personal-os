@@ -156,7 +156,7 @@ export function DataSync() {
           whileTap={{ scale: 0.96 }}
           onClick={runAll}
           disabled={running}
-          className="relative flex h-10 items-center gap-2 overflow-hidden rounded-full bg-primary px-5 text-sm font-medium text-white shadow-[0_2px_18px_-2px_oklch(0.60_0.185_27_/_0.5)] transition-colors hover:bg-primary-bright disabled:cursor-wait"
+          className="relative flex h-10 items-center gap-2 overflow-hidden rounded-full bg-[image:var(--grad-sunset)] px-5 text-sm font-semibold text-(--on-sunset) shadow-[0_2px_18px_-2px_var(--primary-glow)] transition-[filter] hover:brightness-110 disabled:cursor-wait"
         >
           <motion.span
             animate={running ? { rotate: 360 } : { rotate: 0 }}

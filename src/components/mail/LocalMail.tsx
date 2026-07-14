@@ -105,7 +105,7 @@ export function LocalMail() {
             >
               <Icon size={13} />
               {b.label}
-              {b.count ? <span className="num rounded-full bg-primary px-1.5 text-[10px] font-semibold text-white">{b.count}</span> : null}
+              {b.count ? <span className="num rounded-full bg-primary px-1.5 text-[10px] font-semibold text-(--on-sunset)">{b.count}</span> : null}
             </button>
           );
         })}

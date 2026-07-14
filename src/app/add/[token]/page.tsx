@@ -78,7 +78,7 @@ export default function QuickAddPage() {
         className="glass-strong glass-edge relative w-full max-w-sm rounded-3xl p-6"
       >
         <div className="mb-5 flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-primary/15 text-primary-bright shadow-[0_0_18px_-2px_oklch(0.60_0.185_27_/_0.5)]">
+          <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-primary/15 text-primary-bright shadow-[0_0_18px_-2px_var(--primary-glow)]">
             <Flame size={16} strokeWidth={2.2} />
           </span>
           <div>

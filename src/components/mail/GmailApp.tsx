@@ -257,7 +257,7 @@ export function GmailApp({ provider = GMAIL_PROVIDER }: { provider?: MailProvide
               <Icon size={13} />
               {b.label}
               {b.id === "inbox" && unread > 0 && (
-                <span className="num rounded-full bg-primary px-1.5 text-[10px] font-semibold text-white">{unread}</span>
+                <span className="num rounded-full bg-primary px-1.5 text-[10px] font-semibold text-(--on-sunset)">{unread}</span>
               )}
             </button>
           );

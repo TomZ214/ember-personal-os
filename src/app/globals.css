@@ -12,8 +12,15 @@
   --muted: oklch(0.705 0.008 27);
   --faint: oklch(0.60 0.006 27);
 
-  --primary: oklch(0.60 0.185 27);
-  --primary-bright: oklch(0.67 0.185 27);
+  /* "Sunset" brand ramp: peach → pink */
+  --sunset-from: #ffd59e;
+  --sunset-to: #ff6b9d;
+  --grad-sunset: linear-gradient(160deg, var(--sunset-from), var(--sunset-to));
+  --on-sunset: #38101f; /* text on the gradient */
+
+  --primary: #ff6b9d;
+  --primary-bright: #ff8db1;
+  --primary-glow: rgba(255, 107, 157, 0.5);
   --accent: oklch(0.80 0.13 75);
 
   --success: oklch(0.74 0.145 155);
@@ -22,7 +29,7 @@
   --info: oklch(0.72 0.11 230);
 
   /* category ramp (calendar, tags, finance) */
-  --c-ember: oklch(0.62 0.17 27);
+  --c-ember: #ff6b9d;
   --c-amber: oklch(0.78 0.13 75);
   --c-sage: oklch(0.72 0.11 150);
   --c-sky: oklch(0.72 0.11 230);
@@ -76,7 +83,7 @@ body {
 }
 
 ::selection {
-  background: oklch(0.60 0.185 27 / 0.35);
+  background: rgba(255, 107, 157, 0.35);
 }
 
 h1, h2, h3 {
@@ -156,7 +163,7 @@ h1, h2, h3 {
   inset: 0;
   z-index: -1;
   background:
-    radial-gradient(52rem 36rem at 12% 108%, oklch(0.30 0.09 27 / 0.32), transparent 62%),
+    radial-gradient(52rem 36rem at 12% 108%, oklch(0.30 0.09 355 / 0.32), transparent 62%),
     radial-gradient(44rem 30rem at 92% -8%, oklch(0.30 0.06 75 / 0.20), transparent 60%),
     radial-gradient(60rem 44rem at 50% 46%, oklch(0.145 0.004 27), transparent 74%),
     var(--bg-deep);

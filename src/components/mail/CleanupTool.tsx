@@ -270,7 +270,7 @@ export function CleanupTool({ open, onClose, onFinished }: { open: boolean; onCl
             </p>
             <div className="h-2 w-full overflow-hidden rounded-full bg-white/[0.07]">
               <motion.div
-                className="h-full rounded-full bg-primary"
+                className="h-full rounded-full bg-[image:var(--grad-sunset)]"
                 animate={{ width: `${pct}%` }}
                 transition={{ type: "spring", stiffness: 60, damping: 20 }}
               />

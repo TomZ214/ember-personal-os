@@ -247,7 +247,7 @@ function MonthView({
             >
               <span
                 className={`num mb-1 flex h-6 w-6 items-center justify-center rounded-full text-xs ${
-                  today ? "bg-primary font-semibold text-white shadow-[0_0_12px_-2px_var(--primary)]" : "text-muted"
+                  today ? "bg-[image:var(--grad-sunset)] font-semibold text-(--on-sunset) shadow-[0_0_12px_-2px_var(--primary)]" : "text-muted"
                 }`}
               >
                 {format(d, "d")}
@@ -328,7 +328,7 @@ function TimeGrid({
               <div key={dayKey(d)} className="px-2 py-2 text-center">
                 <p className="text-[11px] uppercase tracking-wide text-faint">{format(d, "EEE")}</p>
                 <p className={`num mx-auto mt-0.5 flex h-7 w-7 items-center justify-center rounded-full text-sm ${
-                  isToday(d) ? "bg-primary font-semibold text-white" : "text-ink"
+                  isToday(d) ? "bg-[image:var(--grad-sunset)] font-semibold text-(--on-sunset)" : "text-ink"
                 }`}>
                   {format(d, "d")}
                 </p>
