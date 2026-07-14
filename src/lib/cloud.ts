@@ -147,6 +147,7 @@ export interface InboxTask {
   title: string;
   notes: string | null;
   sender: string | null;
+  priority: string | null;
 }
 
 /**
@@ -161,7 +162,7 @@ export async function claimInboxTasks(userId: string): Promise<InboxTask[]> {
     .from("task_inbox")
     .delete()
     .eq("user_id", userId)
-    .select("id, title, notes, sender");
+    .select("id, title, notes, sender, priority");
   if (error) throw new Error(error.message);
   return (data as InboxTask[]) ?? [];
 }

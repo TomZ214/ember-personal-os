@@ -115,6 +115,7 @@ export async function cloudSyncNow(): Promise<void> {
   if (!currentUserId) return;
   set({ syncing: true, error: null });
   try {
+    await drainInbox(currentUserId);
     const outcome = await reconcile(currentUserId);
     if (outcome === "in-sync") await push(currentUserId);
   } catch (e) {
@@ -123,6 +124,8 @@ export async function cloudSyncNow(): Promise<void> {
   set({ syncing: false });
 }
 
+const INBOX_PRIORITIES = ["low", "medium", "high", "urgent"] as const;
+
 /** turn pending family quick-add rows into real tasks (claim-then-add) */
 async function drainInbox(uid: string): Promise<void> {
   try {
@@ -130,10 +133,12 @@ async function drainInbox(uid: string): Promise<void> {
     if (pending.length === 0) return;
     const { addTask } = useEmber.getState();
     for (const t of pending) {
+      const priority = INBOX_PRIORITIES.find((p) => p === t.priority) ?? "medium";
       addTask({
         title: t.title,
         notes: [t.notes, t.sender ? `Von ${t.sender}` : null].filter(Boolean).join("\n") || undefined,
         tags: ["family"],
+        priority,
       });
     }
     toast(pending.length === 1 ? "1 neue Aufgabe von der Familie" : `${pending.length} neue Aufgaben von der Familie`);

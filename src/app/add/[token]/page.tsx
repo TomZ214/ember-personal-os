@@ -5,10 +5,18 @@ import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Check, Flame, Loader2, Plus } from "lucide-react";
 import { supabase } from "@/lib/cloud";
+import { PRIORITY_META, type Priority } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { Input, Label, Textarea } from "@/components/ui/inputs";
 
 const SENDER_KEY = "ember-quickadd-name";
+
+const URGENCY: { value: Priority; label: string }[] = [
+  { value: "low", label: "Niedrig" },
+  { value: "medium", label: "Normal" },
+  { value: "high", label: "Hoch" },
+  { value: "urgent", label: "Dringend" },
+];
 
 /**
  * Public quick-add page behind a share token — for family members.
@@ -19,6 +27,7 @@ export default function QuickAddPage() {
   const { token } = useParams<{ token: string }>();
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
+  const [priority, setPriority] = useState<Priority>("medium");
   const [sender, setSender] = useState("");
   const [phase, setPhase] = useState<"form" | "sending" | "done">("form");
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +55,7 @@ export default function QuickAddPage() {
       task_title: title.trim(),
       task_notes: notes.trim() || null,
       sender_name: sender.trim() || null,
+      task_priority: priority,
     });
     if (err) {
       setPhase("form");
@@ -89,6 +99,7 @@ export default function QuickAddPage() {
               onClick={() => {
                 setTitle("");
                 setNotes("");
+                setPriority("medium");
                 setPhase("form");
               }}
             >
@@ -115,6 +126,33 @@ export default function QuickAddPage() {
                 placeholder="Details, falls nötig…"
               />
             </label>
+            <div>
+              <Label>Wie dringend?</Label>
+              <div className="grid grid-cols-4 gap-1.5">
+                {URGENCY.map((u) => {
+                  const active = priority === u.value;
+                  return (
+                    <button
+                      key={u.value}
+                      type="button"
+                      onClick={() => setPriority(u.value)}
+                      aria-pressed={active}
+                      className={`flex h-9 items-center justify-center gap-1.5 rounded-[10px] border text-[12px] font-medium transition-colors ${
+                        active
+                          ? "border-white/[0.18] bg-white/[0.10] text-ink"
+                          : "border-white/[0.08] bg-white/[0.03] text-muted hover:border-white/[0.14]"
+                      }`}
+                    >
+                      <span
+                        className="h-1.5 w-1.5 shrink-0 rounded-full"
+                        style={{ background: PRIORITY_META[u.value].color }}
+                      />
+                      {u.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             <label>
               <Label>Dein Name</Label>
               <Input

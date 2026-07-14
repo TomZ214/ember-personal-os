@@ -3,8 +3,9 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  AlarmClock, Check, CheckSquare, Columns3, GripVertical, List, Plus, Tag, Trash2,
+  AlarmClock, Check, CheckSquare, Columns3, GripVertical, List, Loader2, Plus, RefreshCw, Tag, Trash2,
 } from "lucide-react";
+import { cloudSyncNow, useCloudStatus } from "@/hooks/useCloudSync";
 import { useEmber, useHydrated } from "@/lib/store";
 import { friendlyDay, todayKey } from "@/lib/dates";
 import { PRIORITY_META, type Priority, type Task, type TaskStatus } from "@/lib/types";
@@ -24,10 +25,17 @@ const COLUMNS: { status: TaskStatus; label: string; hint: string }[] = [
 export default function TasksPage() {
   const hydrated = useHydrated();
   const tasks = useEmber((s) => s.tasks);
+  const cloud = useCloudStatus();
   const [view, setView] = useState<"board" | "list">("board");
   const [editing, setEditing] = useState<Task | null>(null);
   const [creating, setCreating] = useState(false);
   const openCount = tasks.filter((t) => t.status !== "done").length;
+
+  const sync = async () => {
+    await cloudSyncNow();
+    const { error } = useCloudStatus.getState();
+    toast(error ? `Sync failed: ${error}` : "Tasks synced", error ? "info" : undefined);
+  };
 
   if (!hydrated)
     return <div className="skeleton h-[70vh]" style={{ borderRadius: 18 }} />;
@@ -38,9 +46,17 @@ export default function TasksPage() {
         title="Tasks"
         sub={`${openCount} open`}
         actions={
-          <Button variant="primary" onClick={() => setCreating(true)}>
-            <Plus size={16} /> New task
-          </Button>
+          <>
+            {cloud.signedIn && (
+              <Button onClick={sync} disabled={cloud.syncing} aria-label="Sync tasks">
+                {cloud.syncing ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
+                <span className="hidden sm:inline">Sync</span>
+              </Button>
+            )}
+            <Button variant="primary" onClick={() => setCreating(true)}>
+              <Plus size={16} /> New task
+            </Button>
+          </>
         }
       />
 
