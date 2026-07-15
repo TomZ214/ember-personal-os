@@ -188,20 +188,41 @@ function Detail({
 }
 
 function HourlyChart({ data }: { data: WeatherData["hourly"] }) {
-  const { path, area, points, min, max } = useMemo(() => {
+  const { area, line, labels, min, max } = useMemo(() => {
     const temps = data.map((h) => h.temp);
     const min = Math.min(...temps);
     const max = Math.max(...temps);
     const span = Math.max(1, max - min);
-    const W = 100, H = 34;
+    const W = 100, H = 40, PAD = 9; // headroom top/bottom so labels above the peak never clip
     const pts = data.map((h, i) => ({
       x: (i / (data.length - 1)) * W,
-      y: H - ((h.temp - min) / span) * (H - 8) - 4,
+      y: H - PAD - ((h.temp - min) / span) * (H - PAD * 2),
       temp: h.temp,
+      time: h.time,
     }));
-    const path = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(" ");
-    const area = `${path} L${W},${H} L0,${H} Z`;
-    return { path, area, points: pts, min, max };
+
+    // smooth the polyline into a Catmull-Rom curve for a premium feel
+    const line = pts
+      .map((p, i) => {
+        if (i === 0) return `M${p.x.toFixed(2)},${p.y.toFixed(2)}`;
+        const p0 = pts[i - 1];
+        const cx = ((p0.x + p.x) / 2).toFixed(2);
+        return `C${cx},${p0.y.toFixed(2)} ${cx},${p.y.toFixed(2)} ${p.x.toFixed(2)},${p.y.toFixed(2)}`;
+      })
+      .join(" ");
+    const area = `${line} L${W},${H} L0,${H} Z`;
+
+    // labels as percentages so they render as crisp, undistorted HTML
+    const labels = pts
+      .filter((_, i) => i % 3 === 0)
+      .map((p, idx, arr) => ({
+        temp: p.temp,
+        leftPct: p.x,
+        topPct: (p.y / H) * 100,
+        align: idx === 0 ? "left" : idx === arr.length - 1 ? "right" : "center",
+      }));
+
+    return { area, line, labels, min, max };
   }, [data]);
 
   return (
@@ -210,38 +231,46 @@ function HourlyChart({ data }: { data: WeatherData["hourly"] }) {
         <span>Next 24 h</span>
         <span className="num">▲ {max}° ▽ {min}°</span>
       </div>
-      <svg viewBox="0 0 100 34" preserveAspectRatio="none" className="h-24 w-full overflow-visible">
-        <defs>
-          <linearGradient id="wx-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <motion.path
-          d={area}
-          fill="url(#wx-fill)"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6 }}
-        />
-        <motion.path
-          d={path}
-          fill="none"
-          stroke="var(--accent)"
-          strokeWidth="1.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          vectorEffect="non-scaling-stroke"
-          initial={{ pathLength: 0 }}
-          animate={{ pathLength: 1 }}
-          transition={{ duration: 0.9, ease: "easeInOut" }}
-        />
-        {points.filter((_, i) => i % 4 === 0).map((p, i) => (
-          <text key={i} x={p.x} y={p.y - 2.5} textAnchor="middle" className="fill-muted" style={{ fontSize: 3.4 }}>
-            {p.temp}°
-          </text>
-        ))}
-      </svg>
+      <div className="relative h-28 w-full">
+        {/* stretched SVG draws the shape; text lives in the HTML layer so it stays crisp */}
+        <svg viewBox="0 0 100 40" preserveAspectRatio="none" className="absolute inset-0 h-full w-full">
+          <defs>
+            <linearGradient id="wx-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.28" />
+              <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <motion.path d={area} fill="url(#wx-fill)" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }} />
+          <motion.path
+            d={line}
+            fill="none"
+            stroke="var(--accent)"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: 0.9, ease: "easeInOut" }}
+          />
+        </svg>
+        <div className="pointer-events-none absolute inset-0">
+          {labels.map((l, i) => (
+            <span
+              key={i}
+              className="num absolute text-[11px] font-medium text-ink/90"
+              style={{
+                left: `${l.leftPct}%`,
+                top: `${l.topPct}%`,
+                // sit the label fully above the curve point, edge-clamped at the ends
+                transform: `translate(${l.align === "left" ? "0" : l.align === "right" ? "-100%" : "-50%"}, calc(-100% - 7px))`,
+              }}
+            >
+              {l.temp}°
+            </span>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
