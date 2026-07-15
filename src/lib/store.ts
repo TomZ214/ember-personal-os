@@ -184,6 +184,7 @@ export const useEmber = create<EmberState>()(
               subtasks: t.subtasks ?? [], createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
               recurrence: t.recurrence ?? "none", repeat: t.repeat, reminder: t.reminder ?? null,
+              sharedId: t.sharedId,
               order: Math.min(0, ...s.tasks.map((x) => x.order)) - 1,
             },
             ...s.tasks,

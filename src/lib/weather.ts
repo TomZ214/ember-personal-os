@@ -1,0 +1,212 @@
+/**
+ * Weather data layer — Open-Meteo (no API key). One fetch pulls current
+ * conditions, 48 h hourly and 10-day daily plus air quality; results are
+ * cached in sessionStorage for 20 minutes per location.
+ */
+
+export interface HourPoint {
+  time: string;
+  temp: number;
+  code: number;
+  isDay: boolean;
+  precipProb: number;
+}
+
+export interface DayPoint {
+  date: string;
+  code: number;
+  hi: number;
+  lo: number;
+  sunrise: string;
+  sunset: string;
+  uv: number;
+  precipProb: number;
+  windMax: number;
+}
+
+export interface WeatherData {
+  fetchedAt: number;
+  current: {
+    temp: number;
+    feels: number;
+    code: number;
+    isDay: boolean;
+    humidity: number;
+    wind: number;
+    windDir: number;
+    gust: number;
+    pressure: number;
+    visibility: number; // km
+    uv: number;
+    precipProb: number;
+    aqi: number | null;
+    pm25: number | null;
+  };
+  hourly: HourPoint[];
+  daily: DayPoint[];
+  todayHi: number;
+  todayLo: number;
+}
+
+const FORECAST =
+  "https://api.open-meteo.com/v1/forecast?latitude=LAT&longitude=LON&timezone=auto&forecast_days=10" +
+  "&current=temperature_2m,apparent_temperature,relative_humidity_2m,is_day,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure,precipitation" +
+  "&hourly=temperature_2m,weather_code,is_day,precipitation_probability,visibility,uv_index" +
+  "&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_probability_max,wind_speed_10m_max";
+
+const AIR =
+  "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=LAT&longitude=LON&current=us_aqi,pm2_5&timezone=auto";
+
+export async function fetchWeather(lat: number, lon: number): Promise<WeatherData> {
+  const key = `ember-wx2-${lat}-${lon}`;
+  try {
+    const cached = sessionStorage.getItem(key);
+    if (cached) {
+      const data = JSON.parse(cached) as WeatherData;
+      if (Date.now() - data.fetchedAt < 20 * 60_000) return data;
+    }
+  } catch {
+    /* ignore cache misses */
+  }
+
+  const sub = (u: string) => u.replace("LAT", String(lat)).replace("LON", String(lon));
+  const [fRes, aRes] = await Promise.all([
+    fetch(sub(FORECAST)).then((r) => r.json()),
+    fetch(sub(AIR)).then((r) => r.json()).catch(() => null),
+  ]);
+
+  // hourly: keep the next 48 hours starting from the current hour
+  const now = Date.now();
+  const hAll: HourPoint[] = (fRes.hourly.time as string[]).map((time, i) => ({
+    time,
+    temp: Math.round(fRes.hourly.temperature_2m[i]),
+    code: fRes.hourly.weather_code[i],
+    isDay: fRes.hourly.is_day[i] === 1,
+    precipProb: fRes.hourly.precipitation_probability?.[i] ?? 0,
+  }));
+  const startIdx = Math.max(0, hAll.findIndex((h) => new Date(h.time).getTime() >= now - 3_600_000));
+  const hourly = hAll.slice(startIdx, startIdx + 48);
+
+  // visibility & uv for "current" come from the current hour of the hourly arrays
+  const curHourIdx = Math.max(0, (fRes.hourly.time as string[]).findIndex((t) => new Date(t).getTime() >= now - 3_600_000));
+  const visibility = Math.round(((fRes.hourly.visibility?.[curHourIdx] ?? 10000) / 1000) * 10) / 10;
+  const uv = Math.round(fRes.hourly.uv_index?.[curHourIdx] ?? 0);
+
+  const daily: DayPoint[] = (fRes.daily.time as string[]).map((date, i) => ({
+    date,
+    code: fRes.daily.weather_code[i],
+    hi: Math.round(fRes.daily.temperature_2m_max[i]),
+    lo: Math.round(fRes.daily.temperature_2m_min[i]),
+    sunrise: fRes.daily.sunrise[i],
+    sunset: fRes.daily.sunset[i],
+    uv: Math.round(fRes.daily.uv_index_max?.[i] ?? 0),
+    precipProb: fRes.daily.precipitation_probability_max?.[i] ?? 0,
+    windMax: Math.round(fRes.daily.wind_speed_10m_max?.[i] ?? 0),
+  }));
+
+  const data: WeatherData = {
+    fetchedAt: Date.now(),
+    current: {
+      temp: Math.round(fRes.current.temperature_2m),
+      feels: Math.round(fRes.current.apparent_temperature),
+      code: fRes.current.weather_code,
+      isDay: fRes.current.is_day === 1,
+      humidity: Math.round(fRes.current.relative_humidity_2m),
+      wind: Math.round(fRes.current.wind_speed_10m),
+      windDir: Math.round(fRes.current.wind_direction_10m),
+      gust: Math.round(fRes.current.wind_gusts_10m ?? 0),
+      pressure: Math.round(fRes.current.surface_pressure),
+      visibility,
+      uv,
+      precipProb: daily[0]?.precipProb ?? 0,
+      aqi: aRes?.current?.us_aqi ?? null,
+      pm25: aRes?.current?.pm2_5 != null ? Math.round(aRes.current.pm2_5) : null,
+    },
+    hourly,
+    daily,
+    todayHi: daily[0]?.hi ?? Math.round(fRes.current.temperature_2m),
+    todayLo: daily[0]?.lo ?? Math.round(fRes.current.temperature_2m),
+  };
+
+  try {
+    sessionStorage.setItem(key, JSON.stringify(data));
+  } catch {
+    /* storage full — fine */
+  }
+  return data;
+}
+
+/* ---------------- helpers ---------------- */
+
+export type Condition =
+  | "clear" | "partly" | "cloudy" | "fog" | "drizzle" | "rain" | "snow" | "showers" | "thunder";
+
+export function condition(code: number): Condition {
+  if (code === 0) return "clear";
+  if (code <= 2) return "partly";
+  if (code === 3) return "cloudy";
+  if (code <= 48) return "fog";
+  if (code <= 57) return "drizzle";
+  if (code <= 67) return "rain";
+  if (code <= 77) return "snow";
+  if (code <= 82) return "showers";
+  if (code <= 86) return "snow";
+  return "thunder";
+}
+
+export function conditionLabel(code: number): string {
+  const map: Record<Condition, string> = {
+    clear: "Clear", partly: "Partly cloudy", cloudy: "Overcast", fog: "Fog",
+    drizzle: "Drizzle", rain: "Rain", snow: "Snow", showers: "Showers", thunder: "Thunderstorm",
+  };
+  return map[condition(code)];
+}
+
+const COMPASS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+export function windCompass(deg: number): string {
+  return COMPASS[Math.round(deg / 45) % 8];
+}
+
+/** US AQI → label + token color */
+export function aqiMeta(aqi: number | null): { label: string; color: string } {
+  if (aqi === null) return { label: "—", color: "var(--faint)" };
+  if (aqi <= 50) return { label: "Good", color: "var(--success)" };
+  if (aqi <= 100) return { label: "Moderate", color: "var(--c-amber)" };
+  if (aqi <= 150) return { label: "Unhealthy (sensitive)", color: "var(--warning)" };
+  if (aqi <= 200) return { label: "Unhealthy", color: "var(--danger)" };
+  if (aqi <= 300) return { label: "Very unhealthy", color: "var(--c-lilac)" };
+  return { label: "Hazardous", color: "var(--c-rose)" };
+}
+
+export function uvMeta(uv: number): { label: string; color: string } {
+  if (uv <= 2) return { label: "Low", color: "var(--success)" };
+  if (uv <= 5) return { label: "Moderate", color: "var(--c-amber)" };
+  if (uv <= 7) return { label: "High", color: "var(--warning)" };
+  if (uv <= 10) return { label: "Very high", color: "var(--danger)" };
+  return { label: "Extreme", color: "var(--c-lilac)" };
+}
+
+/** approximate moon phase (0=new, 0.5=full) with a friendly name + emoji */
+export function moonPhase(date = new Date()): { name: string; emoji: string; fraction: number } {
+  // days since a known new moon (2000-01-06 18:14 UTC)
+  const synodic = 29.53058867;
+  const knownNew = Date.UTC(2000, 0, 6, 18, 14) / 86_400_000;
+  const days = date.getTime() / 86_400_000 - knownNew;
+  const frac = ((days % synodic) + synodic) % synodic / synodic;
+  const phases: { max: number; name: string; emoji: string }[] = [
+    { max: 0.03, name: "New moon", emoji: "🌑" },
+    { max: 0.22, name: "Waxing crescent", emoji: "🌒" },
+    { max: 0.28, name: "First quarter", emoji: "🌓" },
+    { max: 0.47, name: "Waxing gibbous", emoji: "🌔" },
+    { max: 0.53, name: "Full moon", emoji: "🌕" },
+    { max: 0.72, name: "Waning gibbous", emoji: "🌖" },
+    { max: 0.78, name: "Last quarter", emoji: "🌗" },
+    { max: 0.97, name: "Waning crescent", emoji: "🌘" },
+    { max: 1.01, name: "New moon", emoji: "🌑" },
+  ];
+  const p = phases.find((x) => frac <= x.max)!;
+  return { name: p.name, emoji: p.emoji, fraction: frac };
+}
+
+export const hhmm = (iso: string) =>
+  new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });

@@ -5,7 +5,7 @@ import { create } from "zustand";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import {
   applyCloudData, claimInboxTasks, cloudConfigured, collectCloudData, deviceId, LAST_SYNC_KEY,
-  pullCloud, pushCloud, supabase, type CloudRow,
+  pullCloud, pushCloud, reconcileSharedTasks, supabase, type CloudRow,
 } from "@/lib/cloud";
 import { useEmber } from "@/lib/store";
 import { refreshPushSubscription } from "@/lib/push";
@@ -85,6 +85,8 @@ async function push(uid: string): Promise<void> {
   try {
     const at = await pushCloud(uid);
     set({ lastSync: at, error: null });
+    // report family-task completion back to the submitters (best effort)
+    void reconcileSharedTasks(uid, useEmber.getState().tasks).catch(() => {});
   } catch (e) {
     set({ error: e instanceof Error ? e.message : String(e) });
   }
@@ -144,6 +146,7 @@ async function drainInbox(uid: string): Promise<void> {
         priority,
         due: t.due ?? undefined,
         recurrence,
+        sharedId: t.id, // links back to shared_tasks so the sender sees status
       });
     }
     toast(pending.length === 1 ? "1 neue Aufgabe von der Familie" : `${pending.length} neue Aufgaben von der Familie`);

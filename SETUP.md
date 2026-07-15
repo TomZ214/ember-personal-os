@@ -246,7 +246,11 @@ seeing anything else — no account needed on their side.
 3. Whoever opens the link sees a single "Aufgabe schicken" form. Sent tasks
    appear in your Tasks (tagged `family`) on all synced devices within
    seconds.
-4. Delete the link anytime — it stops working immediately.
+4. **They can also see whether you did them:** the same page lists the tasks
+   they sent through that link with a live "offen / erledigt" status — and
+   nothing else of yours. When you complete a family task, their view updates.
+   (Re-run `family.sql` once to add this; it's safe on an existing database.)
+5. Delete the link anytime — it stops working immediately.
 
 ---
 

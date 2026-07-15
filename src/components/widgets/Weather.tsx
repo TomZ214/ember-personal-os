@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Sun, WifiOff,
@@ -100,7 +101,7 @@ export function WeatherWidget() {
   const Icon = m.icon;
 
   return (
-    <div className="panel relative h-full overflow-hidden p-5">
+    <Link href="/weather" className="panel panel-hover relative block h-full overflow-hidden p-5">
       <div
         aria-hidden
         className="pointer-events-none absolute -right-10 -top-12 h-44 w-44 rounded-full opacity-25 blur-3xl"
@@ -137,6 +138,6 @@ export function WeatherWidget() {
           );
         })}
       </div>
-    </div>
+    </Link>
   );
 }

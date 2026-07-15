@@ -155,7 +155,8 @@ export interface InboxTask {
 /**
  * Claim pending quick-add tasks. Deleting first (and only keeping rows the
  * delete actually returned) means two signed-in devices can never both turn
- * the same inbox row into a task.
+ * the same inbox row into a task. The row id doubles as the shared_tasks id,
+ * so the created task can later report its status back to the sender.
  */
 export async function claimInboxTasks(userId: string): Promise<InboxTask[]> {
   const sb = supabase();
@@ -167,4 +168,53 @@ export async function claimInboxTasks(userId: string): Promise<InboxTask[]> {
     .select("id, title, notes, sender, priority, due, recurrence");
   if (error) throw new Error(error.message);
   return (data as InboxTask[]) ?? [];
+}
+
+/**
+ * Push the completion status of family-submitted tasks back to shared_tasks,
+ * so the sender's /add/<token> page shows whether they were done. Idempotent:
+ * we fetch current statuses and only write the ones that changed.
+ */
+export async function reconcileSharedTasks(
+  userId: string,
+  tasks: { sharedId?: string; status: string; completedAt?: string }[],
+): Promise<void> {
+  const sb = supabase();
+  if (!sb) return;
+  const mine = tasks.filter((t) => t.sharedId);
+  if (mine.length === 0) return;
+
+  const { data, error } = await sb
+    .from("shared_tasks")
+    .select("id, status")
+    .eq("user_id", userId);
+  if (error) return; // table may not exist yet (family.sql not run)
+  const remote = new Map((data as { id: string; status: string }[]).map((r) => [r.id, r.status]));
+
+  for (const t of mine) {
+    const want = t.status === "done" ? "done" : "open";
+    if (remote.get(t.sharedId!) === want) continue;
+    if (!remote.has(t.sharedId!)) continue; // no record to update (older task)
+    await sb
+      .from("shared_tasks")
+      .update({ status: want, done_at: want === "done" ? t.completedAt ?? new Date().toISOString() : null })
+      .eq("id", t.sharedId!);
+  }
+}
+
+export interface SharedTaskView {
+  title: string;
+  status: string;
+  sender: string | null;
+  created_at: string;
+  done_at: string | null;
+}
+
+/** family member reads back the tasks they submitted through a link + status */
+export async function listSharedTasks(token: string): Promise<SharedTaskView[]> {
+  const sb = supabase();
+  if (!sb) throw new Error("cloud not configured");
+  const { data, error } = await sb.rpc("inbox_list_tasks", { share_token: token });
+  if (error) throw new Error(error.message);
+  return (data as SharedTaskView[]) ?? [];
 }

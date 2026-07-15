@@ -74,6 +74,9 @@ export interface Task {
   repeat?: RepeatRule;
   /** minutes before the due time to send a reminder push */
   reminder?: number | null;
+  /** links a family-submitted task to its shared_tasks row, so the sender can
+   *  see whether it's done — set when the family inbox is drained */
+  sharedId?: string;
 }
 
 export type Recurrence = "none" | "daily" | "weekly";

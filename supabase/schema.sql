@@ -68,8 +68,44 @@ create table if not exists public.task_inbox (
 alter table public.task_inbox add column if not exists priority text not null default 'medium';
 alter table public.task_inbox add column if not exists due date;
 alter table public.task_inbox add column if not exists recurrence text not null default 'none';
+alter table public.task_inbox add column if not exists token uuid;
 
 alter table public.task_inbox enable row level security;
+
+-- persistent record of family-submitted tasks so the submitter can later see
+-- whether the owner did them — scoped to the share link, never the owner's
+-- other tasks. NOT foreign-keyed to task_inbox, so draining (which deletes the
+-- inbox row) leaves this record intact.
+create table if not exists public.shared_tasks (
+  id         uuid primary key,
+  token      uuid not null references public.share_links (token) on delete cascade,
+  user_id    uuid not null references auth.users (id) on delete cascade,
+  sender     text,
+  title      text not null,
+  status     text not null default 'open', -- open | done
+  created_at timestamptz not null default now(),
+  done_at    timestamptz
+);
+
+alter table public.shared_tasks enable row level security;
+
+-- the owner manages their own rows; family members only ever read through the
+-- token-checked RPC below (no anon select policy exists)
+drop policy if exists "own shared: select" on public.shared_tasks;
+drop policy if exists "own shared: update" on public.shared_tasks;
+drop policy if exists "own shared: delete" on public.shared_tasks;
+create policy "own shared: select" on public.shared_tasks
+  for select using (auth.uid() = user_id);
+create policy "own shared: update" on public.shared_tasks
+  for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "own shared: delete" on public.shared_tasks
+  for delete using (auth.uid() = user_id);
+
+do $$
+begin
+  alter publication supabase_realtime add table public.shared_tasks;
+exception when duplicate_object then null;
+end $$;
 
 -- the owner reads and clears their inbox; nobody can insert directly —
 -- inserts only happen through the token-checked function below
@@ -101,6 +137,8 @@ set search_path = public
 as $$
 declare
   uid uuid;
+  new_id uuid := gen_random_uuid();
+  clean_sender text;
 begin
   select user_id into uid from public.share_links where token = share_token;
   if uid is null then
@@ -118,20 +156,47 @@ begin
   if (select count(*) from public.task_inbox where user_id = uid) >= 200 then
     raise exception 'inbox full';
   end if;
-  insert into public.task_inbox (user_id, title, notes, sender, priority, due, recurrence)
+  clean_sender := nullif(left(trim(coalesce(sender_name, '')), 80), '');
+  insert into public.task_inbox (id, user_id, token, title, notes, sender, priority, due, recurrence)
   values (
-    uid,
+    new_id, uid, share_token,
     trim(task_title),
     nullif(left(trim(coalesce(task_notes, '')), 2000), ''),
-    nullif(left(trim(coalesce(sender_name, '')), 80), ''),
+    clean_sender,
     task_priority,
     task_due,
     task_recurrence
   );
+  -- mirror into shared_tasks so the sender can track it (same id links them)
+  insert into public.shared_tasks (id, token, user_id, sender, title, status)
+  values (new_id, share_token, uid, clean_sender, trim(task_title), 'open');
 end;
 $$;
 
 grant execute on function public.inbox_add_task to anon, authenticated;
+
+-- family members read back the status of tasks they submitted through a link.
+-- Only rows for THAT token are ever returned — never the owner's other tasks.
+create or replace function public.inbox_list_tasks(share_token uuid)
+returns table (title text, status text, sender text, created_at timestamptz, done_at timestamptz)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not exists (select 1 from public.share_links where token = share_token) then
+    raise exception 'invalid token';
+  end if;
+  return query
+    select st.title, st.status, st.sender, st.created_at, st.done_at
+    from public.shared_tasks st
+    where st.token = share_token
+    order by (st.status = 'done'), st.created_at desc
+    limit 100;
+end;
+$$;
+
+grant execute on function public.inbox_list_tasks to anon, authenticated;
 
 -- realtime: new inbox tasks appear on the owner's devices instantly
 -- (wrapped so re-running the file never errors)

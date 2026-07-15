@@ -1,5 +1,5 @@
 import {
-  CalendarDays, CheckSquare, Coins, FileBox, Flag, Flame, LayoutGrid, Mail, NotebookPen,
+  CalendarDays, CheckSquare, CloudSun, Coins, FileBox, Flag, Flame, LayoutGrid, Mail, NotebookPen,
   Repeat, Settings, ShieldCheck, Users,
 } from "lucide-react";
 
@@ -13,6 +13,7 @@ export const NAV: NavItem[] = [
   { href: "/", label: "Home", icon: LayoutGrid },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
+  { href: "/weather", label: "Weather", icon: CloudSun },
   { href: "/mail", label: "Mail", icon: Mail },
   { href: "/notes", label: "Notes", icon: NotebookPen },
   { href: "/habits", label: "Habits", icon: Repeat },
