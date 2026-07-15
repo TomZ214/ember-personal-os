@@ -97,6 +97,41 @@ export async function enablePush(userId: string): Promise<string | null> {
   return error ? error.message : null;
 }
 
+/**
+ * Self-heal: browsers silently rotate or drop push subscriptions, which would
+ * make notifications quietly stop. On every sign-in we re-subscribe if needed
+ * and re-store the current subscription (refreshing the timezone too), so the
+ * server always has a live endpoint for this device.
+ */
+export async function refreshPushSubscription(userId: string): Promise<void> {
+  if (!pushSupported() || !VAPID) return;
+  if (Notification.permission !== "granted") return; // user never opted in — nothing to keep alive
+  const reg = await navigator.serviceWorker.getRegistration();
+  if (!reg) return;
+
+  let sub = await reg.pushManager.getSubscription();
+  if (!sub) {
+    try {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID) as BufferSource,
+      });
+    } catch {
+      return; // subscribe can fail if permission was revoked at the OS level
+    }
+  }
+
+  const json = sub.toJSON() as { endpoint?: string; keys?: { p256dh: string; auth: string } };
+  if (!json.endpoint || !json.keys) return;
+  await supabase()?.from("push_subscriptions").upsert({
+    endpoint: json.endpoint,
+    user_id: userId,
+    p256dh: json.keys.p256dh,
+    auth: json.keys.auth,
+    tz: Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Berlin",
+  });
+}
+
 export async function disablePush(): Promise<void> {
   const sub = await currentSubscription();
   if (!sub) return;

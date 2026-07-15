@@ -1,17 +1,21 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { pushReady, sendPush } from "@/lib/server/push";
+import { dayNumber, planNotifications } from "@/lib/server/reminders";
 import { DEFAULT_NOTIFICATIONS, type EventItem, type Settings, type Task } from "@/lib/types";
 
 /**
- * The scheduled job behind push notifications. Netlify calls this every 15
+ * The scheduled job behind push notifications. Netlify calls this every 2
  * minutes; it decides — per user, in their own timezone — what is worth a ping:
  *
  *   • a daily summary at their chosen hour (skipped when nothing is due)
- *   • a nudge ~30 minutes before a calendar event starts
+ *   • a task reminder, at each task's chosen offset before its due time
+ *   • an event reminder, at each event's chosen offset before it starts
  *
- * `push_log` is a send-once ledger: we claim the row BEFORE sending, so a
- * retried or overlapping run can never double-notify.
+ * Matching is CATCH-UP, not a fixed window: a reminder fires on the first run
+ * at or after its fire moment (up to a short grace past the due time), so a
+ * skipped or delayed run never loses a reminder. `push_log` is a send-once
+ * ledger — we claim the row before sending, so nothing is ever sent twice.
  */
 
 export const maxDuration = 60;
@@ -37,8 +41,8 @@ function admin() {
   );
 }
 
-/** today's date and clock in a given timezone */
-function localNow(tz: string): { date: string; minutes: number } {
+/** today's date, clock-minutes, and an absolute wall-clock minute scalar, in a tz */
+function localNow(tz: string): { date: string; minutes: number; scalar: number } {
   const parts = Object.fromEntries(
     new Intl.DateTimeFormat("en-GB", {
       timeZone: tz,
@@ -48,21 +52,9 @@ function localNow(tz: string): { date: string; minutes: number } {
       .formatToParts(new Date())
       .map((p) => [p.type, p.value]),
   );
-  return {
-    date: `${parts.year}-${parts.month}-${parts.day}`,
-    minutes: Number(parts.hour) * 60 + Number(parts.minute),
-  };
-}
-
-/** same rule the calendar uses, minus the date-fns dependency */
-function occursOn(ev: EventItem, key: string): boolean {
-  if (ev.date === key) return true;
-  if (ev.recurrence === "none") return false;
-  const first = new Date(ev.date + "T00:00:00Z");
-  const day = new Date(key + "T00:00:00Z");
-  if (day < first) return false;
-  if (ev.recurrence === "daily") return true;
-  return first.getUTCDay() === day.getUTCDay(); // weekly
+  const date = `${parts.year}-${parts.month}-${parts.day}`;
+  const minutes = Number(parts.hour) * 60 + Number(parts.minute);
+  return { date, minutes, scalar: dayNumber(date) * 1440 + minutes };
 }
 
 export async function GET(req: NextRequest) {
@@ -102,54 +94,16 @@ export async function GET(req: NextRequest) {
 
     const prefs = { ...DEFAULT_NOTIFICATIONS, ...(state.settings?.notifications ?? {}) };
     const tz = devices[0].tz || "Europe/Berlin";
-    const { date: today, minutes: nowMin } = localNow(tz);
+    const now = localNow(tz);
 
-    const tasks = (state.tasks ?? []).filter((t) => t.status !== "done" && t.due);
-    const overdue = tasks.filter((t) => t.due! < today).length;
-    const dueToday = tasks.filter((t) => t.due === today).length;
+    const pending = planNotifications(state, prefs, now);
 
-    const pending: { key: string; payload: Parameters<typeof sendPush>[1] }[] = [];
-
-    // daily digest — only if there's actually something to report
-    if (prefs.digest && Math.floor(nowMin / 60) === prefs.digestHour && overdue + dueToday > 0) {
-      const bits = [
-        overdue > 0 ? `${overdue} overdue` : null,
-        dueToday > 0 ? `${dueToday} due today` : null,
-      ].filter(Boolean);
-      pending.push({
-        key: `digest-${today}`,
-        payload: {
-          title: overdue > 0 ? "⚠️ Ember — today's plan" : "🔥 Ember — today's plan",
-          body: `You have ${bits.join(" and ")}.`,
-          url: "/tasks",
-          tag: "ember-digest",
-        },
-      });
-    }
-
-    // event reminders — the 20-40 min window guarantees exactly one hit per 15-min run
-    if (prefs.eventReminders) {
-      for (const ev of state.events ?? []) {
-        if (!occursOn(ev, today)) continue;
-        const until = ev.start - nowMin;
-        if (until < 20 || until > 40) continue;
-        pending.push({
-          key: `event-${ev.id}-${today}`,
-          payload: {
-            title: "📅 Starting soon",
-            body: `${ev.title} in ${until} minutes${ev.location ? ` · ${ev.location}` : ""}.`,
-            url: "/calendar",
-            tag: `ember-event-${ev.id}`,
-          },
-        });
-      }
-    }
-
-    for (const { key, payload } of pending) {
+    for (const item of pending) {
       // claim first: a duplicate key means another run already sent this
-      const { error: claimErr } = await sb.from("push_log").insert({ user_id: userId, key });
+      const { error: claimErr } = await sb.from("push_log").insert({ user_id: userId, key: item.key });
       if (claimErr) continue;
 
+      const payload = { title: item.title, body: item.body, url: item.url, tag: item.tag };
       for (const d of devices) {
         const result = await sendPush({ endpoint: d.endpoint, p256dh: d.p256dh, auth: d.auth }, payload);
         if (result === "sent") sent++;
@@ -157,6 +111,10 @@ export async function GET(req: NextRequest) {
       }
     }
   }
+
+  // opportunistic housekeeping: drop ledger rows older than 3 days
+  const cutoff = new Date(Date.now() - 3 * 86_400_000).toISOString();
+  await sb.from("push_log").delete().lt("sent_at", cutoff);
 
   return NextResponse.json({ users: byUser.size, sent });
 }

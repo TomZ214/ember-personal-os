@@ -64,6 +64,8 @@ export interface CalEvent {
   source: "local" | "google";
   calendarId?: string;
   attendees?: GEvent["attendees"];
+  /** minutes before start to remind (local events only) */
+  reminder?: number | null;
 }
 
 export interface CalendarInput {
@@ -78,6 +80,8 @@ export interface CalendarInput {
   localColor: keyof typeof CATEGORY_VAR;
   /** target google calendar id, when connected */
   calendarId?: string;
+  /** minutes before start to send a reminder (local events) */
+  reminder?: number | null;
 }
 
 /**
@@ -132,6 +136,7 @@ export function useCalendarSource() {
       recurring: e.recurrence !== "none",
       recurrenceKind: e.recurrence,
       source: "local",
+      reminder: e.reminder ?? null,
     }));
     const remoteEvents: CalEvent[] = (remote.data?.events ?? [])
       .filter((e) => !hiddenCals.has(e.calendarId))
@@ -154,7 +159,7 @@ export function useCalendarSource() {
         addLocal({
           title: input.title, date: input.date, start: input.start, end: input.end,
           color: input.localColor, recurrence: input.recurrence,
-          location: input.location, notes: input.notes,
+          location: input.location, notes: input.notes, reminder: input.reminder ?? null,
         });
       }
     },
@@ -181,6 +186,7 @@ export function useCalendarSource() {
           ...(patch.notes !== undefined && { notes: patch.notes || undefined }),
           ...(patch.recurrence !== undefined && { recurrence: patch.recurrence }),
           ...(patch.localColor !== undefined && { color: patch.localColor }),
+          ...(patch.reminder !== undefined && { reminder: patch.reminder }),
         });
       }
     },

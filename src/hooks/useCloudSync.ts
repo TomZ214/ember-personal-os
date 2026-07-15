@@ -8,6 +8,7 @@ import {
   pullCloud, pushCloud, supabase, type CloudRow,
 } from "@/lib/cloud";
 import { useEmber } from "@/lib/store";
+import { refreshPushSubscription } from "@/lib/push";
 import { toast } from "@/components/ui/toast";
 
 /**
@@ -196,6 +197,8 @@ export function CloudSyncEngine() {
         set({ error: e instanceof Error ? e.message : String(e) }),
       );
       void drainInbox(uid);
+      // keep this device's push subscription alive server-side
+      void refreshPushSubscription(uid).catch(() => {});
 
       // realtime: other devices' pushes land here instantly
       channel = sb

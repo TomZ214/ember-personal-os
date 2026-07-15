@@ -283,13 +283,16 @@ is due.
 
 4. Restart → **Settings → Connections → Notifications → Turn on** → allow the
    browser prompt → **Send test** to prove the whole chain works.
-5. Choose the hour for the daily summary and whether you want event reminders.
+5. Choose the summary hour, and whether you want task and event reminders. Each
+   task and event carries its own reminder offset (at due time, 5/15/30 min, 1 h,
+   1 day before, …).
 
-**How the schedule runs:** `netlify/functions/push-cron.mts` fires every 15
+**How the schedule runs:** `netlify/functions/push-cron.mts` fires every 2
 minutes and calls `/api/cron/push`, which works out — in *your* timezone — what
-is worth a ping. A send-once ledger (`push_log`) makes sure a retried run can
-never notify you twice. Locally there is no scheduler; you can trigger a run by
-hand:
+is worth a ping. Reminders use catch-up matching (they fire on the first run at
+or after the reminder moment, up to 15 min past due), so a skipped run never
+loses one. A send-once ledger (`push_log`) makes sure a retried run can never
+notify you twice. Locally there is no scheduler; you can trigger a run by hand:
 
 ```bash
 curl -H "authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/push

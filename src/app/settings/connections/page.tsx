@@ -771,14 +771,23 @@ function NotificationsCard() {
           <label className="flex items-center gap-3">
             <input
               type="checkbox"
+              checked={prefs.taskReminders}
+              onChange={(e) => setPrefs({ taskReminders: e.target.checked })}
+              className="h-4 w-4 accent-[var(--accent)]"
+            />
+            <span className="flex-1 text-[13px]">Remind me before a task&apos;s due time</span>
+          </label>
+          <label className="flex items-center gap-3">
+            <input
+              type="checkbox"
               checked={prefs.eventReminders}
               onChange={(e) => setPrefs({ eventReminders: e.target.checked })}
               className="h-4 w-4 accent-[var(--accent)]"
             />
-            <span className="flex-1 text-[13px]">Remind me ~30 min before an event</span>
+            <span className="flex-1 text-[13px]">Remind me before a calendar event</span>
           </label>
           <p className="text-xs text-faint">
-            The summary is skipped on days when nothing is due — no empty pings.
+            Each task and event uses its own reminder time. The daily summary is skipped when nothing is due.
           </p>
         </div>
       ) : null}

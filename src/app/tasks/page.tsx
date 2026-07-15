@@ -6,12 +6,16 @@ import {
   AlarmClock, Check, CheckSquare, Columns3, GripVertical, List, Loader2, Plus, RefreshCw, Repeat,
   Tag, Trash2,
 } from "lucide-react";
+import { parseISO } from "date-fns";
 import { cloudSyncNow, useCloudStatus } from "@/hooks/useCloudSync";
 import { useEmber, useHydrated } from "@/lib/store";
 import { friendlyDay, todayKey } from "@/lib/dates";
+import { defaultRule, repeats, repeatShort, ruleForTask } from "@/lib/recurrence";
 import {
-  PRIORITY_META, TASK_RECURRENCE_META, type Priority, type Task, type TaskRecurrence, type TaskStatus,
+  PRIORITY_META, REMINDER_OPTIONS, type Priority, type RepeatRule, type Task, type TaskRecurrence,
+  type TaskStatus,
 } from "@/lib/types";
+import { RepeatPicker } from "@/components/tasks/RepeatPicker";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input, Label, Select, Textarea } from "@/components/ui/inputs";
@@ -199,7 +203,8 @@ function TaskCard({
 }) {
   const overdue = task.due && task.due < todayKey() && task.status !== "done";
   const doneSubs = task.subtasks.filter((s) => s.done).length;
-  const repeats = !!task.recurrence && task.recurrence !== "none";
+  const rule = ruleForTask(task);
+  const isRepeating = repeats(rule);
   return (
     <div
       draggable
@@ -222,7 +227,7 @@ function TaskCard({
         </p>
         <GripVertical size={14} className="mt-0.5 shrink-0 text-faint opacity-0 transition-opacity group-hover:opacity-100" />
       </div>
-      {(task.due || task.tags.length > 0 || task.subtasks.length > 0 || repeats) && (
+      {(task.due || task.tags.length > 0 || task.subtasks.length > 0 || isRepeating) && (
         <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-faint">
           <span className="flex items-center gap-1" style={{ color: PRIORITY_META[task.priority].color }}>
             <span className="h-1.5 w-1.5 rounded-full" style={{ background: PRIORITY_META[task.priority].color }} />
@@ -230,12 +235,12 @@ function TaskCard({
           </span>
           {task.due && (
             <span className={`flex items-center gap-1 ${overdue ? "font-medium text-danger" : ""}`}>
-              <AlarmClock size={11} /> {friendlyDay(task.due)}
+              <AlarmClock size={11} /> {friendlyDay(task.due)}{task.time ? ` · ${task.time}` : ""}
             </span>
           )}
-          {repeats && (
+          {isRepeating && (
             <span className="flex items-center gap-1 text-accent">
-              <Repeat size={11} /> {TASK_RECURRENCE_META[task.recurrence!].short}
+              <Repeat size={11} /> {repeatShort(rule)}
             </span>
           )}
           {task.subtasks.length > 0 && (
@@ -306,7 +311,7 @@ function ListView({ onEdit }: { onEdit: (t: Task) => void }) {
             ))}
             {t.due && (
               <span className={`num shrink-0 text-xs ${overdue ? "font-medium text-danger" : "text-faint"}`}>
-                {friendlyDay(t.due)}
+                {friendlyDay(t.due)}{t.time ? ` · ${t.time}` : ""}
               </span>
             )}
             <span
@@ -333,8 +338,10 @@ function TaskEditor({ open, task, onClose }: { open: boolean; task?: Task; onClo
   const [status, setStatus] = useState<TaskStatus>("todo");
   const [priority, setPriority] = useState<Priority>("medium");
   const [due, setDue] = useState("");
+  const [time, setTime] = useState("");
   const [tags, setTags] = useState("");
-  const [recurrence, setRecurrence] = useState<TaskRecurrence>("none");
+  const [repeat, setRepeat] = useState<RepeatRule>(defaultRule());
+  const [reminder, setReminder] = useState<number | null>(null);
   const [subs, setSubs] = useState<Task["subtasks"]>([]);
   const [newSub, setNewSub] = useState("");
   const [inited, setInited] = useState<string | null>(null);
@@ -349,12 +356,16 @@ function TaskEditor({ open, task, onClose }: { open: boolean; task?: Task; onClo
       setStatus(task?.status ?? "todo");
       setPriority(task?.priority ?? "medium");
       setDue(task?.due ?? "");
+      setTime(task?.time ?? "");
       setTags(task?.tags.join(", ") ?? "");
-      setRecurrence(task?.recurrence ?? "none");
+      setRepeat(task ? ruleForTask(task) : defaultRule());
+      setReminder(task?.reminder ?? null);
       setSubs(task?.subtasks ?? []);
       setNewSub("");
     }
   }
+
+  const dueWeekday = due ? parseISO(due).getDay() : undefined;
 
   const save = () => {
     if (!title.trim()) return;
@@ -364,8 +375,11 @@ function TaskEditor({ open, task, onClose }: { open: boolean; task?: Task; onClo
       status,
       priority,
       due: due || undefined,
+      time: due && time ? time : undefined, // a time only makes sense with a date
       tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
-      recurrence,
+      repeat: repeat.freq === "none" ? undefined : repeat,
+      recurrence: "none" as TaskRecurrence, // superseded by `repeat`
+      reminder: due ? reminder : null, // reminders need a due date
       subtasks: subs,
     };
     if (task) {
@@ -413,19 +427,41 @@ function TaskEditor({ open, task, onClose }: { open: boolean; task?: Task; onClo
             <Input type="date" value={due} onChange={(e) => setDue(e.target.value)} />
           </label>
           <label>
-            <Label>Repeats</Label>
-            <Select value={recurrence} onChange={(e) => setRecurrence(e.target.value as TaskRecurrence)}>
-              {Object.entries(TASK_RECURRENCE_META).map(([k, v]) => (
-                <option key={k} value={k}>{v.label}</option>
-              ))}
-            </Select>
+            <Label>Time</Label>
+            <Input
+              type="time"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              disabled={!due}
+              aria-label="Due time"
+            />
           </label>
         </div>
+
+        <label>
+          <Label>Reminder</Label>
+          <Select
+            value={reminder === null || reminder === undefined ? "none" : String(reminder)}
+            onChange={(e) => setReminder(e.target.value === "none" ? null : Number(e.target.value))}
+            disabled={!due}
+          >
+            <option value="none">No reminder</option>
+            {REMINDER_OPTIONS.map((r) => (
+              <option key={r.value} value={r.value}>{r.label}</option>
+            ))}
+          </Select>
+          {!due && <p className="mt-1 text-xs text-faint">Add a due date to set a reminder.</p>}
+        </label>
+
+        <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-3">
+          <RepeatPicker value={repeat} onChange={setRepeat} dueWeekday={dueWeekday} />
+        </div>
+
         <label>
           <Label>Tags</Label>
           <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="work, errands" />
         </label>
-        {recurrence !== "none" && (
+        {repeat.freq !== "none" && (
           <p className="-mt-1 flex items-center gap-1.5 text-xs text-faint">
             <Repeat size={12} className="shrink-0 text-accent" />
             When you complete this, the next one is created automatically.

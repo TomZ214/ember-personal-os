@@ -21,7 +21,8 @@ export default async function handler(): Promise<Response> {
   return new Response(body, { status: res.status });
 }
 
-/** Netlify reads this to register the cron schedule */
+/** Netlify reads this to register the cron schedule.
+ *  Every 2 minutes so short reminders ("5 minutes before") land on time. */
 export const config = {
-  schedule: "*/15 * * * *",
+  schedule: "*/2 * * * *",
 };

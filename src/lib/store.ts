@@ -2,8 +2,8 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { addDays, addMonths, addWeeks, parseISO } from "date-fns";
-import { dayKey, todayKey } from "./dates";
+import { todayKey } from "./dates";
+import { advanceEnd, nextOccurrence as ruleNext, ruleExhausted, ruleForTask } from "./recurrence";
 import { purgeSeedData } from "./migrations";
 import type {
   Contact, EventItem, FileMeta, Folder, Goal, Habit, Mail, Note, Settings, Subscription, Task, Txn,
@@ -14,20 +14,25 @@ const uid = () => crypto.randomUUID();
 /**
  * Completing a recurring task doesn't consume it — it schedules the next one.
  * The finished copy stays in Done as a record; a fresh open task is created
- * with its due date rolled forward from the one just completed.
+ * with its due date/time rolled forward per the (possibly advanced) rule.
  */
-function nextOccurrence(task: Task, order: number): Task | null {
-  const r = task.recurrence;
-  if (!r || r === "none") return null;
-  const from = task.due ? parseISO(task.due) : new Date();
-  const next = r === "daily" ? addDays(from, 1) : r === "weekly" ? addWeeks(from, 1) : addMonths(from, 1);
+function nextTaskOccurrence(task: Task, order: number): Task | null {
+  const rule = ruleForTask(task);
+  if (rule.freq === "none" || ruleExhausted(rule)) return null;
+  const from = task.due ?? todayKey();
+  const next = ruleNext(rule, from, task.time);
+  if (!next) return null;
   return {
     ...task,
     id: uid(),
     status: "todo",
     completedAt: undefined,
     createdAt: new Date().toISOString(),
-    due: dayKey(next),
+    updatedAt: new Date().toISOString(),
+    due: next.date,
+    time: next.time ?? task.time,
+    repeat: advanceEnd(rule),
+    recurrence: undefined, // migrated onto `repeat`
     // a fresh run starts with its checklist cleared
     subtasks: task.subtasks.map((s) => ({ ...s, done: false })),
     order,
@@ -175,9 +180,10 @@ export const useEmber = create<EmberState>()(
           tasks: [
             {
               id: uid(), title: t.title, notes: t.notes, status: t.status ?? "todo",
-              priority: t.priority ?? "medium", due: t.due, tags: t.tags ?? [],
+              priority: t.priority ?? "medium", due: t.due, time: t.time, tags: t.tags ?? [],
               subtasks: t.subtasks ?? [], createdAt: new Date().toISOString(),
-              recurrence: t.recurrence ?? "none",
+              updatedAt: new Date().toISOString(),
+              recurrence: t.recurrence ?? "none", repeat: t.repeat, reminder: t.reminder ?? null,
               order: Math.min(0, ...s.tasks.map((x) => x.order)) - 1,
             },
             ...s.tasks,
@@ -188,10 +194,10 @@ export const useEmber = create<EmberState>()(
           const spawned: Task[] = [];
           const tasks = s.tasks.map((t) => {
             if (t.id !== id) return t;
-            const next = { ...t, ...patch };
+            const next = { ...t, ...patch, updatedAt: new Date().toISOString() };
             if (patch.status === "done" && t.status !== "done") {
               next.completedAt = new Date().toISOString();
-              const repeat = nextOccurrence(next, Math.min(0, ...s.tasks.map((x) => x.order)) - 1);
+              const repeat = nextTaskOccurrence(next, Math.min(0, ...s.tasks.map((x) => x.order)) - 1);
               if (repeat) spawned.push(repeat);
             }
             if (patch.status && patch.status !== "done") next.completedAt = undefined;
@@ -216,7 +222,7 @@ export const useEmber = create<EmberState>()(
           // dragging a recurring task into Done schedules the next one too
           const repeat =
             status === "done" && moving.status !== "done"
-              ? nextOccurrence(dropped, Math.min(0, ...s.tasks.map((x) => x.order)) - 1)
+              ? nextTaskOccurrence(dropped, Math.min(0, ...s.tasks.map((x) => x.order)) - 1)
               : null;
           return {
             tasks: [

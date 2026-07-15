@@ -8,7 +8,7 @@ export interface Subtask {
   done: boolean;
 }
 
-/** how often a task comes back after it is completed */
+/** legacy simple repeat — kept so old tasks and the family inbox still work */
 export type TaskRecurrence = "none" | "daily" | "weekly" | "monthly";
 
 export const TASK_RECURRENCE_META: Record<TaskRecurrence, { label: string; short: string }> = {
@@ -18,6 +18,42 @@ export const TASK_RECURRENCE_META: Record<TaskRecurrence, { label: string; short
   monthly: { label: "Every month", short: "Monthly" },
 };
 
+/* ---------------- advanced scheduling ---------------- */
+
+export type RepeatFreq =
+  | "none" | "hourly" | "daily" | "weekly" | "monthly" | "yearly" | "weekdays" | "weekends";
+
+/** monthly can repeat on a day-of-month or on an nth weekday (e.g. last Friday) */
+export type MonthlyMode =
+  | { mode: "day" }                                   // same day number each month
+  | { mode: "weekday"; nth: number; weekday: number }; // nth 1..4 or -1 = last; weekday 0=Sun..6=Sat
+
+export type RepeatEnd =
+  | { kind: "forever" }
+  | { kind: "until"; date: string } // yyyy-MM-dd, inclusive
+  | { kind: "count"; count: number }; // total occurrences remaining, including the current one
+
+/** a full recurrence rule — the professional scheduler */
+export interface RepeatRule {
+  freq: RepeatFreq;
+  interval: number;      // every N units (>= 1)
+  weekdays?: number[];   // weekly: which days repeat (0=Sun..6=Sat)
+  monthly?: MonthlyMode; // monthly: how the day is chosen
+  end?: RepeatEnd;       // absent = forever
+}
+
+/** minutes before the due time; 0 = at due time. undefined/null = no reminder */
+export const REMINDER_OPTIONS: { value: number; label: string }[] = [
+  { value: 0, label: "At due time" },
+  { value: 5, label: "5 minutes before" },
+  { value: 10, label: "10 minutes before" },
+  { value: 15, label: "15 minutes before" },
+  { value: 30, label: "30 minutes before" },
+  { value: 60, label: "1 hour before" },
+  { value: 120, label: "2 hours before" },
+  { value: 1440, label: "1 day before" },
+];
+
 export interface Task {
   id: string;
   title: string;
@@ -25,13 +61,19 @@ export interface Task {
   status: TaskStatus;
   priority: Priority;
   due?: string; // yyyy-MM-dd
+  time?: string; // HH:mm — the due time; when absent the task is all-day
   tags: string[];
   subtasks: Subtask[];
   createdAt: string;
   completedAt?: string;
+  updatedAt?: string;
   order: number;
-  /** when set, completing the task schedules the next occurrence */
+  /** legacy field — still honored when `repeat` is absent */
   recurrence?: TaskRecurrence;
+  /** the advanced rule; completing the task schedules the next occurrence */
+  repeat?: RepeatRule;
+  /** minutes before the due time to send a reminder push */
+  reminder?: number | null;
 }
 
 export type Recurrence = "none" | "daily" | "weekly";
@@ -46,6 +88,8 @@ export interface EventItem {
   recurrence: Recurrence;
   location?: string;
   notes?: string;
+  /** minutes before start to send a reminder push */
+  reminder?: number | null;
 }
 
 export interface Folder {
@@ -158,8 +202,10 @@ export interface NotificationSettings {
   /** daily summary of what's due, sent at this local hour (0-23) */
   digest: boolean;
   digestHour: number;
-  /** ping ~30 minutes before a calendar event starts */
+  /** ping before a calendar event starts, per each event's reminder */
   eventReminders: boolean;
+  /** ping before a task's due time, per each task's reminder */
+  taskReminders: boolean;
 }
 
 export interface Settings {
@@ -177,6 +223,7 @@ export const DEFAULT_NOTIFICATIONS: NotificationSettings = {
   digest: true,
   digestHour: 8,
   eventReminders: true,
+  taskReminders: true,
 };
 
 export const CATEGORY_VAR: Record<CategoryColor, string> = {

@@ -12,7 +12,7 @@ import {
 import { useHydrated } from "@/lib/store";
 import { dayKey, friendlyDay, minutesToLabel, todayKey } from "@/lib/dates";
 import { parseQuickEvent } from "@/lib/nlp";
-import { CATEGORY_VAR, type CategoryColor, type Recurrence } from "@/lib/types";
+import { CATEGORY_VAR, REMINDER_OPTIONS, type CategoryColor, type Recurrence } from "@/lib/types";
 import { eventOccursOn, useCalendarSource, type CalEvent, type CalendarInput } from "@/hooks/useIntegrations";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -510,6 +510,7 @@ function EventEditor({
   const [color, setColor] = useState<CategoryColor>("sky");
   const [recurrence, setRecurrence] = useState<Recurrence>("none");
   const [location, setLocation] = useState("");
+  const [reminder, setReminder] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
   const [target, setTarget] = useState("local");
   const [saving, setSaving] = useState(false);
@@ -528,6 +529,7 @@ function EventEditor({
       setColor("sky");
       setRecurrence(event?.recurring ? (event.recurrenceKind ?? "weekly") : "none");
       setLocation(event?.location ?? "");
+      setReminder(event?.reminder ?? null);
       setNotes(event?.notes ?? "");
       setTarget(
         event ? (event.source === "google" ? event.calendarId! : "local")
@@ -555,6 +557,7 @@ function EventEditor({
       recurrence,
       localColor: color,
       calendarId: target,
+      reminder,
     };
     try {
       if (event) {
@@ -666,6 +669,20 @@ function EventEditor({
           <Label>Location</Label>
           <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Optional" />
         </label>
+        {!isGoogle && (
+          <label>
+            <Label>Reminder</Label>
+            <Select
+              value={reminder === null ? "none" : String(reminder)}
+              onChange={(e) => setReminder(e.target.value === "none" ? null : Number(e.target.value))}
+            >
+              <option value="none">No reminder</option>
+              {REMINDER_OPTIONS.map((r) => (
+                <option key={r.value} value={r.value}>{r.label}</option>
+              ))}
+            </Select>
+          </label>
+        )}
         <label>
           <Label>Notes</Label>
           <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Optional" />
