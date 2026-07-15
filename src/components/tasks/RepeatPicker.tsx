@@ -63,8 +63,10 @@ export function RepeatPicker({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-2 gap-3">
-        <label>
+      {/* only split into two columns when the interval field is actually shown,
+          otherwise the frequency dropdown renders half-width with dead space */}
+      <div className={showInterval ? "grid grid-cols-2 gap-3" : ""}>
+        <label className="block">
           <Label>{t.repeats}</Label>
           <Select
             value={value.freq}
