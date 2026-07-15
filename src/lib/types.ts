@@ -8,6 +8,16 @@ export interface Subtask {
   done: boolean;
 }
 
+/** how often a task comes back after it is completed */
+export type TaskRecurrence = "none" | "daily" | "weekly" | "monthly";
+
+export const TASK_RECURRENCE_META: Record<TaskRecurrence, { label: string; short: string }> = {
+  none: { label: "Does not repeat", short: "Once" },
+  daily: { label: "Every day", short: "Daily" },
+  weekly: { label: "Every week", short: "Weekly" },
+  monthly: { label: "Every month", short: "Monthly" },
+};
+
 export interface Task {
   id: string;
   title: string;
@@ -20,6 +30,8 @@ export interface Task {
   createdAt: string;
   completedAt?: string;
   order: number;
+  /** when set, completing the task schedules the next occurrence */
+  recurrence?: TaskRecurrence;
 }
 
 export type Recurrence = "none" | "daily" | "weekly";
@@ -139,6 +151,17 @@ export interface VaultEntry {
   url?: string;
 }
 
+/** monthly spending limits, keyed by the category names the bank data uses */
+export type Budgets = Record<string, number>;
+
+export interface NotificationSettings {
+  /** daily summary of what's due, sent at this local hour (0-23) */
+  digest: boolean;
+  digestHour: number;
+  /** ping ~30 minutes before a calendar event starts */
+  eventReminders: boolean;
+}
+
 export interface Settings {
   userName: string;
   focusMinutes: number;
@@ -146,7 +169,15 @@ export interface Settings {
   latitude: number;
   longitude: number;
   place: string;
+  budgets?: Budgets;
+  notifications?: NotificationSettings;
 }
+
+export const DEFAULT_NOTIFICATIONS: NotificationSettings = {
+  digest: true,
+  digestHour: 8,
+  eventReminders: true,
+};
 
 export const CATEGORY_VAR: Record<CategoryColor, string> = {
   ember: "var(--c-ember)",

@@ -10,6 +10,7 @@ import { useEmber } from "@/lib/store";
 import { eur, todayKey } from "@/lib/dates";
 import type { useBank } from "@/hooks/useIntegrations";
 import { Donut, MonthBars, SummaryCard } from "./charts";
+import { BudgetPanel } from "./BudgetPanel";
 import { EmptyState } from "@/components/ui/misc";
 import { Button } from "@/components/ui/Button";
 
@@ -164,6 +165,11 @@ export function BankPanel({ bank }: { bank: ReturnType<typeof useBank> }) {
           <p className="mb-1 text-[13px] font-medium text-muted">Where it went</p>
           <p className="mb-4 text-xs text-faint">Auto-categorized · this month</p>
           <Donut categories={categories} total={expenses} blur={privacy} />
+        </div>
+
+        {/* budgets */}
+        <div className="lg:col-span-12">
+          <BudgetPanel txns={txns} blur={privacy} />
         </div>
 
         {/* detected subscriptions */}

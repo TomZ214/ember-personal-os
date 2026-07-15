@@ -250,6 +250,53 @@ seeing anything else — no account needed on their side.
 
 ---
 
+## 4c. Push notifications (optional)
+
+Ember can reach you when it is **closed**: a daily summary of what's due, and a
+nudge ~30 minutes before an event starts. Nothing is sent on days when nothing
+is due.
+
+> On iPhone this only works from the **home-screen app** — Safari tabs cannot
+> receive push. Add Ember to the home screen first, then open it from there.
+
+1. Run [`supabase/family.sql`](supabase/family.sql) if you haven't (it also
+   creates the `push_subscriptions` and `push_log` tables).
+2. Generate a key pair once:
+
+   ```bash
+   npx web-push generate-vapid-keys
+   ```
+
+3. Put these into `.env.local` (and later into Netlify's env vars):
+
+   ```
+   NEXT_PUBLIC_VAPID_PUBLIC_KEY=B...        # the public key from step 2
+   VAPID_PRIVATE_KEY=...                    # the private key — secret!
+   VAPID_SUBJECT=mailto:you@example.com
+   CRON_SECRET=<any long random string>     # protects the scheduled endpoint
+   SUPABASE_SERVICE_ROLE_KEY=...            # Supabase → Settings → API → service_role (secret!)
+   ```
+
+   The service-role key bypasses row-level security, which the scheduled job
+   needs in order to read everyone's due tasks. It must **only** ever live in
+   server env vars — never in the browser, never in git.
+
+4. Restart → **Settings → Connections → Notifications → Turn on** → allow the
+   browser prompt → **Send test** to prove the whole chain works.
+5. Choose the hour for the daily summary and whether you want event reminders.
+
+**How the schedule runs:** `netlify/functions/push-cron.mts` fires every 15
+minutes and calls `/api/cron/push`, which works out — in *your* timezone — what
+is worth a ping. A send-once ledger (`push_log`) makes sure a retried run can
+never notify you twice. Locally there is no scheduler; you can trigger a run by
+hand:
+
+```bash
+curl -H "authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/push
+```
+
+---
+
 ## 5. Hosting on Netlify (or any server host)
 
 Everything works the same when hosted — you just swap `http://localhost:3000`

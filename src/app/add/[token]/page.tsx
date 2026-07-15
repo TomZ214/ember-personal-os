@@ -5,9 +5,9 @@ import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Check, Flame, Loader2, Plus } from "lucide-react";
 import { supabase } from "@/lib/cloud";
-import { PRIORITY_META, type Priority } from "@/lib/types";
+import { PRIORITY_META, type Priority, type TaskRecurrence } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
-import { Input, Label, Textarea } from "@/components/ui/inputs";
+import { Input, Label, Select, Textarea } from "@/components/ui/inputs";
 
 const SENDER_KEY = "ember-quickadd-name";
 
@@ -16,6 +16,13 @@ const URGENCY: { value: Priority; label: string }[] = [
   { value: "medium", label: "Normal" },
   { value: "high", label: "Hoch" },
   { value: "urgent", label: "Dringend" },
+];
+
+const REPEAT: { value: TaskRecurrence; label: string }[] = [
+  { value: "none", label: "Einmalig" },
+  { value: "daily", label: "Jeden Tag" },
+  { value: "weekly", label: "Jede Woche" },
+  { value: "monthly", label: "Jeden Monat" },
 ];
 
 /**
@@ -29,6 +36,7 @@ export default function QuickAddPage() {
   const [notes, setNotes] = useState("");
   const [priority, setPriority] = useState<Priority>("medium");
   const [due, setDue] = useState("");
+  const [recurrence, setRecurrence] = useState<TaskRecurrence>("none");
   const [sender, setSender] = useState("");
   const [phase, setPhase] = useState<"form" | "sending" | "done">("form");
   const [error, setError] = useState<string | null>(null);
@@ -58,6 +66,7 @@ export default function QuickAddPage() {
       sender_name: sender.trim() || null,
       task_priority: priority,
       task_due: due || null,
+      task_recurrence: recurrence,
     });
     if (err) {
       setPhase("form");
@@ -103,6 +112,7 @@ export default function QuickAddPage() {
                 setNotes("");
                 setPriority("medium");
                 setDue("");
+                setRecurrence("none");
                 setPhase("form");
               }}
             >
@@ -156,10 +166,20 @@ export default function QuickAddPage() {
                 })}
               </div>
             </div>
-            <label>
-              <Label>Fällig bis (optional)</Label>
-              <Input type="date" value={due} onChange={(e) => setDue(e.target.value)} />
-            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label>
+                <Label>Fällig bis</Label>
+                <Input type="date" value={due} onChange={(e) => setDue(e.target.value)} />
+              </label>
+              <label>
+                <Label>Wiederholen</Label>
+                <Select value={recurrence} onChange={(e) => setRecurrence(e.target.value as TaskRecurrence)}>
+                  {REPEAT.map((r) => (
+                    <option key={r.value} value={r.value}>{r.label}</option>
+                  ))}
+                </Select>
+              </label>
+            </div>
             <label>
               <Label>Dein Name</Label>
               <Input

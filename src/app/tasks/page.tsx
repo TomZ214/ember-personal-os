@@ -3,12 +3,15 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  AlarmClock, Check, CheckSquare, Columns3, GripVertical, List, Loader2, Plus, RefreshCw, Tag, Trash2,
+  AlarmClock, Check, CheckSquare, Columns3, GripVertical, List, Loader2, Plus, RefreshCw, Repeat,
+  Tag, Trash2,
 } from "lucide-react";
 import { cloudSyncNow, useCloudStatus } from "@/hooks/useCloudSync";
 import { useEmber, useHydrated } from "@/lib/store";
 import { friendlyDay, todayKey } from "@/lib/dates";
-import { PRIORITY_META, type Priority, type Task, type TaskStatus } from "@/lib/types";
+import {
+  PRIORITY_META, TASK_RECURRENCE_META, type Priority, type Task, type TaskRecurrence, type TaskStatus,
+} from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input, Label, Select, Textarea } from "@/components/ui/inputs";
@@ -196,6 +199,7 @@ function TaskCard({
 }) {
   const overdue = task.due && task.due < todayKey() && task.status !== "done";
   const doneSubs = task.subtasks.filter((s) => s.done).length;
+  const repeats = !!task.recurrence && task.recurrence !== "none";
   return (
     <div
       draggable
@@ -218,7 +222,7 @@ function TaskCard({
         </p>
         <GripVertical size={14} className="mt-0.5 shrink-0 text-faint opacity-0 transition-opacity group-hover:opacity-100" />
       </div>
-      {(task.due || task.tags.length > 0 || task.subtasks.length > 0) && (
+      {(task.due || task.tags.length > 0 || task.subtasks.length > 0 || repeats) && (
         <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-faint">
           <span className="flex items-center gap-1" style={{ color: PRIORITY_META[task.priority].color }}>
             <span className="h-1.5 w-1.5 rounded-full" style={{ background: PRIORITY_META[task.priority].color }} />
@@ -227,6 +231,11 @@ function TaskCard({
           {task.due && (
             <span className={`flex items-center gap-1 ${overdue ? "font-medium text-danger" : ""}`}>
               <AlarmClock size={11} /> {friendlyDay(task.due)}
+            </span>
+          )}
+          {repeats && (
+            <span className="flex items-center gap-1 text-accent">
+              <Repeat size={11} /> {TASK_RECURRENCE_META[task.recurrence!].short}
             </span>
           )}
           {task.subtasks.length > 0 && (
@@ -325,6 +334,7 @@ function TaskEditor({ open, task, onClose }: { open: boolean; task?: Task; onClo
   const [priority, setPriority] = useState<Priority>("medium");
   const [due, setDue] = useState("");
   const [tags, setTags] = useState("");
+  const [recurrence, setRecurrence] = useState<TaskRecurrence>("none");
   const [subs, setSubs] = useState<Task["subtasks"]>([]);
   const [newSub, setNewSub] = useState("");
   const [inited, setInited] = useState<string | null>(null);
@@ -340,6 +350,7 @@ function TaskEditor({ open, task, onClose }: { open: boolean; task?: Task; onClo
       setPriority(task?.priority ?? "medium");
       setDue(task?.due ?? "");
       setTags(task?.tags.join(", ") ?? "");
+      setRecurrence(task?.recurrence ?? "none");
       setSubs(task?.subtasks ?? []);
       setNewSub("");
     }
@@ -354,6 +365,7 @@ function TaskEditor({ open, task, onClose }: { open: boolean; task?: Task; onClo
       priority,
       due: due || undefined,
       tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
+      recurrence,
       subtasks: subs,
     };
     if (task) {
@@ -401,10 +413,24 @@ function TaskEditor({ open, task, onClose }: { open: boolean; task?: Task; onClo
             <Input type="date" value={due} onChange={(e) => setDue(e.target.value)} />
           </label>
           <label>
-            <Label>Tags</Label>
-            <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="work, errands" />
+            <Label>Repeats</Label>
+            <Select value={recurrence} onChange={(e) => setRecurrence(e.target.value as TaskRecurrence)}>
+              {Object.entries(TASK_RECURRENCE_META).map(([k, v]) => (
+                <option key={k} value={k}>{v.label}</option>
+              ))}
+            </Select>
           </label>
         </div>
+        <label>
+          <Label>Tags</Label>
+          <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="work, errands" />
+        </label>
+        {recurrence !== "none" && (
+          <p className="-mt-1 flex items-center gap-1.5 text-xs text-faint">
+            <Repeat size={12} className="shrink-0 text-accent" />
+            When you complete this, the next one is created automatically.
+          </p>
+        )}
 
         <div>
           <Label>Subtasks</Label>

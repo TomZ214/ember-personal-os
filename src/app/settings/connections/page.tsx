@@ -6,19 +6,26 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import {
-  ArrowLeft, CalendarDays, ChevronRight, Cloud, Copy, HeartHandshake, Landmark, Loader2, LogOut,
-  Mail, MailCheck, Plus, RefreshCw, Search, ShieldCheck, Sparkles, Trash2, Unplug, Users,
+  ArrowLeft, Bell, BellOff, CalendarDays, ChevronRight, Cloud, Copy, HeartHandshake, Landmark,
+  Loader2, LogOut, Mail, MailCheck, Plus, RefreshCw, Search, ShieldCheck, Sparkles, Trash2, Unplug,
+  Users,
 } from "lucide-react";
 import {
   lastSynced, markSynced, useBank, useGoogleStatus,
 } from "@/hooks/useIntegrations";
 import { cloudSignIn, cloudSignOut, cloudSyncNow, cloudVerifyCode, useCloudStatus } from "@/hooks/useCloudSync";
 import { createShareLink, deleteShareLink, listShareLinks, supabase, type ShareLink } from "@/lib/cloud";
+import {
+  currentSubscription, disablePush, enablePush, isIOS, isStandalone, pushConfigured, pushSupported,
+  sendTestPush,
+} from "@/lib/push";
+import { useEmber } from "@/lib/store";
+import { DEFAULT_NOTIFICATIONS } from "@/lib/types";
 import { invalidateApi, useApi } from "@/hooks/useApi";
 import type { BankInstitution } from "@/lib/integrations/types";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
-import { Input } from "@/components/ui/inputs";
+import { Input, Select } from "@/components/ui/inputs";
 import { PageHeader } from "@/components/ui/misc";
 import { toast } from "@/components/ui/toast";
 
@@ -74,6 +81,7 @@ function Connections() {
         <ICloudCard />
         <BankCard />
         <CloudCard />
+        <NotificationsCard />
         <FamilyCard />
         <AiCard />
       </div>
@@ -627,6 +635,155 @@ function CloudCard() {
       {!cloud.configured && (
         <MissingEnv missing={["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"]} />
       )}
+    </section>
+  );
+}
+
+/* ---------------- push notifications ---------------- */
+
+function NotificationsCard() {
+  const cloud = useCloudStatus();
+  const settings = useEmber((s) => s.settings);
+  const updateSettings = useEmber((s) => s.updateSettings);
+  const prefs = { ...DEFAULT_NOTIFICATIONS, ...(settings.notifications ?? {}) };
+
+  const [subscribed, setSubscribed] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(async () => {
+      setSubscribed(!!(await currentSubscription()));
+      setReady(true);
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
+
+  const configured = pushConfigured();
+  const supported = ready && pushSupported();
+  const needsHomeScreen = ready && isIOS() && !isStandalone();
+
+  const enable = async () => {
+    setBusy(true);
+    try {
+      const uid = (await supabase()?.auth.getSession())?.data.session?.user.id;
+      if (!uid) {
+        toast("Sign in to Cloud Sync first", "info");
+        return;
+      }
+      const err = await enablePush(uid);
+      if (err) toast(err, "info");
+      else {
+        setSubscribed(true);
+        toast("Notifications on — this device will get your reminders");
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const disable = async () => {
+    setBusy(true);
+    try {
+      await disablePush();
+      setSubscribed(false);
+      toast("Notifications off for this device", "info");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const test = async () => {
+    setBusy(true);
+    const err = await sendTestPush();
+    setBusy(false);
+    if (err) toast(err, "info");
+    else toast("Test sent — it should land in a second");
+  };
+
+  const setPrefs = (patch: Partial<typeof prefs>) =>
+    updateSettings({ notifications: { ...prefs, ...patch } });
+
+  return (
+    <section className="panel p-5">
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="flex h-11 w-11 items-center justify-center rounded-[14px] border border-white/[0.08] bg-white/[0.05]">
+          <Bell size={18} className="text-muted" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="flex items-center gap-2 text-[15px] font-semibold">
+            Notifications <StatusDot state={subscribed ? "on" : "off"} />
+          </h2>
+          <p className="text-[13px] text-muted">
+            {subscribed
+              ? "This device gets your daily summary and event reminders"
+              : "Get reminded even when Ember is closed"}
+          </p>
+        </div>
+        {cloud.signedIn && supported && !needsHomeScreen && (
+          <div className="flex gap-2">
+            {subscribed && (
+              <Button size="sm" onClick={test} disabled={busy}>Send test</Button>
+            )}
+            <Button size="sm" variant={subscribed ? "subtle" : "primary"} onClick={subscribed ? disable : enable} disabled={busy}>
+              {busy ? <Loader2 size={13} className="animate-spin" /> : subscribed ? <BellOff size={13} /> : <Bell size={13} />}
+              {subscribed ? "Turn off" : "Turn on"}
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {!cloud.signedIn ? (
+        <p className="mt-4 border-t border-white/[0.06] pt-4 text-[13px] text-muted">
+          Sign in to Cloud Sync above first — reminders are sent from your synced data.
+        </p>
+      ) : needsHomeScreen ? (
+        <p className="mt-4 border-t border-white/[0.06] pt-4 text-[13px] text-muted">
+          On iPhone, notifications only work from the installed app: tap <span className="font-medium text-ink">Share → Add to Home Screen</span>,
+          open Ember from there, and this switch will appear.
+        </p>
+      ) : !supported ? (
+        <p className="mt-4 border-t border-white/[0.06] pt-4 text-[13px] text-muted">
+          This browser doesn&apos;t support push notifications.
+        </p>
+      ) : subscribed ? (
+        <div className="mt-4 flex flex-col gap-3 border-t border-white/[0.06] pt-4">
+          <label className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={prefs.digest}
+              onChange={(e) => setPrefs({ digest: e.target.checked })}
+              className="h-4 w-4 accent-[var(--accent)]"
+            />
+            <span className="flex-1 text-[13px]">Daily summary of what&apos;s due</span>
+            <Select
+              value={String(prefs.digestHour)}
+              onChange={(e) => setPrefs({ digestHour: Number(e.target.value) })}
+              disabled={!prefs.digest}
+              aria-label="Time of the daily summary"
+              className="h-9 w-24"
+            >
+              {Array.from({ length: 24 }, (_, h) => (
+                <option key={h} value={h}>{String(h).padStart(2, "0")}:00</option>
+              ))}
+            </Select>
+          </label>
+          <label className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={prefs.eventReminders}
+              onChange={(e) => setPrefs({ eventReminders: e.target.checked })}
+              className="h-4 w-4 accent-[var(--accent)]"
+            />
+            <span className="flex-1 text-[13px]">Remind me ~30 min before an event</span>
+          </label>
+          <p className="text-xs text-faint">
+            The summary is skipped on days when nothing is due — no empty pings.
+          </p>
+        </div>
+      ) : null}
+
+      {!configured && <MissingEnv missing={["NEXT_PUBLIC_VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "CRON_SECRET", "SUPABASE_SERVICE_ROLE_KEY"]} />}
     </section>
   );
 }

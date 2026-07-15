@@ -1,0 +1,8 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+# scheduled function lives in netlify/functions/push-cron.mts and declares its
+# own cron expression; nothing else to configure here
+[functions]
+  directory = "netlify/functions"

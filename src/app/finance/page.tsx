@@ -10,6 +10,7 @@ import { useBank } from "@/hooks/useIntegrations";
 import { eur, todayKey } from "@/lib/dates";
 import { CATEGORY_VAR, type Txn } from "@/lib/types";
 import { BankPanel } from "@/components/finance/BankPanel";
+import { BudgetPanel } from "@/components/finance/BudgetPanel";
 import { Donut, MonthBars, SummaryCard } from "@/components/finance/charts";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -60,6 +61,17 @@ export default function FinancePage() {
 
   const subsMonthly = subs.reduce((a, s) => a + (s.cycle === "monthly" ? s.amount : s.amount / 12), 0);
   const recent = useMemo(() => [...txns].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 12), [txns]);
+
+  // the budget panel speaks the bank's language: money out is negative
+  const budgetTxns = useMemo(
+    () =>
+      txns.map((t) => ({
+        date: t.date,
+        amount: t.kind === "expense" ? -t.amount : t.amount,
+        category: t.category,
+      })),
+    [txns],
+  );
 
   if (!hydrated) return <div className="skeleton h-[70vh]" style={{ borderRadius: 18 }} />;
 
@@ -143,6 +155,11 @@ export default function FinancePage() {
           <Donut categories={categories} total={expenses} blur={privacy} />
         </div>
 
+        {/* budgets — same analysis, driven by the manually logged spending */}
+        <div className="lg:col-span-12">
+          <BudgetPanel txns={budgetTxns} blur={privacy} />
+        </div>
+
         {/* subscriptions */}
         <div className="panel p-5 lg:col-span-5">
           <p className="mb-4 text-[13px] font-medium text-muted">Subscriptions</p>
@@ -197,7 +214,7 @@ export default function FinancePage() {
                     <p className="text-[11px] text-faint">{t.category} · {format(parseISO(t.date), "MMM d")}</p>
                   </div>
                   <span className={`num text-sm font-medium ${t.kind === "income" ? "text-success" : ""} ${privacy ? "money-blur" : ""}`}>
-                    {t.kind === "income" ? "+" : "âˆ’"}{eur(t.amount)}
+                    {t.kind === "income" ? "+" : "-"}{eur(t.amount)}
                   </span>
                   <button
                     onClick={() => { deleteTxn(t.id); toast("Transaction removed", "info"); }}

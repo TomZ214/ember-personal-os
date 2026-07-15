@@ -2,13 +2,37 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { todayKey } from "./dates";
+import { addDays, addMonths, addWeeks, parseISO } from "date-fns";
+import { dayKey, todayKey } from "./dates";
 import { purgeSeedData } from "./migrations";
 import type {
   Contact, EventItem, FileMeta, Folder, Goal, Habit, Mail, Note, Settings, Subscription, Task, Txn,
 } from "./types";
 
 const uid = () => crypto.randomUUID();
+
+/**
+ * Completing a recurring task doesn't consume it — it schedules the next one.
+ * The finished copy stays in Done as a record; a fresh open task is created
+ * with its due date rolled forward from the one just completed.
+ */
+function nextOccurrence(task: Task, order: number): Task | null {
+  const r = task.recurrence;
+  if (!r || r === "none") return null;
+  const from = task.due ? parseISO(task.due) : new Date();
+  const next = r === "daily" ? addDays(from, 1) : r === "weekly" ? addWeeks(from, 1) : addMonths(from, 1);
+  return {
+    ...task,
+    id: uid(),
+    status: "todo",
+    completedAt: undefined,
+    createdAt: new Date().toISOString(),
+    due: dayKey(next),
+    // a fresh run starts with its checklist cleared
+    subtasks: task.subtasks.map((s) => ({ ...s, done: false })),
+    order,
+  };
+}
 
 /** the slices that sync to the cloud (and nothing else — no tokens, no UI state) */
 export interface CloudData {
@@ -153,21 +177,28 @@ export const useEmber = create<EmberState>()(
               id: uid(), title: t.title, notes: t.notes, status: t.status ?? "todo",
               priority: t.priority ?? "medium", due: t.due, tags: t.tags ?? [],
               subtasks: t.subtasks ?? [], createdAt: new Date().toISOString(),
+              recurrence: t.recurrence ?? "none",
               order: Math.min(0, ...s.tasks.map((x) => x.order)) - 1,
             },
             ...s.tasks,
           ],
         })),
       updateTask: (id, patch) =>
-        set((s) => ({
-          tasks: s.tasks.map((t) => {
+        set((s) => {
+          const spawned: Task[] = [];
+          const tasks = s.tasks.map((t) => {
             if (t.id !== id) return t;
             const next = { ...t, ...patch };
-            if (patch.status === "done" && t.status !== "done") next.completedAt = new Date().toISOString();
+            if (patch.status === "done" && t.status !== "done") {
+              next.completedAt = new Date().toISOString();
+              const repeat = nextOccurrence(next, Math.min(0, ...s.tasks.map((x) => x.order)) - 1);
+              if (repeat) spawned.push(repeat);
+            }
             if (patch.status && patch.status !== "done") next.completedAt = undefined;
             return next;
-          }),
-        })),
+          });
+          return { tasks: [...spawned, ...tasks] };
+        }),
       deleteTask: (id) => set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) })),
       moveTask: (id, status, beforeId) =>
         set((s) => {
@@ -176,12 +207,24 @@ export const useEmber = create<EmberState>()(
           const rest = s.tasks.filter((t) => t.id !== id);
           const col = rest.filter((t) => t.status === status).sort((a, b) => a.order - b.order);
           const idx = beforeId ? col.findIndex((t) => t.id === beforeId) : col.length;
-          col.splice(idx === -1 ? col.length : idx, 0, {
+          const dropped: Task = {
             ...moving, status,
             completedAt: status === "done" ? moving.completedAt ?? new Date().toISOString() : undefined,
-          });
+          };
+          col.splice(idx === -1 ? col.length : idx, 0, dropped);
           const reordered = col.map((t, i) => ({ ...t, order: i }));
-          return { tasks: [...rest.filter((t) => t.status !== status), ...reordered] };
+          // dragging a recurring task into Done schedules the next one too
+          const repeat =
+            status === "done" && moving.status !== "done"
+              ? nextOccurrence(dropped, Math.min(0, ...s.tasks.map((x) => x.order)) - 1)
+              : null;
+          return {
+            tasks: [
+              ...(repeat ? [repeat] : []),
+              ...rest.filter((t) => t.status !== status),
+              ...reordered,
+            ],
+          };
         }),
 
       addEvent: (e) => set((s) => ({ events: [...s.events, { ...e, id: uid() }] })),

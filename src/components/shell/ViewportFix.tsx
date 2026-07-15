@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { registerWorker } from "@/lib/push";
 
 /**
  * iOS home-screen apps: when the on-screen keyboard closes, WKWebView
@@ -10,6 +11,13 @@ import { useEffect } from "react";
  * recompute the viewport and snap the page back into place.
  */
 export function ViewportFix() {
+  // the push service worker must already be installed when the user flips the
+  // switch in Settings, so register it quietly on every load
+  useEffect(() => {
+    const t = setTimeout(() => void registerWorker()?.catch(() => {}), 0);
+    return () => clearTimeout(t);
+  }, []);
+
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
