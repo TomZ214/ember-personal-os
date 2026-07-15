@@ -145,7 +145,9 @@ async function drainInbox(uid: string): Promise<void> {
         tags: ["family"],
         priority,
         due: t.due ?? undefined,
-        recurrence,
+        // prefer the full rule the family member chose; fall back to the legacy field
+        repeat: t.repeat ?? undefined,
+        recurrence: t.repeat ? "none" : recurrence,
         sharedId: t.id, // links back to shared_tasks so the sender sees status
       });
     }

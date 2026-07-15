@@ -2,57 +2,70 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import type { RepeatEnd, RepeatFreq, RepeatRule } from "@/lib/types";
-import { describeRepeat } from "@/lib/recurrence";
+import { describeRepeat, type Lang } from "@/lib/recurrence";
 import { Input, Label, Select } from "@/components/ui/inputs";
 
 /**
  * Professional recurrence editor — the calendar-app scheduler. Emits a full
  * RepeatRule. Kept compact: the extra controls only appear when they matter.
+ * Fully localized (en / de) so it works on the German family quick-add page.
  */
 
-const FREQS: { value: RepeatFreq; label: string }[] = [
-  { value: "none", label: "Does not repeat" },
-  { value: "hourly", label: "Hourly" },
-  { value: "daily", label: "Daily" },
-  { value: "weekly", label: "Weekly" },
-  { value: "monthly", label: "Monthly" },
-  { value: "yearly", label: "Yearly" },
-  { value: "weekdays", label: "Every weekday (Mon–Fri)" },
-  { value: "weekends", label: "Every weekend (Sat & Sun)" },
+const FREQS: { value: RepeatFreq; en: string; de: string }[] = [
+  { value: "none", en: "Does not repeat", de: "Wiederholt sich nicht" },
+  { value: "hourly", en: "Hourly", de: "Stündlich" },
+  { value: "daily", en: "Daily", de: "Täglich" },
+  { value: "weekly", en: "Weekly", de: "Wöchentlich" },
+  { value: "monthly", en: "Monthly", de: "Monatlich" },
+  { value: "yearly", en: "Yearly", de: "Jährlich" },
+  { value: "weekdays", en: "Every weekday (Mon–Fri)", de: "Jeden Wochentag (Mo–Fr)" },
+  { value: "weekends", en: "Every weekend (Sat & Sun)", de: "Jedes Wochenende (Sa & So)" },
 ];
 
-const UNIT: Partial<Record<RepeatFreq, string>> = {
-  hourly: "hours", daily: "days", weekly: "weeks", monthly: "months", yearly: "years",
+const UNIT: Record<Lang, Partial<Record<RepeatFreq, string>>> = {
+  en: { hourly: "hours", daily: "days", weekly: "weeks", monthly: "months", yearly: "years" },
+  de: { hourly: "Stunden", daily: "Tage", weekly: "Wochen", monthly: "Monate", yearly: "Jahre" },
 };
 
-const WD = [
-  { d: 1, l: "M" }, { d: 2, l: "T" }, { d: 3, l: "W" }, { d: 4, l: "T" },
-  { d: 5, l: "F" }, { d: 6, l: "S" }, { d: 0, l: "S" },
-];
+const WD: Record<Lang, { d: number; l: string }[]> = {
+  en: [{ d: 1, l: "M" }, { d: 2, l: "T" }, { d: 3, l: "W" }, { d: 4, l: "T" }, { d: 5, l: "F" }, { d: 6, l: "S" }, { d: 0, l: "S" }],
+  de: [{ d: 1, l: "Mo" }, { d: 2, l: "Di" }, { d: 3, l: "Mi" }, { d: 4, l: "Do" }, { d: 5, l: "Fr" }, { d: 6, l: "Sa" }, { d: 0, l: "So" }],
+};
 
-const ORDINALS = [
-  { v: 1, l: "first" }, { v: 2, l: "second" }, { v: 3, l: "third" }, { v: 4, l: "fourth" }, { v: -1, l: "last" },
-];
+const ORDINALS: Record<Lang, { v: number; l: string }[]> = {
+  en: [{ v: 1, l: "first" }, { v: 2, l: "second" }, { v: 3, l: "third" }, { v: 4, l: "fourth" }, { v: -1, l: "last" }],
+  de: [{ v: 1, l: "ersten" }, { v: 2, l: "zweiten" }, { v: 3, l: "dritten" }, { v: 4, l: "vierten" }, { v: -1, l: "letzten" }],
+};
 
-const WEEKDAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const WEEKDAY_NAMES: Record<Lang, string[]> = {
+  en: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+  de: ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"],
+};
+
+const T: Record<Lang, Record<string, string>> = {
+  en: { repeats: "Repeats", every: "Every", onDays: "On these days", on: "On", sameDay: "the same day of the month", the: "the", ends: "Ends", never: "Never", onDate: "On date", after: "After…", times: "times" },
+  de: { repeats: "Wiederholen", every: "Alle", onDays: "An diesen Tagen", on: "Am", sameDay: "am gleichen Tag des Monats", the: "am", ends: "Endet", never: "Nie", onDate: "An Datum", after: "Nach…", times: "Mal" },
+};
 
 export function RepeatPicker({
-  value, onChange, dueWeekday,
+  value, onChange, dueWeekday, lang = "en",
 }: {
   value: RepeatRule;
   onChange: (r: RepeatRule) => void;
   /** weekday of the task's due date, to seed the weekly/monthly defaults */
   dueWeekday?: number;
+  lang?: Lang;
 }) {
   const set = (patch: Partial<RepeatRule>) => onChange({ ...value, ...patch });
-  const showInterval = !!UNIT[value.freq];
+  const showInterval = !!UNIT[lang][value.freq];
   const end: RepeatEnd = value.end ?? { kind: "forever" };
+  const t = T[lang];
 
   return (
     <div className="flex flex-col gap-3">
       <div className="grid grid-cols-2 gap-3">
         <label>
-          <Label>Repeats</Label>
+          <Label>{t.repeats}</Label>
           <Select
             value={value.freq}
             onChange={(e) => {
@@ -64,13 +77,13 @@ export function RepeatPicker({
               onChange({ ...value, ...patch });
             }}
           >
-            {FREQS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+            {FREQS.map((f) => <option key={f.value} value={f.value}>{f[lang]}</option>)}
           </Select>
         </label>
 
         {showInterval && (
           <label>
-            <Label>Every</Label>
+            <Label>{t.every}</Label>
             <div className="flex items-center gap-2">
               <Input
                 type="number"
@@ -81,7 +94,7 @@ export function RepeatPicker({
                 className="w-20 text-center"
                 aria-label="Interval"
               />
-              <span className="text-sm text-muted">{UNIT[value.freq]}</span>
+              <span className="text-sm text-muted">{UNIT[lang][value.freq]}</span>
             </div>
           </label>
         )}
@@ -90,9 +103,9 @@ export function RepeatPicker({
       <AnimatePresence initial={false}>
         {value.freq === "weekly" && (
           <Reveal key="wk">
-            <Label>On these days</Label>
+            <Label>{t.onDays}</Label>
             <div className="flex gap-1.5">
-              {WD.map(({ d, l }) => {
+              {WD[lang].map(({ d, l }) => {
                 const on = (value.weekdays ?? []).includes(d);
                 return (
                   <button
@@ -104,7 +117,7 @@ export function RepeatPicker({
                       if (on) cur.delete(d); else cur.add(d);
                       set({ weekdays: [...cur].sort((a, b) => a - b) });
                     }}
-                    className={`flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-medium transition-colors ${
+                    className={`flex h-9 min-w-9 items-center justify-center rounded-full px-2 text-[13px] font-medium transition-colors ${
                       on ? "bg-accent/20 text-accent" : "bg-white/[0.05] text-muted hover:bg-white/[0.09]"
                     }`}
                   >
@@ -118,7 +131,7 @@ export function RepeatPicker({
 
         {value.freq === "monthly" && (
           <Reveal key="mo">
-            <Label>On</Label>
+            <Label>{t.on}</Label>
             <div className="flex flex-col gap-2">
               <label className="flex items-center gap-2.5 text-sm">
                 <input
@@ -127,7 +140,7 @@ export function RepeatPicker({
                   onChange={() => set({ monthly: { mode: "day" } })}
                   className="h-4 w-4 accent-[var(--accent)]"
                 />
-                the same day of the month
+                {t.sameDay}
               </label>
               <label className="flex flex-wrap items-center gap-2 text-sm">
                 <input
@@ -138,7 +151,7 @@ export function RepeatPicker({
                   }
                   className="h-4 w-4 accent-[var(--accent)]"
                 />
-                the
+                {t.the}
                 <Select
                   value={value.monthly?.mode === "weekday" ? String(value.monthly.nth) : "1"}
                   disabled={value.monthly?.mode !== "weekday"}
@@ -147,7 +160,7 @@ export function RepeatPicker({
                   }
                   className="h-9 w-28"
                 >
-                  {ORDINALS.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}
+                  {ORDINALS[lang].map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}
                 </Select>
                 <Select
                   value={value.monthly?.mode === "weekday" ? String(value.monthly.weekday) : "1"}
@@ -157,7 +170,7 @@ export function RepeatPicker({
                   }
                   className="h-9 w-32"
                 >
-                  {WEEKDAY_NAMES.map((n, i) => <option key={i} value={i}>{n}</option>)}
+                  {WEEKDAY_NAMES[lang].map((n, i) => <option key={i} value={i}>{n}</option>)}
                 </Select>
               </label>
             </div>
@@ -166,7 +179,7 @@ export function RepeatPicker({
 
         {value.freq !== "none" && (
           <Reveal key="end">
-            <Label>Ends</Label>
+            <Label>{t.ends}</Label>
             <div className="flex flex-wrap items-center gap-2">
               <Select
                 value={end.kind}
@@ -181,9 +194,9 @@ export function RepeatPicker({
                 }}
                 className="h-9 w-36"
               >
-                <option value="forever">Never</option>
-                <option value="until">On date</option>
-                <option value="count">After…</option>
+                <option value="forever">{t.never}</option>
+                <option value="until">{t.onDate}</option>
+                <option value="count">{t.after}</option>
               </Select>
               {end.kind === "until" && (
                 <Input
@@ -205,7 +218,7 @@ export function RepeatPicker({
                     className="h-9 w-20 text-center"
                     aria-label="Number of times"
                   />
-                  times
+                  {t.times}
                 </span>
               )}
             </div>
@@ -214,7 +227,7 @@ export function RepeatPicker({
       </AnimatePresence>
 
       {value.freq !== "none" && (
-        <p className="text-xs text-accent">{describeRepeat(value)}</p>
+        <p className="text-xs text-accent">{describeRepeat(value, lang)}</p>
       )}
     </div>
   );

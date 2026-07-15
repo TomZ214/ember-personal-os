@@ -183,36 +183,49 @@ export function repeatShort(rule: RepeatRule): string {
   }
 }
 
+const WEEKDAY_LABEL_DE = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+const WEEKDAY_LONG_DE = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+const ORDINAL_DE = ["", "ersten", "zweiten", "dritten", "vierten"];
+
+export type Lang = "en" | "de";
+
 /** full human sentence for the editor and details view */
-export function describeRepeat(rule: RepeatRule): string {
+export function describeRepeat(rule: RepeatRule, lang: Lang = "en"): string {
   const r = withDefaults(rule);
   const n = r.interval;
+  const de = lang === "de";
+  const wl = de ? WEEKDAY_LABEL_DE : WEEKDAY_LABEL;
+  const wLong = de ? WEEKDAY_LONG_DE : WEEKDAY_LONG;
+  const ord = de ? ORDINAL_DE : ORDINAL;
   let base: string;
+
   switch (r.freq) {
-    case "none": return "Does not repeat";
-    case "hourly": base = n === 1 ? "Every hour" : `Every ${n} hours`; break;
-    case "daily": base = n === 1 ? "Every day" : `Every ${n} days`; break;
-    case "weekdays": base = "Every weekday (Mon–Fri)"; break;
-    case "weekends": base = "Every weekend (Sat & Sun)"; break;
+    case "none": return de ? "Wiederholt sich nicht" : "Does not repeat";
+    case "hourly": base = de ? (n === 1 ? "Jede Stunde" : `Alle ${n} Stunden`) : (n === 1 ? "Every hour" : `Every ${n} hours`); break;
+    case "daily": base = de ? (n === 1 ? "Jeden Tag" : `Alle ${n} Tage`) : (n === 1 ? "Every day" : `Every ${n} days`); break;
+    case "weekdays": base = de ? "Jeden Wochentag (Mo–Fr)" : "Every weekday (Mon–Fri)"; break;
+    case "weekends": base = de ? "Jedes Wochenende (Sa & So)" : "Every weekend (Sat & Sun)"; break;
     case "weekly": {
-      const which = r.weekdays && r.weekdays.length
-        ? " on " + r.weekdays.slice().sort((a, b) => a - b).map((d) => WEEKDAY_LABEL[d]).join(", ")
+      const days = r.weekdays && r.weekdays.length
+        ? r.weekdays.slice().sort((a, b) => a - b).map((d) => wl[d]).join(", ")
         : "";
-      base = (n === 1 ? "Every week" : `Every ${n} weeks`) + which;
+      const every = de ? (n === 1 ? "Jede Woche" : `Alle ${n} Wochen`) : (n === 1 ? "Every week" : `Every ${n} weeks`);
+      base = every + (days ? (de ? ` am ${days}` : ` on ${days}`) : "");
       break;
     }
     case "monthly": {
       const m = r.monthly ?? { mode: "day" as const };
-      const every = n === 1 ? "Every month" : `Every ${n} months`;
-      base = m.mode === "weekday"
-        ? `${every} on the ${m.nth === -1 ? "last" : ORDINAL[m.nth]} ${WEEKDAY_LONG[m.weekday]}`
-        : every;
+      const every = de ? (n === 1 ? "Jeden Monat" : `Alle ${n} Monate`) : (n === 1 ? "Every month" : `Every ${n} months`);
+      if (m.mode === "weekday") {
+        const which = m.nth === -1 ? (de ? "letzten" : "last") : ord[m.nth];
+        base = de ? `${every} am ${which} ${wLong[m.weekday]}` : `${every} on the ${which} ${wLong[m.weekday]}`;
+      } else base = every;
       break;
     }
-    case "yearly": base = n === 1 ? "Every year" : `Every ${n} years`; break;
+    case "yearly": base = de ? (n === 1 ? "Jedes Jahr" : `Alle ${n} Jahre`) : (n === 1 ? "Every year" : `Every ${n} years`); break;
   }
-  if (r.end?.kind === "until") base += `, until ${r.end.date}`;
-  if (r.end?.kind === "count") base += `, ${r.end.count} times`;
+  if (r.end?.kind === "until") base += de ? `, bis ${r.end.date}` : `, until ${r.end.date}`;
+  if (r.end?.kind === "count") base += de ? `, ${r.end.count} Mal` : `, ${r.end.count} times`;
   return base;
 }
 

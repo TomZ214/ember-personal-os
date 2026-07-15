@@ -3,6 +3,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { VAULT_STORAGE_KEY } from "./crypto";
 import { useEmber, type CloudData } from "./store";
+import type { RepeatRule } from "./types";
 
 /**
  * Cloud sync via Supabase — optional, env-gated like every integration.
@@ -150,6 +151,7 @@ export interface InboxTask {
   priority: string | null;
   due: string | null;
   recurrence: string | null;
+  repeat: RepeatRule | null;
 }
 
 /**
@@ -165,7 +167,7 @@ export async function claimInboxTasks(userId: string): Promise<InboxTask[]> {
     .from("task_inbox")
     .delete()
     .eq("user_id", userId)
-    .select("id, title, notes, sender, priority, due, recurrence");
+    .select("id, title, notes, sender, priority, due, recurrence, repeat");
   if (error) throw new Error(error.message);
   return (data as InboxTask[]) ?? [];
 }

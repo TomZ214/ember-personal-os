@@ -69,6 +69,7 @@ alter table public.task_inbox add column if not exists priority text not null de
 alter table public.task_inbox add column if not exists due date;
 alter table public.task_inbox add column if not exists recurrence text not null default 'none';
 alter table public.task_inbox add column if not exists token uuid;
+alter table public.task_inbox add column if not exists repeat jsonb; -- full RepeatRule
 
 alter table public.task_inbox enable row level security;
 
@@ -120,6 +121,7 @@ create policy "own inbox: delete" on public.task_inbox
 drop function if exists public.inbox_add_task(uuid, text, text, text);
 drop function if exists public.inbox_add_task(uuid, text, text, text, text);
 drop function if exists public.inbox_add_task(uuid, text, text, text, text, date);
+drop function if exists public.inbox_add_task(uuid, text, text, text, text, date, text);
 
 create or replace function public.inbox_add_task(
   share_token     uuid,
@@ -128,7 +130,8 @@ create or replace function public.inbox_add_task(
   sender_name     text default null,
   task_priority   text default 'medium',
   task_due        date default null,
-  task_recurrence text default 'none'
+  task_recurrence text default 'none',
+  task_repeat     jsonb default null
 )
 returns void
 language plpgsql
@@ -157,7 +160,7 @@ begin
     raise exception 'inbox full';
   end if;
   clean_sender := nullif(left(trim(coalesce(sender_name, '')), 80), '');
-  insert into public.task_inbox (id, user_id, token, title, notes, sender, priority, due, recurrence)
+  insert into public.task_inbox (id, user_id, token, title, notes, sender, priority, due, recurrence, repeat)
   values (
     new_id, uid, share_token,
     trim(task_title),
@@ -165,7 +168,8 @@ begin
     clean_sender,
     task_priority,
     task_due,
-    task_recurrence
+    task_recurrence,
+    task_repeat
   );
   -- mirror into shared_tasks so the sender can track it (same id links them)
   insert into public.shared_tasks (id, token, user_id, sender, title, status)
