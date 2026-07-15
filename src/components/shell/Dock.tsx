@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   AnimatePresence, motion, useMotionValue, useSpring, useTransform, type MotionValue,
 } from "framer-motion";
+import { useT } from "@/lib/i18n";
 import { NAV, type NavItem } from "./nav";
 
 /** macOS-style dock with cursor magnification. Desktop only. */
@@ -38,6 +39,8 @@ function isActive(pathname: string, href: string) {
 function DockIcon({ item, mouseX, active }: { item: NavItem; mouseX: MotionValue<number>; active: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState(false);
+  const t = useT();
+  const label = t(`nav.${item.key}`);
 
   const distance = useTransform(mouseX, (x) => {
     const r = ref.current?.getBoundingClientRect();
@@ -60,13 +63,13 @@ function DockIcon({ item, mouseX, active }: { item: NavItem; mouseX: MotionValue
             transition={{ duration: 0.15 }}
             className="glass-strong pointer-events-none absolute -top-10 whitespace-nowrap rounded-lg px-2.5 py-1 text-xs font-medium"
           >
-            {item.label}
+            {label}
           </motion.span>
         )}
       </AnimatePresence>
       <Link
         href={item.href}
-        aria-label={item.label}
+        aria-label={label}
         aria-current={active ? "page" : undefined}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}

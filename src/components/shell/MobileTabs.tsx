@@ -5,19 +5,21 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { CalendarDays, CheckSquare, LayoutGrid, NotebookPen, Grip } from "lucide-react";
+import { useT } from "@/lib/i18n";
 import { NAV } from "./nav";
 
 const PRIMARY = [
-  { href: "/", label: "Home", icon: LayoutGrid },
-  { href: "/tasks", label: "Tasks", icon: CheckSquare },
-  { href: "/calendar", label: "Calendar", icon: CalendarDays },
-  { href: "/notes", label: "Notes", icon: NotebookPen },
+  { href: "/", key: "home", icon: LayoutGrid },
+  { href: "/tasks", key: "tasks", icon: CheckSquare },
+  { href: "/calendar", key: "calendar", icon: CalendarDays },
+  { href: "/notes", key: "notes", icon: NotebookPen },
 ];
 
 /** iOS-style bottom tab bar + "Apps" sheet for the rest. Mobile only. */
 export function MobileTabs() {
   const pathname = usePathname();
   const [appsOpen, setAppsOpen] = useState(false);
+  const t = useT();
   const inPrimary = PRIMARY.some((p) => (p.href === "/" ? pathname === "/" : pathname.startsWith(p.href)));
 
   return (
@@ -49,7 +51,7 @@ export function MobileTabs() {
                 className={`relative transition-colors ${active ? "text-accent" : "text-muted"}`}
               />
               <span className={`relative text-[10px] font-medium ${active ? "text-ink" : "text-faint"}`}>
-                {item.label}
+                {t(`nav.${item.key}`)}
               </span>
             </Link>
           );
@@ -57,7 +59,7 @@ export function MobileTabs() {
         <button
           onClick={() => setAppsOpen(true)}
           className="relative flex min-w-16 flex-1 flex-col items-center gap-1 py-2.5"
-          aria-label="All apps"
+          aria-label={t("nav.allApps")}
         >
           {!inPrimary && (
             <motion.span
@@ -67,7 +69,7 @@ export function MobileTabs() {
             />
           )}
           <Grip size={21} strokeWidth={1.8} className={`relative ${inPrimary ? "text-muted" : "text-accent"}`} />
-          <span className={`relative text-[10px] font-medium ${inPrimary ? "text-faint" : "text-ink"}`}>Apps</span>
+          <span className={`relative text-[10px] font-medium ${inPrimary ? "text-faint" : "text-ink"}`}>{t("nav.apps")}</span>
         </button>
       </nav>
 
@@ -95,7 +97,7 @@ export function MobileTabs() {
               className="glass-strong glass-edge absolute inset-x-0 bottom-0 rounded-t-[28px] px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3"
             >
               <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/20" />
-              <p className="mb-4 text-sm font-medium text-muted">All apps</p>
+              <p className="mb-4 text-sm font-medium text-muted">{t("nav.allApps")}</p>
               <div className="grid grid-cols-4 gap-2">
                 {NAV.map((item, i) => {
                   const Icon = item.icon;
@@ -114,7 +116,7 @@ export function MobileTabs() {
                         <span className="flex h-12 w-12 items-center justify-center rounded-[15px] border border-white/[0.10] bg-white/[0.06]">
                           <Icon size={21} strokeWidth={1.8} />
                         </span>
-                        <span className="text-[11px] text-muted">{item.label}</span>
+                        <span className="text-[11px] text-muted">{t(`nav.${item.key}`)}</span>
                       </Link>
                     </motion.div>
                   );

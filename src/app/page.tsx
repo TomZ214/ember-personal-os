@@ -5,7 +5,8 @@ import { format } from "date-fns";
 import { Mail } from "lucide-react";
 import { useEmber, useHydrated } from "@/lib/store";
 import { useGmailUnread } from "@/hooks/useIntegrations";
-import { greeting, todayKey } from "@/lib/dates";
+import { greetingFor, useLang, useT } from "@/lib/i18n";
+import { todayKey } from "@/lib/dates";
 import { ProgressRing } from "@/components/ui/misc";
 import { AgendaWidget } from "@/components/widgets/Agenda";
 import { BankGlanceWidget } from "@/components/widgets/BankGlance";
@@ -38,6 +39,8 @@ export default function Dashboard() {
   const mails = useEmber((s) => s.mails);
   const score = useScore();
   const gmail = useGmailUnread();
+  const lang = useLang();
+  const t = useT();
   const localUnread = mails.filter((m) => m.folder === "inbox" && !m.read).length;
   // real Gmail count when connected, demo mailbox otherwise
   const unread = gmail.connected ? (gmail.unread ?? 0) : localUnread;
@@ -50,7 +53,7 @@ export default function Dashboard() {
         <div>
           <p className="text-sm text-faint">{format(new Date(), "EEEE, MMMM d")}</p>
           <h1 className="mt-1 text-[26px] font-semibold tracking-tight sm:text-3xl">
-            {greeting(settings.userName)}
+            {greetingFor(lang, settings.userName)}
           </h1>
           {unread > 0 && (
             <Link
@@ -58,7 +61,7 @@ export default function Dashboard() {
               className="mt-2 inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-accent"
             >
               <Mail size={14} />
-              {unread} unread message{unread === 1 ? "" : "s"}{gmail.connected ? " in Gmail" : " waiting"}
+              {unread} {unread === 1 ? t("dash.unreadOne") : t("dash.unreadMany")}{gmail.connected ? ` ${t("dash.inGmail")}` : ` ${t("dash.waiting")}`}
             </Link>
           )}
         </div>

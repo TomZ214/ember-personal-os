@@ -5,6 +5,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { Flame, Search } from "lucide-react";
 import { useEmber } from "@/lib/store";
+import { useT } from "@/lib/i18n";
 import { Kbd } from "@/components/ui/misc";
 
 function subscribeClock(cb: () => void) {
@@ -18,6 +19,7 @@ export function TopBar() {
   const setPaletteOpen = useEmber((s) => s.setPaletteOpen);
   const clock = useSyncExternalStore(subscribeClock, clockSnapshot, clockServerSnapshot);
   const [time, date] = clock ? clock.split("|") : ["--:--", ""];
+  const t = useT();
 
   return (
     // pt-safe: in the iOS home-screen app the page runs under the status bar
@@ -36,7 +38,7 @@ export function TopBar() {
             className="flex h-9 items-center gap-2.5 rounded-[11px] border border-white/[0.08] bg-white/[0.05] px-3 text-sm text-muted transition-colors hover:border-white/[0.14] hover:text-ink"
           >
             <Search size={15} />
-            <span className="hidden sm:inline">Search anything…</span>
+            <span className="hidden sm:inline">{t("topbar.search")}</span>
             <span className="hidden items-center gap-1 sm:flex">
               <Kbd>⌘</Kbd>
               <Kbd>K</Kbd>

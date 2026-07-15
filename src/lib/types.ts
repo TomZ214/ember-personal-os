@@ -211,6 +211,8 @@ export interface NotificationSettings {
   taskReminders: boolean;
 }
 
+export type Language = "en" | "de";
+
 export interface Settings {
   userName: string;
   focusMinutes: number;
@@ -220,6 +222,8 @@ export interface Settings {
   place: string;
   budgets?: Budgets;
   notifications?: NotificationSettings;
+  /** UI language — English or German */
+  language?: Language;
 }
 
 export const DEFAULT_NOTIFICATIONS: NotificationSettings = {

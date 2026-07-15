@@ -11,7 +11,8 @@ import {
 import { CalendarClock, Check, Flame, X } from "lucide-react";
 import { useEmber, useHydrated } from "@/lib/store";
 import { useGmailUnread } from "@/hooks/useIntegrations";
-import { dayKey, greeting, occursOn, todayKey } from "@/lib/dates";
+import { dayKey, occursOn, todayKey } from "@/lib/dates";
+import { greetingFor, useLang, useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/Button";
 
 /**
@@ -157,6 +158,7 @@ function AlertCard({
   onClose: () => void;
 }) {
   const reduced = useReducedMotion();
+  const lang = useLang();
   const { items, hasTasks, hasEvent } = snapshot;
   const multiple = items.length > 1;
 
@@ -293,7 +295,7 @@ function AlertCard({
               </motion.span>
               <div className="min-w-0">
                 <h2 className="truncate text-[19px] font-semibold tracking-tight">
-                  {greeting(userName)}
+                  {greetingFor(lang, userName)}
                 </h2>
                 <p className="text-[13px] text-muted">
                   {multiple ? "Here's what needs you." : "One thing needs you."}
@@ -352,6 +354,7 @@ function AlertCard({
 /* ---------------- empty state ---------------- */
 
 function AllClearPill() {
+  const t = useT();
   return (
     <motion.div
       initial={{ opacity: 0, y: -10, scale: 0.96 }}
@@ -363,7 +366,7 @@ function AllClearPill() {
       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-success/15 text-success">
         <Check size={13} strokeWidth={3} />
       </span>
-      <span className="text-[13px] font-medium">Everything is up to date.</span>
+      <span className="text-[13px] font-medium">{t("dash.everythingUpToDate")}</span>
       <CalendarClock size={13} className="text-faint" />
     </motion.div>
   );
