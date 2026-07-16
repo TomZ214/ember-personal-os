@@ -39,6 +39,7 @@ alter table public.task_inbox add column if not exists due date;
 alter table public.task_inbox add column if not exists recurrence text not null default 'none';
 alter table public.task_inbox add column if not exists token uuid;
 alter table public.task_inbox add column if not exists repeat jsonb; -- full RepeatRule
+alter table public.task_inbox add column if not exists time text;    -- HH:mm due time
 
 alter table public.task_inbox enable row level security;
 
@@ -91,6 +92,7 @@ drop function if exists public.inbox_add_task(uuid, text, text, text);
 drop function if exists public.inbox_add_task(uuid, text, text, text, text);
 drop function if exists public.inbox_add_task(uuid, text, text, text, text, date);
 drop function if exists public.inbox_add_task(uuid, text, text, text, text, date, text);
+drop function if exists public.inbox_add_task(uuid, text, text, text, text, date, text, jsonb);
 
 create or replace function public.inbox_add_task(
   share_token     uuid,
@@ -100,7 +102,8 @@ create or replace function public.inbox_add_task(
   task_priority   text default 'medium',
   task_due        date default null,
   task_recurrence text default 'none',
-  task_repeat     jsonb default null
+  task_repeat     jsonb default null,
+  task_time       text default null
 )
 returns void
 language plpgsql
@@ -125,11 +128,15 @@ begin
   if task_recurrence is null or task_recurrence not in ('none', 'daily', 'weekly', 'monthly') then
     task_recurrence := 'none';
   end if;
+  -- a time only makes sense with a date, and must look like HH:mm
+  if task_due is null or task_time !~ '^([01][0-9]|2[0-3]):[0-5][0-9]$' then
+    task_time := null;
+  end if;
   if (select count(*) from public.task_inbox where user_id = uid) >= 200 then
     raise exception 'inbox full';
   end if;
   clean_sender := nullif(left(trim(coalesce(sender_name, '')), 80), '');
-  insert into public.task_inbox (id, user_id, token, title, notes, sender, priority, due, recurrence, repeat)
+  insert into public.task_inbox (id, user_id, token, title, notes, sender, priority, due, recurrence, repeat, time)
   values (
     new_id, uid, share_token,
     trim(task_title),
@@ -138,7 +145,8 @@ begin
     task_priority,
     task_due,
     task_recurrence,
-    task_repeat
+    task_repeat,
+    task_time
   );
   -- mirror into shared_tasks so the sender can track it (same id links them)
   insert into public.shared_tasks (id, token, user_id, sender, title, status)

@@ -145,6 +145,7 @@ async function drainInbox(uid: string): Promise<void> {
         tags: ["family"],
         priority,
         due: t.due ?? undefined,
+        time: t.time ?? undefined,
         // prefer the full rule the family member chose; fall back to the legacy field
         repeat: t.repeat ?? undefined,
         recurrence: t.repeat ? "none" : recurrence,

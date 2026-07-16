@@ -150,6 +150,7 @@ export interface InboxTask {
   sender: string | null;
   priority: string | null;
   due: string | null;
+  time: string | null;
   recurrence: string | null;
   repeat: RepeatRule | null;
 }
@@ -167,7 +168,7 @@ export async function claimInboxTasks(userId: string): Promise<InboxTask[]> {
     .from("task_inbox")
     .delete()
     .eq("user_id", userId)
-    .select("id, title, notes, sender, priority, due, recurrence, repeat");
+    .select("id, title, notes, sender, priority, due, time, recurrence, repeat");
   if (error) throw new Error(error.message);
   return (data as InboxTask[]) ?? [];
 }

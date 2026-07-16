@@ -32,6 +32,7 @@ export default function QuickAddPage() {
   const [notes, setNotes] = useState("");
   const [priority, setPriority] = useState<Priority>("medium");
   const [due, setDue] = useState("");
+  const [time, setTime] = useState("");
   const [repeat, setRepeat] = useState<RepeatRule>(defaultRule());
   const [sender, setSender] = useState("");
   const [phase, setPhase] = useState<"form" | "sending" | "done">("form");
@@ -87,6 +88,7 @@ export default function QuickAddPage() {
       task_due: due || null,
       task_recurrence: "none",
       task_repeat: repeat.freq === "none" ? null : repeat,
+      task_time: due && time ? time : null, // a time only makes sense with a date
     });
     if (err) {
       setPhase("form");
@@ -133,6 +135,7 @@ export default function QuickAddPage() {
                 setNotes("");
                 setPriority("medium");
                 setDue("");
+                setTime("");
                 setRepeat(defaultRule());
                 setPhase("form");
               }}
@@ -187,10 +190,22 @@ export default function QuickAddPage() {
                 })}
               </div>
             </div>
-            <label>
-              <Label>Fällig bis</Label>
-              <Input type="date" value={due} onChange={(e) => setDue(e.target.value)} />
-            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label>
+                <Label>Fällig bis</Label>
+                <Input type="date" value={due} onChange={(e) => setDue(e.target.value)} />
+              </label>
+              <label>
+                <Label>Uhrzeit</Label>
+                <Input
+                  type="time"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  disabled={!due}
+                  aria-label="Uhrzeit"
+                />
+              </label>
+            </div>
             <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-3">
               <RepeatPicker
                 value={repeat}
