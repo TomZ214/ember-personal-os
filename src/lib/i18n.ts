@@ -40,6 +40,68 @@ const en: Dict = {
   "action.close": "Close",
   "action.done": "Done",
 
+  // priorities
+  "priority.low": "Low",
+  "priority.medium": "Medium",
+  "priority.high": "High",
+  "priority.urgent": "Urgent",
+
+  // reminders
+  "reminder.none": "No reminder",
+  "reminder.atDue": "At due time",
+  "reminder.min5": "5 minutes before",
+  "reminder.min10": "10 minutes before",
+  "reminder.min15": "15 minutes before",
+  "reminder.min30": "30 minutes before",
+  "reminder.hour1": "1 hour before",
+  "reminder.hour2": "2 hours before",
+  "reminder.day1": "1 day before",
+
+  // tasks
+  "tasks.title": "Tasks",
+  "tasks.open": "open",
+  "tasks.new": "New task",
+  "tasks.sync": "Sync",
+  "tasks.synced": "Tasks synced",
+  "tasks.syncFailed": "Sync failed",
+  "tasks.board": "Board",
+  "tasks.list": "List",
+  "tasks.dragHint": "Drag cards between columns",
+  "tasks.col.backlog": "Backlog",
+  "tasks.col.backlogHint": "Someday, maybe",
+  "tasks.col.todo": "To do",
+  "tasks.col.todoHint": "Committed",
+  "tasks.col.doing": "In progress",
+  "tasks.col.doingHint": "Right now",
+  "tasks.col.done": "Done",
+  "tasks.col.doneHint": "Shipped",
+  "tasks.empty": "Empty",
+  "tasks.dropHere": "Drop here",
+  "tasks.noneYet": "No tasks yet",
+  "tasks.noneYetHint": "Press ⌘K or the button above to add your first task.",
+  "tasks.edit": "Edit task",
+  "tasks.fTitle": "Title",
+  "tasks.fTitlePh": "What needs doing?",
+  "tasks.fNotes": "Notes",
+  "tasks.fNotesPh": "Optional details…",
+  "tasks.fStatus": "Status",
+  "tasks.fPriority": "Priority",
+  "tasks.fDue": "Due date",
+  "tasks.fTime": "Time",
+  "tasks.fReminder": "Reminder",
+  "tasks.reminderNeedsDue": "Add a due date to set a reminder.",
+  "tasks.fTags": "Tags",
+  "tasks.fTagsPh": "work, errands",
+  "tasks.repeatHint": "When you complete this, the next one is created automatically.",
+  "tasks.fSubtasks": "Subtasks",
+  "tasks.fSubtaskPh": "Add a step, press Enter",
+  "tasks.save": "Save changes",
+  "tasks.added": "Task added",
+  "tasks.updated": "Task updated",
+  "tasks.deleted": "Task deleted",
+  "tasks.complete": "Complete",
+  "tasks.reopen": "Reopen",
+
   // top bar
   "topbar.search": "Search anything…",
 
@@ -115,6 +177,68 @@ const de: Dict = {
   "action.close": "Schließen",
   "action.done": "Fertig",
 
+  // priorities
+  "priority.low": "Niedrig",
+  "priority.medium": "Normal",
+  "priority.high": "Hoch",
+  "priority.urgent": "Dringend",
+
+  // reminders
+  "reminder.none": "Keine Erinnerung",
+  "reminder.atDue": "Zur Fälligkeit",
+  "reminder.min5": "5 Minuten vorher",
+  "reminder.min10": "10 Minuten vorher",
+  "reminder.min15": "15 Minuten vorher",
+  "reminder.min30": "30 Minuten vorher",
+  "reminder.hour1": "1 Stunde vorher",
+  "reminder.hour2": "2 Stunden vorher",
+  "reminder.day1": "1 Tag vorher",
+
+  // tasks
+  "tasks.title": "Aufgaben",
+  "tasks.open": "offen",
+  "tasks.new": "Neue Aufgabe",
+  "tasks.sync": "Sync",
+  "tasks.synced": "Aufgaben synchronisiert",
+  "tasks.syncFailed": "Sync fehlgeschlagen",
+  "tasks.board": "Board",
+  "tasks.list": "Liste",
+  "tasks.dragHint": "Karten zwischen Spalten ziehen",
+  "tasks.col.backlog": "Backlog",
+  "tasks.col.backlogHint": "Irgendwann mal",
+  "tasks.col.todo": "Zu erledigen",
+  "tasks.col.todoHint": "Fest eingeplant",
+  "tasks.col.doing": "In Arbeit",
+  "tasks.col.doingHint": "Gerade jetzt",
+  "tasks.col.done": "Erledigt",
+  "tasks.col.doneHint": "Abgeschlossen",
+  "tasks.empty": "Leer",
+  "tasks.dropHere": "Hier ablegen",
+  "tasks.noneYet": "Noch keine Aufgaben",
+  "tasks.noneYetHint": "Drücke ⌘K oder den Knopf oben, um deine erste Aufgabe anzulegen.",
+  "tasks.edit": "Aufgabe bearbeiten",
+  "tasks.fTitle": "Titel",
+  "tasks.fTitlePh": "Was ist zu tun?",
+  "tasks.fNotes": "Notiz",
+  "tasks.fNotesPh": "Optionale Details…",
+  "tasks.fStatus": "Status",
+  "tasks.fPriority": "Priorität",
+  "tasks.fDue": "Fällig am",
+  "tasks.fTime": "Uhrzeit",
+  "tasks.fReminder": "Erinnerung",
+  "tasks.reminderNeedsDue": "Füge ein Fälligkeitsdatum hinzu, um zu erinnern.",
+  "tasks.fTags": "Tags",
+  "tasks.fTagsPh": "arbeit, besorgungen",
+  "tasks.repeatHint": "Wenn du das erledigst, wird die nächste automatisch angelegt.",
+  "tasks.fSubtasks": "Teilaufgaben",
+  "tasks.fSubtaskPh": "Schritt hinzufügen, Enter drücken",
+  "tasks.save": "Änderungen speichern",
+  "tasks.added": "Aufgabe hinzugefügt",
+  "tasks.updated": "Aufgabe aktualisiert",
+  "tasks.deleted": "Aufgabe gelöscht",
+  "tasks.complete": "Erledigen",
+  "tasks.reopen": "Wieder öffnen",
+
   // top bar
   "topbar.search": "Alles durchsuchen…",
 
@@ -179,6 +303,13 @@ export function useT(): Translator {
     [lang],
   );
 }
+
+/** dictionary key for a reminder offset in minutes (see REMINDER_OPTIONS) */
+const REMINDER_KEYS: Record<number, string> = {
+  0: "reminder.atDue", 5: "reminder.min5", 10: "reminder.min10", 15: "reminder.min15",
+  30: "reminder.min30", 60: "reminder.hour1", 120: "reminder.hour2", 1440: "reminder.day1",
+};
+export const reminderKey = (min: number): string => REMINDER_KEYS[min] ?? "reminder.atDue";
 
 /** localized greeting used on the dashboard and welcome alert */
 export function greetingFor(lang: Language, name: string): string {

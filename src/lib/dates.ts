@@ -1,4 +1,5 @@
 import { format, isToday, isTomorrow, isYesterday, parseISO } from "date-fns";
+import { de as deLocale } from "date-fns/locale";
 
 export const dayKey = (d: Date) => format(d, "yyyy-MM-dd");
 export const todayKey = () => dayKey(new Date());
@@ -9,12 +10,16 @@ export function minutesToLabel(min: number): string {
   return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
 }
 
-export function friendlyDay(key: string): string {
+/** date-fns locale for a language code — use with format() */
+export const dfLocale = (lang: string) => (lang === "de" ? deLocale : undefined);
+
+export function friendlyDay(key: string, lang: "en" | "de" = "en"): string {
   const d = parseISO(key);
-  if (isToday(d)) return "Today";
-  if (isTomorrow(d)) return "Tomorrow";
-  if (isYesterday(d)) return "Yesterday";
-  return format(d, "EEE, MMM d");
+  const de = lang === "de";
+  if (isToday(d)) return de ? "Heute" : "Today";
+  if (isTomorrow(d)) return de ? "Morgen" : "Tomorrow";
+  if (isYesterday(d)) return de ? "Gestern" : "Yesterday";
+  return format(d, de ? "EEE, d. MMM" : "EEE, MMM d", { locale: dfLocale(lang) });
 }
 
 export function greeting(name: string): string {

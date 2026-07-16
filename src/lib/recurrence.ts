@@ -168,18 +168,19 @@ export function ruleExhausted(rule: RepeatRule): boolean {
 }
 
 /** short label for a task card badge */
-export function repeatShort(rule: RepeatRule): string {
+export function repeatShort(rule: RepeatRule, lang: "en" | "de" = "en"): string {
   const r = withDefaults(rule);
   const n = r.interval;
+  const de = lang === "de";
   switch (r.freq) {
-    case "none": return "Once";
-    case "hourly": return n === 1 ? "Hourly" : `Every ${n}h`;
-    case "daily": return n === 1 ? "Daily" : `Every ${n}d`;
-    case "weekdays": return "Weekdays";
-    case "weekends": return "Weekends";
-    case "weekly": return n === 1 ? "Weekly" : `Every ${n}w`;
-    case "monthly": return n === 1 ? "Monthly" : `Every ${n}mo`;
-    case "yearly": return n === 1 ? "Yearly" : `Every ${n}y`;
+    case "none": return de ? "Einmalig" : "Once";
+    case "hourly": return n === 1 ? (de ? "Stündlich" : "Hourly") : `${de ? "Alle" : "Every"} ${n}h`;
+    case "daily": return n === 1 ? (de ? "Täglich" : "Daily") : `${de ? "Alle" : "Every"} ${n}${de ? "T" : "d"}`;
+    case "weekdays": return de ? "Wochentags" : "Weekdays";
+    case "weekends": return de ? "Wochenende" : "Weekends";
+    case "weekly": return n === 1 ? (de ? "Wöchentlich" : "Weekly") : `${de ? "Alle" : "Every"} ${n}${de ? "W" : "w"}`;
+    case "monthly": return n === 1 ? (de ? "Monatlich" : "Monthly") : `${de ? "Alle" : "Every"} ${n}${de ? "M" : "mo"}`;
+    case "yearly": return n === 1 ? (de ? "Jährlich" : "Yearly") : `${de ? "Alle" : "Every"} ${n}${de ? "J" : "y"}`;
   }
 }
 
