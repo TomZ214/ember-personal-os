@@ -10,7 +10,8 @@ import {
   CalendarDays, ChevronLeft, ChevronRight, Loader2, MapPin, Plus, RefreshCw, Sparkles, Trash2, Users,
 } from "lucide-react";
 import { useHydrated } from "@/lib/store";
-import { dayKey, friendlyDay, minutesToLabel, todayKey } from "@/lib/dates";
+import { dayKey, dfLocale, friendlyDay, minutesToLabel, todayKey } from "@/lib/dates";
+import { reminderKey, useLang, useT } from "@/lib/i18n";
 import { parseQuickEvent } from "@/lib/nlp";
 import { CATEGORY_VAR, REMINDER_OPTIONS, type CategoryColor, type Recurrence } from "@/lib/types";
 import { eventOccursOn, useCalendarSource, type CalEvent, type CalendarInput } from "@/hooks/useIntegrations";
@@ -32,6 +33,8 @@ const occursOnDay = eventOccursOn;
 export default function CalendarPage() {
   const hydrated = useHydrated();
   const cal = useCalendarSource();
+  const t = useT();
+  const lang = useLang();
   const [view, setView] = useState<View>("month");
   const [cursor, setCursor] = useState(() => new Date());
   const [editing, setEditing] = useState<CalEvent | null>(null);
@@ -49,10 +52,10 @@ export default function CalendarPage() {
         localColor: "sky",
         calendarId: cal.connected ? cal.calendars.find((c) => c.primary)?.id : undefined,
       });
-      toast(`"${nlParsed.title}" — ${friendlyDay(nlParsed.date)} ${minutesToLabel(nlParsed.start)}${cal.connected ? " · synced to Google" : ""}`);
+      toast(`"${nlParsed.title}" — ${friendlyDay(nlParsed.date, lang)} ${minutesToLabel(nlParsed.start)}${cal.connected ? " · synced to Google" : ""}`);
       setNl("");
     } catch (e) {
-      toast(e instanceof Error ? e.message : "Couldn't create event", "info");
+      toast(e instanceof Error ? e.message : t("cal.createFailed"), "info");
     }
   };
 
@@ -63,26 +66,26 @@ export default function CalendarPage() {
   };
 
   const title =
-    view === "day" ? format(cursor, "EEEE, MMMM d") :
-    view === "week" ? `Week of ${format(startOfWeek(cursor, { weekStartsOn: 1 }), "MMM d")}` :
-    format(cursor, "MMMM yyyy");
+    view === "day" ? format(cursor, lang === "de" ? "EEEE, d. MMMM" : "EEEE, MMMM d", { locale: dfLocale(lang) }) :
+    view === "week" ? `${t("cal.weekOf")} ${format(startOfWeek(cursor, { weekStartsOn: 1 }), "d. MMM", { locale: dfLocale(lang) })}` :
+    format(cursor, "MMMM yyyy", { locale: dfLocale(lang) });
 
   if (!hydrated) return <div className="skeleton h-[70vh]" style={{ borderRadius: 18 }} />;
 
   return (
     <div>
       <PageHeader
-        title="Calendar"
-        sub={cal.connected ? "Two-way synced with Google Calendar" : undefined}
+        title={t("cal.title")}
+        sub={cal.connected ? t("cal.syncedGoogle") : undefined}
         actions={
           <>
             {cal.connected && (
-              <Button size="sm" variant="ghost" onClick={() => cal.refresh()} aria-label="Sync now" title="Sync now">
+              <Button size="sm" variant="ghost" onClick={() => cal.refresh()} aria-label={t("cal.syncNow")} title={t("cal.syncNow")}>
                 {cal.syncing ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
               </Button>
             )}
             <Button variant="primary" onClick={() => setCreating({ date: dayKey(cursor), start: 9 * 60 })}>
-              <Plus size={16} /> New event
+              <Plus size={16} /> {t("cal.new")}
             </Button>
           </>
         }
@@ -96,9 +99,9 @@ export default function CalendarPage() {
             value={nl}
             onChange={(e) => setNl(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && quickAdd()}
-            placeholder='Type naturally — "Dentist tomorrow 14:30" or "Gym monday 7am 90min"'
+            placeholder={t("cal.quickAddPh")}
             className="h-12 w-full bg-transparent text-sm placeholder:text-faint focus:outline-none"
-            aria-label="Quick add event"
+            aria-label={t("cal.quickAdd")}
           />
           {nlParsed && (
             <motion.button
@@ -107,7 +110,7 @@ export default function CalendarPage() {
               onClick={quickAdd}
               className="num shrink-0 whitespace-nowrap rounded-full bg-accent/15 px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/25"
             >
-              ↵ {friendlyDay(nlParsed.date)} · {minutesToLabel(nlParsed.start)}
+              ↵ {friendlyDay(nlParsed.date, lang)} · {minutesToLabel(nlParsed.start)}
             </motion.button>
           )}
         </div>
@@ -123,7 +126,7 @@ export default function CalendarPage() {
                 key={c.id}
                 onClick={() => cal.toggleCalendar(c.id)}
                 aria-pressed={!hidden}
-                title={hidden ? `Show ${c.name}` : `Hide ${c.name}`}
+                title={`${hidden ? t("cal.show") : t("cal.hide")} ${c.name}`}
                 className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-all ${
                   hidden ? "border-white/[0.06] text-faint opacity-55" : "border-white/[0.1] bg-white/[0.04] text-muted"
                 }`}
@@ -134,20 +137,20 @@ export default function CalendarPage() {
             );
           })}
           {cal.needsReconnect && (
-            <span className="text-xs text-warning">Google access expired — reconnect in Settings → Connections</span>
+            <span className="text-xs text-warning">{t("cal.googleExpired")}</span>
           )}
         </div>
       )}
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-1">
-          <button onClick={() => shift(-1)} aria-label="Previous" className="rounded-lg p-2 text-muted transition-colors hover:bg-white/[0.06] hover:text-ink">
+          <button onClick={() => shift(-1)} aria-label={t("cal.previous")} className="rounded-lg p-2 text-muted transition-colors hover:bg-white/[0.06] hover:text-ink">
             <ChevronLeft size={17} />
           </button>
           <button onClick={() => setCursor(new Date())} className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-white/[0.06] hover:text-ink">
-            Today
+            {t("cal.today")}
           </button>
-          <button onClick={() => shift(1)} aria-label="Next" className="rounded-lg p-2 text-muted transition-colors hover:bg-white/[0.06] hover:text-ink">
+          <button onClick={() => shift(1)} aria-label={t("cal.next")} className="rounded-lg p-2 text-muted transition-colors hover:bg-white/[0.06] hover:text-ink">
             <ChevronRight size={17} />
           </button>
           <h2 className="ml-2 text-base font-semibold tracking-tight sm:text-lg">{title}</h2>
@@ -158,7 +161,7 @@ export default function CalendarPage() {
               key={v}
               onClick={() => setView(v)}
               aria-pressed={view === v}
-              className={`relative h-8 rounded-[9px] px-3 text-[13px] font-medium capitalize transition-colors ${
+              className={`relative h-8 rounded-[9px] px-3 text-[13px] font-medium transition-colors ${
                 view === v ? "text-ink" : "text-faint hover:text-muted"
               }`}
             >
@@ -166,7 +169,7 @@ export default function CalendarPage() {
                 <motion.span layoutId="cal-view" className="absolute inset-0 rounded-[9px] bg-white/[0.09]"
                   transition={{ type: "spring", stiffness: 500, damping: 38 }} />
               )}
-              <span className="relative">{v}</span>
+              <span className="relative">{t(`cal.view.${v}`)}</span>
             </button>
           ))}
         </div>
@@ -197,6 +200,8 @@ function MonthView({
   onEdit: (e: CalEvent) => void;
   onCreate: (date: string) => void;
 }) {
+  const t = useT();
+  const lang = useLang();
   const [dragEv, setDragEv] = useState<CalEvent | null>(null);
   const [overDay, setOverDay] = useState<string | null>(null);
 
@@ -212,16 +217,18 @@ function MonthView({
     if (!ev || ev.date === key) return;
     try {
       await cal.update(ev, { date: key, start: ev.start, end: ev.end });
-      toast(`Moved to ${friendlyDay(key)}${ev.source === "google" ? " · synced" : ""}`);
+      toast(`${t("cal.movedTo")} ${friendlyDay(key, lang)}${ev.source === "google" ? " · synced" : ""}`);
     } catch (e) {
-      toast(e instanceof Error ? e.message : "Couldn't move event", "info");
+      toast(e instanceof Error ? e.message : t("cal.moveFailed"), "info");
     }
   };
 
   return (
     <div className="panel overflow-hidden">
       <div className="grid grid-cols-7 border-b border-white/[0.06]">
-        {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
+        {eachDayOfInterval({ start: startOfWeek(cursor, { weekStartsOn: 1 }), end: endOfWeek(cursor, { weekStartsOn: 1 }) })
+          .map((wd) => format(wd, "EEE", { locale: dfLocale(lang) }))
+          .map((d) => (
           <div key={d} className="px-2 py-2 text-center text-[11px] font-medium uppercase tracking-wide text-faint">
             {d}
           </div>
@@ -298,6 +305,7 @@ function TimeGrid({
   onEdit: (e: CalEvent) => void;
   onCreate: (v: { date: string; start: number }) => void;
 }) {
+  const lang = useLang();
   const [nowMin, setNowMin] = useState(-1);
 
   useEffect(() => {
@@ -326,7 +334,7 @@ function TimeGrid({
             <span />
             {cols.map((d) => (
               <div key={dayKey(d)} className="px-2 py-2 text-center">
-                <p className="text-[11px] uppercase tracking-wide text-faint">{format(d, "EEE")}</p>
+                <p className="text-[11px] uppercase tracking-wide text-faint">{format(d, "EEE", { locale: dfLocale(lang) })}</p>
                 <p className={`num mx-auto mt-0.5 flex h-7 w-7 items-center justify-center rounded-full text-sm ${
                   isToday(d) ? "bg-[image:var(--grad-sunset)] font-semibold text-(--on-sunset)" : "text-ink"
                 }`}>
@@ -427,6 +435,8 @@ function TimeGrid({
 /* ---------------- agenda ---------------- */
 
 function AgendaView({ cal, cursor, onEdit }: { cal: Cal; cursor: Date; onEdit: (e: CalEvent) => void }) {
+  const t = useT();
+  const lang = useLang();
   const daysAhead = Array.from({ length: 14 }, (_, i) => addDays(cursor, i));
   const groups = daysAhead
     .map((d) => ({
@@ -438,7 +448,7 @@ function AgendaView({ cal, cursor, onEdit }: { cal: Cal; cursor: Date; onEdit: (
   if (groups.length === 0)
     return (
       <div className="panel">
-        <EmptyState icon={<CalendarDays size={20} />} title="Nothing scheduled" hint="The next two weeks are wide open." />
+        <EmptyState icon={<CalendarDays size={20} />} title={t("cal.nothing")} hint={t("cal.nothingHint")} />
       </div>
     );
 
@@ -453,7 +463,7 @@ function AgendaView({ cal, cursor, onEdit }: { cal: Cal; cursor: Date; onEdit: (
         >
           <h3 className={`mb-2 text-sm font-semibold ${isSameDay(g.day, new Date()) ? "text-accent" : ""}`}>
             {friendlyDay(dayKey(g.day))}
-            <span className="ml-2 text-xs font-normal text-faint">{format(g.day, "MMM d")}</span>
+            <span className="ml-2 text-xs font-normal text-faint">{format(g.day, lang === "de" ? "d. MMM" : "MMM d", { locale: dfLocale(lang) })}</span>
           </h3>
           <div className="panel divide-y divide-white/[0.05] overflow-hidden">
             {g.items.map((e) => (
@@ -463,7 +473,7 @@ function AgendaView({ cal, cursor, onEdit }: { cal: Cal; cursor: Date; onEdit: (
                 className="flex w-full items-center gap-4 px-4 py-3 text-left transition-colors hover:bg-white/[0.03]"
               >
                 <span className="num w-20 shrink-0 text-sm text-muted">
-                  {e.allDay ? "All day" : <>{minutesToLabel(e.start)}<span className="text-faint"> – {minutesToLabel(e.end)}</span></>}
+                  {e.allDay ? t("cal.allDay") : <>{minutesToLabel(e.start)}<span className="text-faint"> – {minutesToLabel(e.end)}</span></>}
                 </span>
                 <span className="h-8 w-1 shrink-0 rounded-full" style={{ background: e.color }} />
                 <span className="min-w-0 flex-1">
@@ -503,6 +513,7 @@ function EventEditor({
   defaults?: { date: string; start: number };
   onClose: () => void;
 }) {
+  const t = useT();
   const [title, setTitle] = useState("");
   const [date, setDate] = useState(todayKey());
   const [start, setStart] = useState("09:00");
@@ -569,7 +580,7 @@ function EventEditor({
       }
       onClose();
     } catch (e) {
-      toast(e instanceof Error ? e.message : "Save failed", "info");
+      toast(e instanceof Error ? e.message : t("cal.saveFailed"), "info");
     }
     setSaving(false);
   };
@@ -579,45 +590,45 @@ function EventEditor({
     setSaving(true);
     try {
       await cal.remove(event);
-      toast("Event deleted", "info");
+      toast(t("cal.deleted"), "info");
       onClose();
     } catch (e) {
-      toast(e instanceof Error ? e.message : "Delete failed", "info");
+      toast(e instanceof Error ? e.message : t("cal.deleteFailed"), "info");
     }
     setSaving(false);
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={event ? "Edit event" : "New event"}>
+    <Modal open={open} onClose={onClose} title={event ? t("cal.edit") : t("cal.new")}>
       <div className="flex flex-col gap-4">
         <label>
-          <Label>Title</Label>
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="What's happening?" autoFocus />
+          <Label>{t("cal.fTitle")}</Label>
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("cal.fTitlePh")} autoFocus />
         </label>
 
         {!event && cal.connected && (
           <label>
-            <Label>Calendar</Label>
+            <Label>{t("cal.fCalendar")}</Label>
             <Select value={target} onChange={(e) => setTarget(e.target.value)}>
               {cal.calendars.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}{c.primary ? " (Google primary)" : ""}</option>
               ))}
-              <option value="local">On this device only</option>
+              <option value="local">{t("cal.deviceOnly")}</option>
             </Select>
           </label>
         )}
 
         <div className="grid grid-cols-3 gap-3">
           <label className="col-span-3 sm:col-span-1">
-            <Label>Date</Label>
+            <Label>{t("cal.fDate")}</Label>
             <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </label>
           <label>
-            <Label>Start</Label>
+            <Label>{t("cal.fStart")}</Label>
             <Input type="time" value={start} onChange={(e) => setStart(e.target.value)} />
           </label>
           <label>
-            <Label>End</Label>
+            <Label>{t("cal.fEnd")}</Label>
             <Input type="time" value={end} onChange={(e) => setEnd(e.target.value)} />
           </label>
         </div>
@@ -625,7 +636,7 @@ function EventEditor({
         <div className="grid grid-cols-2 gap-3">
           {!isGoogle && target === "local" ? (
             <div>
-              <Label>Color</Label>
+              <Label>{t("cal.fColor")}</Label>
               <div className="flex h-10 items-center gap-2">
                 {COLORS.map((c) => (
                   <button
@@ -641,7 +652,7 @@ function EventEditor({
             </div>
           ) : (
             <div>
-              <Label>Color</Label>
+              <Label>{t("cal.fColor")}</Label>
               <div className="flex h-10 items-center gap-2 text-[13px] text-muted">
                 <span className="h-4 w-4 rounded-full" style={{ background: event?.color ?? cal.calendars.find((c) => c.id === target)?.color }} />
                 Calendar color
@@ -650,47 +661,47 @@ function EventEditor({
           )}
           {(!isGoogle || !event?.recurring) && !event?.recurring ? (
             <label>
-              <Label>Repeats</Label>
+              <Label>{t("cal.fRepeats")}</Label>
               <Select value={recurrence} onChange={(e) => setRecurrence(e.target.value as Recurrence)} disabled={!!event && isGoogle}>
-                <option value="none">Never</option>
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
+                <option value="none">{t("cal.never")}</option>
+                <option value="daily">{t("cal.daily")}</option>
+                <option value="weekly">{t("cal.weekly")}</option>
               </Select>
             </label>
           ) : (
             <div>
-              <Label>Repeats</Label>
-              <p className="flex h-10 items-center text-[13px] text-muted">Recurring series{isGoogle ? " — edits apply to this occurrence" : ""}</p>
+              <Label>{t("cal.fRepeats")}</Label>
+              <p className="flex h-10 items-center text-[13px] text-muted">{isGoogle ? t("cal.recurringSeriesGoogle") : t("cal.recurringSeries")}</p>
             </div>
           )}
         </div>
 
         <label>
-          <Label>Location</Label>
-          <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Optional" />
+          <Label>{t("cal.fLocation")}</Label>
+          <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t("cal.optional")} />
         </label>
         {!isGoogle && (
           <label>
-            <Label>Reminder</Label>
+            <Label>{t("cal.fReminder")}</Label>
             <Select
               value={reminder === null ? "none" : String(reminder)}
               onChange={(e) => setReminder(e.target.value === "none" ? null : Number(e.target.value))}
             >
-              <option value="none">No reminder</option>
+              <option value="none">{t("reminder.none")}</option>
               {REMINDER_OPTIONS.map((r) => (
-                <option key={r.value} value={r.value}>{r.label}</option>
+                <option key={r.value} value={r.value}>{t(reminderKey(r.value))}</option>
               ))}
             </Select>
           </label>
         )}
         <label>
-          <Label>Notes</Label>
-          <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Optional" />
+          <Label>{t("cal.fNotes")}</Label>
+          <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder={t("cal.optional")} />
         </label>
 
         {isGoogle && event?.attendees && event.attendees.length > 0 && (
           <div>
-            <Label>Attendees</Label>
+            <Label>{t("cal.attendees")}</Label>
             <ul className="flex flex-col gap-1.5">
               {event.attendees.slice(0, 6).map((a) => (
                 <li key={a.email} className="flex items-center gap-2 text-[13px]">
@@ -712,10 +723,10 @@ function EventEditor({
             </Button>
           ) : <span />}
           <div className="flex gap-2">
-            <Button variant="ghost" onClick={onClose}>Cancel</Button>
+            <Button variant="ghost" onClick={onClose}>{t("action.cancel")}</Button>
             <Button variant="primary" onClick={save} disabled={!title.trim() || saving}>
               {saving ? <Loader2 size={14} className="animate-spin" /> : null}
-              {event ? "Save changes" : "Create event"}
+              {event ? t("tasks.save") : t("cal.create")}
             </Button>
           </div>
         </div>
