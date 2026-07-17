@@ -7,6 +7,7 @@ import { ArrowUpRight, Check, CheckSquare, Plus } from "lucide-react";
 import { useEmber } from "@/lib/store";
 import { todayKey } from "@/lib/dates";
 import { PRIORITY_META } from "@/lib/types";
+import { celebrate } from "@/components/ui/celebrate";
 import { EmptyState } from "@/components/ui/misc";
 
 export function TodayTasksWidget() {
@@ -62,7 +63,11 @@ export function TodayTasksWidget() {
                 >
                   <div className="flex items-center gap-3 py-1.5">
                     <button
-                      onClick={() => updateTask(t.id, { status: "done" })}
+                      onClick={(e) => {
+                        updateTask(t.id, { status: "done" });
+                        const r = e.currentTarget.getBoundingClientRect();
+                        celebrate(t.title, { x: r.left + r.width / 2, y: r.top + r.height / 2 });
+                      }}
                       aria-label={`Complete "${t.title}"`}
                       className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-md border border-white/25 text-transparent transition-all hover:border-success hover:bg-success/15 hover:text-success"
                     >

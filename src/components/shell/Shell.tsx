@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { Celebrations } from "@/components/ui/celebrate";
 import { Toaster } from "@/components/ui/toast";
 import { CloudSyncEngine } from "@/hooks/useCloudSync";
 import { CommandPalette } from "./CommandPalette";
@@ -35,6 +36,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <MobileTabs />
       <CommandPalette />
       <Toaster />
+      <Celebrations />
       <CloudSyncEngine />
       <ViewportFix />
       <WelcomeAlert />

@@ -153,6 +153,11 @@ const en: Dict = {
   "cal.view.agenda": "Agenda",
   "cal.movedTo": "Moved to",
 
+  // completion celebration
+  "celebrate.today": "today",
+  "celebrate.allDoneTitle": "All done for today",
+  "celebrate.allDoneSub": "Nothing left on your list. Enjoy it.",
+
   // top bar
   "topbar.search": "Search anything…",
 
@@ -340,6 +345,11 @@ const de: Dict = {
   "cal.view.day": "Tag",
   "cal.view.agenda": "Agenda",
   "cal.movedTo": "Verschoben auf",
+
+  // completion celebration
+  "celebrate.today": "heute",
+  "celebrate.allDoneTitle": "Alles erledigt für heute",
+  "celebrate.allDoneSub": "Nichts mehr offen auf deiner Liste. Genieß es.",
 
   // top bar
   "topbar.search": "Alles durchsuchen…",

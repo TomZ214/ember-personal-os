@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input, Label, Select, Textarea } from "@/components/ui/inputs";
 import { EmptyState, PageHeader } from "@/components/ui/misc";
+import { celebrate } from "@/components/ui/celebrate";
 import { toast } from "@/components/ui/toast";
 
 const COLUMNS: { status: TaskStatus }[] = [
@@ -114,8 +115,15 @@ function Board({ onEdit }: { onEdit: (t: Task) => void }) {
   const [over, setOver] = useState<{ status: TaskStatus; beforeId?: string } | null>(null);
   const t = useT();
 
-  const drop = () => {
-    if (dragId && over) moveTask(dragId, over.status, over.beforeId);
+  const drop = (e?: React.DragEvent) => {
+    if (dragId && over) {
+      const moved = tasks.find((x) => x.id === dragId);
+      moveTask(dragId, over.status, over.beforeId);
+      // dropping into Done counts as completing it
+      if (moved && over.status === "done" && moved.status !== "done") {
+        celebrate(moved.title, e ? { x: e.clientX, y: e.clientY } : undefined);
+      }
+    }
     setDragId(null);
     setOver(null);
   };
@@ -300,6 +308,11 @@ function ListView({ onEdit }: { onEdit: (task: Task) => void }) {
               onClick={(e) => {
                 e.stopPropagation();
                 updateTask(task.id, { status: done ? "todo" : "done" });
+                if (!done) {
+                  // burst from the centre of the checkbox that was just ticked
+                  const r = e.currentTarget.getBoundingClientRect();
+                  celebrate(task.title, { x: r.left + r.width / 2, y: r.top + r.height / 2 });
+                }
               }}
               aria-label={done ? t("tasks.reopen") : t("tasks.complete")}
               className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-md border transition-all ${
@@ -389,13 +402,16 @@ function TaskEditor({ open, task, onClose }: { open: boolean; task?: Task; onClo
       reminder: due ? reminder : null, // reminders need a due date
       subtasks: subs,
     };
+    const justCompleted = status === "done" && task?.status !== "done";
     if (task) {
       updateTask(task.id, patch);
-      toast(t("tasks.updated"));
+      if (!justCompleted) toast(t("tasks.updated"));
     } else {
       addTask(patch);
-      toast(t("tasks.added"));
+      if (!justCompleted) toast(t("tasks.added"));
     }
+    // the celebration replaces the plain toast when something gets finished
+    if (justCompleted) celebrate(title.trim());
     onClose();
   };
 
