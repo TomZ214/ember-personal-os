@@ -20,6 +20,8 @@ import {
   sendTestPush,
 } from "@/lib/push";
 import { useEmber } from "@/lib/store";
+import { useLang, useT } from "@/lib/i18n";
+import { dfLocale } from "@/lib/dates";
 import { DEFAULT_NOTIFICATIONS } from "@/lib/types";
 import { invalidateApi, useApi } from "@/hooks/useApi";
 import type { BankInstitution } from "@/lib/integrations/types";
@@ -37,19 +39,11 @@ export default function ConnectionsPage() {
   );
 }
 
-const ERROR_TEXT: Record<string, string> = {
-  google_not_configured: "Google isn't configured yet — add the env vars from SETUP.md first.",
-  oauth_state_mismatch: "Sign-in was interrupted (state mismatch). Try again.",
-  google_token_exchange_failed: "Google rejected the sign-in. Check client ID/secret and redirect URI.",
-  access_denied: "You cancelled the Google consent screen.",
-  bank_link_not_authorized: "The bank link wasn't completed — you can retry anytime.",
-  bank_callback_failed: "The bank confirmed nothing — try connecting again.",
-};
-
 function Connections() {
   const router = useRouter();
   const params = useSearchParams();
   const announced = useRef(false);
+  const t = useT();
 
   useEffect(() => {
     if (announced.current) return;
@@ -57,12 +51,12 @@ function Connections() {
     const error = params.get("error");
     if (connected || error) {
       announced.current = true;
-      if (connected === "google") toast("Google account connected");
-      if (connected === "bank") toast("Bank connected — first sync starting");
-      if (error) toast(ERROR_TEXT[error] ?? `Connection failed: ${error}`, "info");
+      if (connected === "google") toast(t("conn.googleConnected"));
+      if (connected === "bank") toast(t("conn.bankConnected"));
+      if (error) toast(t(`conn.err.${error}`, t("conn.connectionFailed").replace("{error}", error)), "info");
       router.replace("/settings/connections");
     }
-  }, [params, router]);
+  }, [params, router, t]);
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -70,11 +64,11 @@ function Connections() {
         href="/settings"
         className="mb-3 inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-ink"
       >
-        <ArrowLeft size={14} /> Settings
+        <ArrowLeft size={14} /> {t("nav.settings")}
       </Link>
       <PageHeader
-        title="Connections"
-        sub="Link real services. Tokens are AES-256 encrypted in httpOnly cookies — never exposed to the browser."
+        title={t("conn.title")}
+        sub={t("conn.sub")}
       />
       <div className="flex flex-col gap-4">
         <GoogleCard />
@@ -93,6 +87,7 @@ function Connections() {
 
 function ICloudCard() {
   const { data, loading, refresh } = useApi<{ configured: boolean; connected: boolean; account?: string }>("/api/icloud/status");
+  const t = useT();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -109,12 +104,12 @@ function ICloudCard() {
         body: JSON.stringify({ email, password }),
       });
       const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? "Connection failed");
+      if (!res.ok) throw new Error(body.error ?? t("conn.connectFailedToast"));
       setPassword("");
       setFormOpen(false);
       invalidateApi("/api/icloud");
       await refresh();
-      toast("iCloud Mail connected");
+      toast(t("conn.icloudConnected"));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -127,7 +122,7 @@ function ICloudCard() {
     invalidateApi("/api/icloud");
     await refresh();
     setBusy(false);
-    toast("iCloud disconnected", "info");
+    toast(t("conn.icloudDisconnected"), "info");
   };
 
   return (
@@ -141,19 +136,19 @@ function ICloudCard() {
             iCloud Mail <StatusDot state={data?.connected ? "on" : "off"} />
           </h2>
           <p className="truncate text-[13px] text-muted">
-            {loading && !data ? "Checking…" :
-              data?.connected ? `${data.account} — second inbox in Mail` :
-              "Your @icloud.com inbox alongside Gmail"}
+            {loading && !data ? t("conn.checking") :
+              data?.connected ? t("conn.icloudSecondInbox").replace("{account}", data.account ?? "") :
+              t("conn.icloudAlongside")}
           </p>
         </div>
         {data?.connected ? (
           <Button size="sm" onClick={disconnect} disabled={busy}>
-            <Unplug size={13} /> Disconnect
+            <Unplug size={13} /> {t("conn.disconnect")}
           </Button>
         ) : (
           !formOpen && (
             <Button variant="primary" onClick={() => setFormOpen(true)}>
-              Connect iCloud
+              {t("conn.connectIcloud")}
             </Button>
           )
         )}
@@ -162,13 +157,11 @@ function ICloudCard() {
       {!data?.connected && formOpen && (
         <div className="mt-4 flex flex-col gap-3 border-t border-white/[0.06] pt-4">
           <p className="text-[13px] leading-relaxed text-muted">
-            iCloud has no &quot;sign in with Apple&quot; for mail — instead you create an{" "}
-            <span className="font-medium text-ink">app-specific password</span>: go to{" "}
+            {t("conn.icloudInstrPre")}{" "}
             <a href="https://account.apple.com/account/manage" target="_blank" rel="noopener noreferrer" className="text-accent underline underline-offset-2">
               account.apple.com
             </a>{" "}
-            → Sign-In &amp; Security → App-Specific Passwords → create one (e.g. &quot;Ember&quot;) and paste it here.
-            It only works for mail and you can revoke it anytime.
+            {t("conn.icloudInstrPost")}
           </p>
           <div className="flex max-w-lg flex-col gap-2 sm:flex-row">
             <Input
@@ -176,7 +169,7 @@ function ICloudCard() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@icloud.com"
-              aria-label="iCloud address"
+              aria-label={t("conn.icloudAddr")}
             />
             <Input
               type="password"
@@ -184,15 +177,15 @@ function ICloudCard() {
               onChange={(e) => setPassword(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && connect()}
               placeholder="xxxx-xxxx-xxxx-xxxx"
-              aria-label="App-specific password"
+              aria-label={t("conn.appPassword")}
             />
             <Button variant="primary" onClick={connect} disabled={busy || !email.includes("@") || password.length < 8} className="shrink-0">
-              {busy ? <Loader2 size={14} className="animate-spin" /> : null} Connect
+              {busy ? <Loader2 size={14} className="animate-spin" /> : null} {t("conn.connect")}
             </Button>
           </div>
           {error && <p className="text-[13px] text-danger">{error}</p>}
           <p className="text-xs text-faint">
-            Verified with a live sign-in before saving · stored AES-256-encrypted, server-side only · your real Apple ID password is never used.
+            {t("conn.icloudVerifiedNote")}
           </p>
         </div>
       )}
@@ -214,26 +207,29 @@ function StatusDot({ state }: { state: "on" | "off" | "warn" }) {
 }
 
 function MissingEnv({ missing }: { missing: string[] }) {
+  const t = useT();
   return (
     <div className="mt-3 rounded-xl border border-warning/20 bg-warning/[0.06] px-4 py-3 text-[13px] leading-relaxed text-muted">
-      Not configured yet. Add{" "}
+      {t("conn.missingEnvPre")}{" "}
       {missing.map((m, i) => (
         <span key={m}>
           <code className="rounded bg-white/[0.08] px-1.5 py-0.5 font-mono text-xs text-ink">{m}</code>
           {i < missing.length - 1 ? ", " : ""}
         </span>
       ))}{" "}
-      to <code className="rounded bg-white/[0.08] px-1.5 py-0.5 font-mono text-xs text-ink">.env.local</code> and
-      restart — step-by-step instructions live in <span className="font-medium text-ink">SETUP.md</span>.
+      <code className="rounded bg-white/[0.08] px-1.5 py-0.5 font-mono text-xs text-ink">.env.local</code>{" "}
+      {t("conn.missingEnvPost")} <span className="font-medium text-ink">SETUP.md</span>.
     </div>
   );
 }
 
 function SyncRow({ label }: { label: string }) {
+  const t = useT();
+  const lang = useLang();
   const at = lastSynced(label);
   return (
     <span className="text-xs text-faint">
-      {at ? `Last sync ${formatDistanceToNow(parseISO(at), { addSuffix: true })}` : "Not synced yet"}
+      {at ? t("conn.lastSync").replace("{rel}", formatDistanceToNow(parseISO(at), { addSuffix: true, locale: dfLocale(lang) })) : t("conn.notSynced")}
     </span>
   );
 }
@@ -247,6 +243,7 @@ function ServiceRow({
   sync: string;
   pull: () => Promise<void>;
 }) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const [, bump] = useState(0);
   const run = async () => {
@@ -254,9 +251,9 @@ function ServiceRow({
     try {
       await pull();
       markSynced(sync);
-      toast(`${label} synced`);
+      toast(t("conn.syncedToast").replace("{label}", label));
     } catch {
-      toast(`${label} sync failed`, "info");
+      toast(t("conn.syncFailedToast").replace("{label}", label), "info");
     }
     setBusy(false);
     bump((n) => n + 1);
@@ -271,8 +268,8 @@ function ServiceRow({
       <button
         onClick={run}
         disabled={busy}
-        aria-label={`Sync ${label} now`}
-        title="Sync now"
+        aria-label={t("conn.syncLabelNow").replace("{label}", label)}
+        title={t("conn.syncNow")}
         className="shrink-0 rounded-lg p-1.5 text-faint transition-colors hover:bg-white/[0.07] hover:text-ink"
       >
         {busy ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
@@ -285,6 +282,7 @@ function ServiceRow({
 
 function GoogleCard() {
   const { data, loading, refresh } = useGoogleStatus();
+  const t = useT();
   const [busy, setBusy] = useState(false);
 
   const disconnect = async () => {
@@ -293,7 +291,7 @@ function GoogleCard() {
     invalidateApi("/api/google");
     await refresh();
     setBusy(false);
-    toast("Google disconnected — access revoked", "info");
+    toast(t("conn.googleDisconnected"), "info");
   };
 
   const state: "on" | "off" | "warn" = data?.connected
@@ -311,26 +309,26 @@ function GoogleCard() {
             Google <StatusDot state={state} />
           </h2>
           <p className="truncate text-[13px] text-muted">
-            {loading ? "Checking…" :
-              !data?.configured ? "Awaiting configuration" :
-              data.connected ? (data.needsReconnect ? `${data.account} — access expired, reconnect below` : data.account) :
-              "Calendar, Gmail and Contacts in one sign-in"}
+            {loading ? t("conn.checking") :
+              !data?.configured ? t("conn.notConfigured") :
+              data.connected ? (data.needsReconnect ? t("conn.googleExpired").replace("{account}", data.account ?? "") : data.account) :
+              t("conn.googleTagline")}
           </p>
         </div>
         {data?.configured && !data.connected && (
           <Button variant="primary" onClick={() => (window.location.href = "/api/google/auth")}>
-            Connect Google
+            {t("conn.connectGoogle")}
           </Button>
         )}
         {data?.connected && (
           <div className="flex gap-2">
             {data.needsReconnect && (
               <Button variant="primary" size="sm" onClick={() => (window.location.href = "/api/google/auth")}>
-                <RefreshCw size={13} /> Reconnect
+                <RefreshCw size={13} /> {t("conn.reconnect")}
               </Button>
             )}
             <Button size="sm" onClick={disconnect} disabled={busy}>
-              <Unplug size={13} /> Disconnect
+              <Unplug size={13} /> {t("conn.disconnect")}
             </Button>
           </div>
         )}
@@ -340,7 +338,7 @@ function GoogleCard() {
 
       {data?.connected && (
         <div className="mt-4 grid grid-cols-1 gap-2 border-t border-white/[0.06] pt-4 sm:grid-cols-3">
-          <ServiceRow icon={CalendarDays} label="Calendar" sync="calendar" pull={async () => {
+          <ServiceRow icon={CalendarDays} label={t("conn.svcCalendar")} sync="calendar" pull={async () => {
             const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
             const from = new Date(Date.now() - 45 * 86_400_000).toISOString();
             const to = new Date(Date.now() + 90 * 86_400_000).toISOString();
@@ -351,7 +349,7 @@ function GoogleCard() {
             await fetch("/api/google/gmail?box=inbox");
             invalidateApi("/api/google/gmail");
           }} />
-          <ServiceRow icon={Users} label="Contacts" sync="contacts" pull={async () => {
+          <ServiceRow icon={Users} label={t("conn.svcContacts")} sync="contacts" pull={async () => {
             await fetch("/api/google/contacts");
             invalidateApi("/api/google/contacts");
           }} />
@@ -365,6 +363,8 @@ function GoogleCard() {
 
 function BankCard() {
   const bank = useBank();
+  const t = useT();
+  const lang = useLang();
   const [picking, setPicking] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -374,7 +374,7 @@ function BankCard() {
     bank.clearCache();
     invalidateApi("/api/bank");
     setBusy(false);
-    toast("Bank disconnected — requisition deleted at provider", "info");
+    toast(t("conn.bankDisconnected"), "info");
   };
 
   const state: "on" | "off" | "warn" = bank.connected ? "on" : bank.status?.needsReconnect ? "warn" : "off";
@@ -390,26 +390,26 @@ function BankCard() {
             Bank <StatusDot state={state} />
           </h2>
           <p className="truncate text-[13px] text-muted">
-            {!bank.status ? "Checking…" :
-              !bank.status.configured ? "Awaiting configuration" :
-              bank.connected ? `${bank.status.account} · ${bank.accounts.length || "…"} account${bank.accounts.length === 1 ? "" : "s"}` :
-              bank.status.needsReconnect ? "Link started but not authorized — try again" :
-              "PSD2 open banking via Enable Banking — Sparkasse Heidelberg ready"}
+            {!bank.status ? t("conn.checking") :
+              !bank.status.configured ? t("conn.notConfigured") :
+              bank.connected ? t("conn.bankAccounts").replace("{account}", bank.status.account ?? "").replace("{n}", String(bank.accounts.length || "…")).replace("{accounts}", bank.accounts.length === 1 ? t("conn.account") : t("conn.accounts")) :
+              bank.status.needsReconnect ? t("conn.bankLinkStarted") :
+              t("conn.bankTagline")}
           </p>
         </div>
         {bank.status?.configured && !bank.connected && (
           <Button variant="primary" onClick={() => setPicking(true)}>
-            Connect bank
+            {t("conn.connectBank")}
           </Button>
         )}
         {bank.connected && (
           <div className="flex gap-2">
             <Button size="sm" onClick={() => bank.sync()} disabled={bank.syncing}>
               {bank.syncing ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
-              Sync now
+              {t("conn.syncNow")}
             </Button>
             <Button size="sm" onClick={disconnect} disabled={busy}>
-              <Unplug size={13} /> Disconnect
+              <Unplug size={13} /> {t("conn.disconnect")}
             </Button>
           </div>
         )}
@@ -418,15 +418,15 @@ function BankCard() {
       {bank.status && !bank.status.configured && <MissingEnv missing={bank.status.missing} />}
       {bank.syncError && (
         <p className="mt-3 rounded-xl border border-danger/20 bg-danger/[0.06] px-4 py-2.5 text-[13px] text-muted">
-          Sync failed: {bank.syncError}
+          {t("conn.bankSyncFailed").replace("{error}", bank.syncError)}
         </p>
       )}
       {bank.connected && (
         <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-1 border-t border-white/[0.06] pt-3.5 text-xs text-faint">
-          <span>{bank.syncedAt ? `Last sync ${formatDistanceToNow(parseISO(bank.syncedAt), { addSuffix: true })}` : "Not synced yet"}</span>
-          <span>{bank.transactions.length} transactions cached</span>
-          <span>90-day consent · renew by reconnecting</span>
-          <span className="flex items-center gap-1"><ShieldCheck size={11} /> read-only access</span>
+          <span>{bank.syncedAt ? t("conn.lastSync").replace("{rel}", formatDistanceToNow(parseISO(bank.syncedAt), { addSuffix: true, locale: dfLocale(lang) })) : t("conn.notSynced")}</span>
+          <span>{t("conn.txnsCached").replace("{n}", String(bank.transactions.length))}</span>
+          <span>{t("conn.consent90")}</span>
+          <span className="flex items-center gap-1"><ShieldCheck size={11} /> {t("conn.readOnly")}</span>
         </div>
       )}
 
@@ -436,6 +436,7 @@ function BankCard() {
 }
 
 function InstitutionPicker({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useT();
   const [query, setQuery] = useState("Sparkasse Heidelberg");
   const [debounced, setDebounced] = useState(query);
   const [connecting, setConnecting] = useState<string | null>(null);
@@ -462,23 +463,22 @@ function InstitutionPicker({ open, onClose }: { open: boolean; onClose: () => vo
       // off to the bank's own SCA flow
       window.location.assign(body.link);
     } catch (e) {
-      toast(e instanceof Error ? e.message : "Connection failed", "info");
+      toast(e instanceof Error ? e.message : t("conn.connectFailedToast"), "info");
       setConnecting(null);
     }
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Choose your bank">
+    <Modal open={open} onClose={onClose} title={t("conn.chooseBank")}>
       <p className="mb-3 text-[13px] leading-relaxed text-muted">
-        You&apos;ll be redirected to your bank to authorize read-only access (PSD2). Ember never sees your
-        banking credentials.
+        {t("conn.bankRedirectNote")}
       </p>
       <div className="relative mb-3">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
-        <Input value={query} onChange={(e) => setQuery(e.target.value)} className="pl-9" placeholder="Search German banks…" autoFocus />
+        <Input value={query} onChange={(e) => setQuery(e.target.value)} className="pl-9" placeholder={t("conn.searchBanks")} autoFocus />
       </div>
       <div className="flex max-h-72 flex-col gap-1 overflow-y-auto">
-        {loading && <p className="px-2 py-6 text-center text-sm text-muted">Searching…</p>}
+        {loading && <p className="px-2 py-6 text-center text-sm text-muted">{t("conn.searching")}</p>}
         {error && <p className="px-2 py-6 text-center text-sm text-danger">{error}</p>}
         {data?.institutions.map((inst) => (
           <motion.button
@@ -499,7 +499,7 @@ function InstitutionPicker({ open, onClose }: { open: boolean; onClose: () => vo
           </motion.button>
         ))}
         {data && data.institutions.length === 0 && (
-          <p className="px-2 py-6 text-center text-sm text-muted">No banks match “{debounced}”.</p>
+          <p className="px-2 py-6 text-center text-sm text-muted">{t("conn.noBanks").replace("{q}", debounced)}</p>
         )}
       </div>
     </Modal>
@@ -510,6 +510,8 @@ function InstitutionPicker({ open, onClose }: { open: boolean; onClose: () => vo
 
 function CloudCard() {
   const cloud = useCloudStatus();
+  const t = useT();
+  const lang = useLang();
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [code, setCode] = useState("");
@@ -525,7 +527,7 @@ function CloudCard() {
     if (err) toast(err, "info");
     else {
       setSent(true);
-      toast("Sign-in email sent — check your inbox");
+      toast(t("conn.signinEmailSent"));
     }
   };
 
@@ -538,7 +540,7 @@ function CloudCard() {
     else {
       setSent(false);
       setCode("");
-      toast("Signed in — sync is live");
+      toast(t("conn.signedInLive"));
     }
   };
 
@@ -550,23 +552,23 @@ function CloudCard() {
         </span>
         <div className="min-w-0 flex-1">
           <h2 className="flex items-center gap-2 text-[15px] font-semibold">
-            Cloud Sync <StatusDot state={state} />
+            {t("conn.cloudSync")} <StatusDot state={state} />
           </h2>
           <p className="truncate text-[13px] text-muted">
-            {!cloud.configured ? "Awaiting configuration" :
-              cloud.authLoading ? "Checking…" :
-              cloud.signedIn ? `${cloud.email} — realtime sync across your devices` :
-              "Your data on every device, updated live (Supabase)"}
+            {!cloud.configured ? t("conn.notConfigured") :
+              cloud.authLoading ? t("conn.checking") :
+              cloud.signedIn ? t("conn.cloudRealtime").replace("{email}", cloud.email ?? "") :
+              t("conn.cloudTagline")}
           </p>
         </div>
         {cloud.signedIn && (
           <div className="flex gap-2">
             <Button size="sm" onClick={() => cloudSyncNow()} disabled={cloud.syncing}>
               {cloud.syncing ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
-              Sync now
+              {t("conn.syncNow")}
             </Button>
-            <Button size="sm" onClick={async () => { await cloudSignOut(); toast("Signed out — this device is local-only again", "info"); }}>
-              <LogOut size={13} /> Sign out
+            <Button size="sm" onClick={async () => { await cloudSignOut(); toast(t("conn.signedOut"), "info"); }}>
+              <LogOut size={13} /> {t("conn.signOut")}
             </Button>
           </div>
         )}
@@ -579,9 +581,7 @@ function CloudCard() {
               <p className="flex items-center gap-2 text-[13px] text-muted">
                 <MailCheck size={15} className="shrink-0 text-success" />
                 <span>
-                  Email sent to <span className="font-medium text-ink">{email}</span> — click the link,{" "}
-                  <span className="font-medium text-ink">or</span> type the 6-digit code from the same email
-                  (required in the iPhone home-screen app, where links open in Safari instead).
+                  {t("conn.emailSentTo")} <span className="font-medium text-ink">{email}</span> {t("conn.emailSentRest")}
                 </span>
               </p>
               <div className="flex max-w-xs gap-2">
@@ -592,15 +592,15 @@ function CloudCard() {
                   onChange={(e) => setCode(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && verifyCode()}
                   placeholder="123456"
-                  aria-label="6-digit sign-in code"
+                  aria-label={t("conn.code6")}
                   className="num tracking-[0.2em]"
                 />
                 <Button variant="primary" onClick={verifyCode} disabled={busy || code.replace(/\s/g, "").length < 6} className="shrink-0">
-                  {busy ? <Loader2 size={14} className="animate-spin" /> : null} Sign in
+                  {busy ? <Loader2 size={14} className="animate-spin" /> : null} {t("conn.signIn")}
                 </Button>
               </div>
               <button onClick={() => setSent(false)} className="self-start text-xs text-faint underline underline-offset-2 hover:text-ink">
-                Different email
+                {t("conn.differentEmail")}
               </button>
             </div>
           ) : (
@@ -611,23 +611,23 @@ function CloudCard() {
                 onChange={(e) => setEmail(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && sendLink()}
                 placeholder="you@example.com"
-                aria-label="Email for sign-in"
+                aria-label={t("conn.emailForSignin")}
               />
               <Button variant="primary" onClick={sendLink} disabled={busy || !email.includes("@")} className="shrink-0">
-                {busy ? <Loader2 size={14} className="animate-spin" /> : null} Send magic link
+                {busy ? <Loader2 size={14} className="animate-spin" /> : null} {t("conn.sendMagicLink")}
               </Button>
             </div>
           )}
           <p className="mt-2 text-xs text-faint">
-            No password — you sign in via a link in your email. Tokens and bank access never sync; the vault syncs only as encrypted ciphertext.
+            {t("conn.cloudPrivacyNote")}
           </p>
         </div>
       )}
 
       {cloud.signedIn && (
         <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-1 border-t border-white/[0.06] pt-3.5 text-xs text-faint">
-          <span>{cloud.lastSync ? `Last sync ${formatDistanceToNow(parseISO(cloud.lastSync), { addSuffix: true })}` : "Not synced yet"}</span>
-          <span>tasks · events · notes · habits · goals · finance · contacts · settings</span>
+          <span>{cloud.lastSync ? t("conn.lastSync").replace("{rel}", formatDistanceToNow(parseISO(cloud.lastSync), { addSuffix: true, locale: dfLocale(lang) })) : t("conn.notSynced")}</span>
+          <span>{t("conn.cloudDataList")}</span>
           {cloud.error && <span className="text-danger">{cloud.error}</span>}
         </div>
       )}
@@ -643,6 +643,7 @@ function CloudCard() {
 
 function NotificationsCard() {
   const cloud = useCloudStatus();
+  const t = useT();
   const settings = useEmber((s) => s.settings);
   const updateSettings = useEmber((s) => s.updateSettings);
   const prefs = { ...DEFAULT_NOTIFICATIONS, ...(settings.notifications ?? {}) };
@@ -668,14 +669,14 @@ function NotificationsCard() {
     try {
       const uid = (await supabase()?.auth.getSession())?.data.session?.user.id;
       if (!uid) {
-        toast("Sign in to Cloud Sync first", "info");
+        toast(t("conn.signInCloudFirst"), "info");
         return;
       }
       const err = await enablePush(uid);
       if (err) toast(err, "info");
       else {
         setSubscribed(true);
-        toast("Notifications on — this device will get your reminders");
+        toast(t("conn.notifOn"));
       }
     } finally {
       setBusy(false);
@@ -687,7 +688,7 @@ function NotificationsCard() {
     try {
       await disablePush();
       setSubscribed(false);
-      toast("Notifications off for this device", "info");
+      toast(t("conn.notifOffToast"), "info");
     } finally {
       setBusy(false);
     }
@@ -698,7 +699,7 @@ function NotificationsCard() {
     const err = await sendTestPush();
     setBusy(false);
     if (err) toast(err, "info");
-    else toast("Test sent — it should land in a second");
+    else toast(t("conn.testSent"));
   };
 
   const setPrefs = (patch: Partial<typeof prefs>) =>
@@ -712,22 +713,22 @@ function NotificationsCard() {
         </span>
         <div className="min-w-0 flex-1">
           <h2 className="flex items-center gap-2 text-[15px] font-semibold">
-            Notifications <StatusDot state={subscribed ? "on" : "off"} />
+            {t("conn.notifications")} <StatusDot state={subscribed ? "on" : "off"} />
           </h2>
           <p className="text-[13px] text-muted">
             {subscribed
-              ? "This device gets your daily summary and event reminders"
-              : "Get reminded even when Ember is closed"}
+              ? t("conn.notifSubbed")
+              : t("conn.notifTagline")}
           </p>
         </div>
         {cloud.signedIn && supported && !needsHomeScreen && (
           <div className="flex gap-2">
             {subscribed && (
-              <Button size="sm" onClick={test} disabled={busy}>Send test</Button>
+              <Button size="sm" onClick={test} disabled={busy}>{t("conn.sendTest")}</Button>
             )}
             <Button size="sm" variant={subscribed ? "subtle" : "primary"} onClick={subscribed ? disable : enable} disabled={busy}>
               {busy ? <Loader2 size={13} className="animate-spin" /> : subscribed ? <BellOff size={13} /> : <Bell size={13} />}
-              {subscribed ? "Turn off" : "Turn on"}
+              {subscribed ? t("conn.turnOff") : t("conn.turnOn")}
             </Button>
           </div>
         )}
@@ -735,16 +736,15 @@ function NotificationsCard() {
 
       {!cloud.signedIn ? (
         <p className="mt-4 border-t border-white/[0.06] pt-4 text-[13px] text-muted">
-          Sign in to Cloud Sync above first — reminders are sent from your synced data.
+          {t("conn.notifNeedCloud")}
         </p>
       ) : needsHomeScreen ? (
         <p className="mt-4 border-t border-white/[0.06] pt-4 text-[13px] text-muted">
-          On iPhone, notifications only work from the installed app: tap <span className="font-medium text-ink">Share → Add to Home Screen</span>,
-          open Ember from there, and this switch will appear.
+          {t("conn.notifIos")}
         </p>
       ) : !supported ? (
         <p className="mt-4 border-t border-white/[0.06] pt-4 text-[13px] text-muted">
-          This browser doesn&apos;t support push notifications.
+          {t("conn.notifUnsupported")}
         </p>
       ) : subscribed ? (
         <div className="mt-4 flex flex-col gap-3 border-t border-white/[0.06] pt-4">
@@ -755,12 +755,12 @@ function NotificationsCard() {
               onChange={(e) => setPrefs({ digest: e.target.checked })}
               className="h-4 w-4 accent-[var(--accent)]"
             />
-            <span className="flex-1 text-[13px]">Daily summary of what&apos;s due</span>
+            <span className="flex-1 text-[13px]">{t("conn.notifDigest")}</span>
             <Select
               value={String(prefs.digestHour)}
               onChange={(e) => setPrefs({ digestHour: Number(e.target.value) })}
               disabled={!prefs.digest}
-              aria-label="Time of the daily summary"
+              aria-label={t("conn.digestTimeAria")}
               className="h-9 w-24"
             >
               {Array.from({ length: 24 }, (_, h) => (
@@ -775,7 +775,7 @@ function NotificationsCard() {
               onChange={(e) => setPrefs({ taskReminders: e.target.checked })}
               className="h-4 w-4 accent-[var(--accent)]"
             />
-            <span className="flex-1 text-[13px]">Remind me before a task&apos;s due time</span>
+            <span className="flex-1 text-[13px]">{t("conn.notifTaskRemind")}</span>
           </label>
           <label className="flex items-center gap-3">
             <input
@@ -784,10 +784,10 @@ function NotificationsCard() {
               onChange={(e) => setPrefs({ eventReminders: e.target.checked })}
               className="h-4 w-4 accent-[var(--accent)]"
             />
-            <span className="flex-1 text-[13px]">Remind me before a calendar event</span>
+            <span className="flex-1 text-[13px]">{t("conn.notifEventRemind")}</span>
           </label>
           <p className="text-xs text-faint">
-            Each task and event uses its own reminder time. The daily summary is skipped when nothing is due.
+            {t("conn.notifFootnote")}
           </p>
         </div>
       ) : null}
@@ -801,6 +801,7 @@ function NotificationsCard() {
 
 function FamilyCard() {
   const cloud = useCloudStatus();
+  const t = useT();
   const [links, setLinks] = useState<ShareLink[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [setupNeeded, setSetupNeeded] = useState(false);
@@ -828,10 +829,10 @@ function FamilyCard() {
     setBusy(true);
     try {
       const uid = (await supabase()?.auth.getSession())?.data.session?.user.id;
-      if (!uid) throw new Error("Not signed in");
+      if (!uid) throw new Error(t("conn.notSignedIn"));
       const link = await createShareLink(uid, "Familie");
       setLinks([...(links ?? []), link]);
-      toast("Family link created — share it via WhatsApp or iMessage");
+      toast(t("conn.familyCreated"));
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       if (/share_links/.test(msg)) setSetupNeeded(true);
@@ -842,14 +843,14 @@ function FamilyCard() {
 
   const copy = async (token: string) => {
     await navigator.clipboard.writeText(`${window.location.origin}/add/${token}`);
-    toast("Link copied");
+    toast(t("conn.linkCopied"));
   };
 
   const remove = async (token: string) => {
     try {
       await deleteShareLink(token);
       setLinks((links ?? []).filter((l) => l.token !== token));
-      toast("Link deleted — it stops working immediately", "info");
+      toast(t("conn.linkDeleted"), "info");
     } catch (e) {
       toast(e instanceof Error ? e.message : String(e), "info");
     }
@@ -863,29 +864,28 @@ function FamilyCard() {
         </span>
         <div className="min-w-0 flex-1">
           <h2 className="flex items-center gap-2 text-[15px] font-semibold">
-            Family quick-add <StatusDot state={(links?.length ?? 0) > 0 ? "on" : "off"} />
+            {t("conn.familyTitle")} <StatusDot state={(links?.length ?? 0) > 0 ? "on" : "off"} />
           </h2>
           <p className="text-[13px] text-muted">
-            A link that lets family members send tasks to your list — they see a single form, never your data.
+            {t("conn.familyTagline")}
           </p>
         </div>
         {cloud.signedIn && !setupNeeded && (
           <Button size="sm" onClick={create} disabled={busy}>
-            {busy ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />} New link
+            {busy ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />} {t("conn.newLink")}
           </Button>
         )}
       </div>
 
       {!cloud.signedIn && (
         <p className="mt-4 border-t border-white/[0.06] pt-4 text-[13px] text-muted">
-          Sign in to Cloud Sync above first — tasks travel through your cloud inbox.
+          {t("conn.familyNeedCloud")}
         </p>
       )}
 
       {setupNeeded && (
         <p className="mt-4 border-t border-white/[0.06] pt-4 text-[13px] text-muted">
-          One-time setup: run <span className="font-medium text-ink">supabase/family.sql</span> in the
-          Supabase SQL editor (same as the original schema), then reload this page.
+          {t("conn.familySetupPre")} <span className="font-medium text-ink">supabase/family.sql</span> {t("conn.familySetupPost")}
         </p>
       )}
 
@@ -897,9 +897,9 @@ function FamilyCard() {
                 /add/{l.token.slice(0, 8)}…
               </span>
               <Button size="sm" onClick={() => copy(l.token)}>
-                <Copy size={13} /> Copy link
+                <Copy size={13} /> {t("conn.copyLink")}
               </Button>
-              <Button size="sm" variant="ghost" aria-label="Delete link" onClick={() => remove(l.token)}>
+              <Button size="sm" variant="ghost" aria-label={t("conn.deleteLink")} onClick={() => remove(l.token)}>
                 <Trash2 size={13} />
               </Button>
             </li>
@@ -914,6 +914,7 @@ function FamilyCard() {
 
 function AiCard() {
   const { data } = useApi<{ configured: boolean }>("/api/ai");
+  const t = useT();
   return (
     <section className="panel p-5">
       <div className="flex flex-wrap items-center gap-3">
@@ -926,8 +927,8 @@ function AiCard() {
           </h2>
           <p className="text-[13px] text-muted">
             {data?.configured
-              ? "Email summaries and smart replies are live"
-              : "Powers mail summaries + smart replies — optional (Claude or ChatGPT)"}
+              ? t("conn.aiLive")
+              : t("conn.aiTagline")}
           </p>
         </div>
       </div>

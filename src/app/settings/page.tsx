@@ -23,22 +23,22 @@ export default function SettingsPage() {
   if (!hydrated) return <div className="skeleton h-[70vh]" style={{ borderRadius: 18 }} />;
 
   const locate = () => {
-    if (!navigator.geolocation) return toast("Geolocation not available", "info");
+    if (!navigator.geolocation) return toast(t("settings.geoUnavailable"), "info");
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         updateSettings({
           latitude: Math.round(pos.coords.latitude * 100) / 100,
           longitude: Math.round(pos.coords.longitude * 100) / 100,
-          place: "My location",
+          place: t("settings.myLocation"),
         });
         sessionStorage.clear(); // drop weather cache
         setLocating(false);
-        toast("Location updated — weather follows you now");
+        toast(t("settings.locationUpdated"));
       },
       () => {
         setLocating(false);
-        toast("Couldn't get your location", "info");
+        toast(t("settings.locationFailed"), "info");
       },
     );
   };
@@ -181,7 +181,7 @@ function ConnectionsLink() {
         <span className="block text-[15px] font-semibold">{t("settings.connections")}</span>
         <span className="block text-[13px] text-muted">
           {connectedCount > 0
-            ? `${connectedCount} ${connectedCount === 1 ? "service" : "services"} ${t("settings.connectionsConnected")}`
+            ? `${connectedCount} ${connectedCount === 1 ? t("settings.service") : t("settings.services")} ${t("settings.connectionsConnected")}`
             : t("settings.connectionsLink")}
         </span>
       </span>

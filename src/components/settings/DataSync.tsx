@@ -9,6 +9,8 @@ import {
 import { invalidateApi, useApi } from "@/hooks/useApi";
 import { markSynced, useBank, useGoogleStatus } from "@/hooks/useIntegrations";
 import { cloudSyncNow, useCloudStatus } from "@/hooks/useCloudSync";
+import { useLang, useT } from "@/lib/i18n";
+import { dfLocale } from "@/lib/dates";
 import { toast } from "@/components/ui/toast";
 
 const LAST_FULL_SYNC = "ember-last-full-sync";
@@ -26,6 +28,8 @@ interface Step {
 
 /** Settings → Data Sync: one button that brings every connected service up to date. */
 export function DataSync() {
+  const t = useT();
+  const lang = useLang();
   const google = useGoogleStatus();
   const icloud = useApi<{ connected: boolean; account?: string }>("/api/icloud/status");
   const bank = useBank();
@@ -50,7 +54,7 @@ export function DataSync() {
 
   const steps: Step[] = [
     {
-      id: "calendar", label: "Google Calendar", icon: CalendarDays, enabled: googleOn,
+      id: "calendar", label: t("sync.stepCalendar"), icon: CalendarDays, enabled: googleOn,
       run: async () => {
         const from = new Date(Date.now() - 45 * 86_400_000).toISOString();
         const to = new Date(Date.now() + 90 * 86_400_000).toISOString();
@@ -60,7 +64,7 @@ export function DataSync() {
         );
         invalidateApi("/api/google/calendar");
         markSynced("calendar");
-        return `${d.events?.length ?? 0} events`;
+        return t("sync.events").replace("{n}", String(d.events?.length ?? 0));
       },
     },
     {
@@ -69,48 +73,48 @@ export function DataSync() {
         const d = await pullJson("/api/google/gmail?box=inbox", "Gmail");
         invalidateApi("/api/google/gmail");
         markSynced("gmail");
-        return `${d.unreadInbox ?? 0} unread`;
+        return t("sync.unread").replace("{n}", String(d.unreadInbox ?? 0));
       },
     },
     {
-      id: "contacts", label: "Google Contacts", icon: Users, enabled: googleOn,
+      id: "contacts", label: t("sync.stepContacts"), icon: Users, enabled: googleOn,
       run: async () => {
         const d = await pullJson("/api/google/contacts", "Contacts");
         invalidateApi("/api/google/contacts");
         markSynced("contacts");
-        return `${d.contacts?.length ?? 0} contacts`;
+        return t("sync.contacts").replace("{n}", String(d.contacts?.length ?? 0));
       },
     },
     {
-      id: "icloud", label: `iCloud Mail${icloud.data?.account ? ` · ${icloud.data.account}` : ""}`, icon: Mail,
+      id: "icloud", label: `${t("sync.stepIcloud")}${icloud.data?.account ? ` · ${icloud.data.account}` : ""}`, icon: Mail,
       enabled: !!icloud.data?.connected,
       run: async () => {
         const d = await pullJson("/api/icloud/mail?box=inbox", "iCloud");
         invalidateApi("/api/icloud/mail");
         markSynced("icloud");
-        return `${d.unreadInbox ?? 0} unread`;
+        return t("sync.unread").replace("{n}", String(d.unreadInbox ?? 0));
       },
     },
     {
-      id: "bank", label: `Bank${bank.status?.account ? ` · ${bank.status.account}` : ""}`, icon: Landmark,
+      id: "bank", label: `${t("sync.stepBank")}${bank.status?.account ? ` · ${bank.status.account}` : ""}`, icon: Landmark,
       enabled: bank.connected,
       run: async () => {
         await bank.sync();
-        return "balances + transactions";
+        return t("sync.balancesTx");
       },
     },
     {
-      id: "cloud", label: "Cloud database", icon: Cloud, enabled: cloud.configured && cloud.signedIn,
+      id: "cloud", label: t("sync.stepCloud"), icon: Cloud, enabled: cloud.configured && cloud.signedIn,
       run: async () => {
         await cloudSyncNow();
         const err = useCloudStatus.getState().error;
         if (err) throw new Error(err);
-        return "pushed & pulled";
+        return t("sync.pushedPulled");
       },
     },
     {
-      id: "local", label: "This device", icon: HardDrive, enabled: true,
-      run: async () => "tasks, notes, habits & goals live locally — always current",
+      id: "local", label: t("sync.stepLocal"), icon: HardDrive, enabled: true,
+      run: async () => t("sync.localLive"),
     },
   ];
 
@@ -138,18 +142,18 @@ export function DataSync() {
     localStorage.setItem(LAST_FULL_SYNC, now);
     setLastFull(now);
     setRunning(false);
-    toast(failed === 0 ? "Everything is up to date" : `Sync finished — ${failed} service${failed === 1 ? "" : "s"} failed`, failed === 0 ? "success" : "info");
+    toast(failed === 0 ? t("sync.upToDate") : (failed === 1 ? t("sync.finishedOne") : t("sync.finishedMany")).replace("{n}", String(failed)), failed === 0 ? "success" : "info");
   };
 
   return (
     <section className="panel p-5">
       <div className="flex flex-wrap items-center gap-3">
         <div className="min-w-0 flex-1">
-          <h2 className="text-[15px] font-semibold">Data Sync</h2>
+          <h2 className="text-[15px] font-semibold">{t("sync.title")}</h2>
           <p className="mt-0.5 text-[13px] text-muted">
             {connectedCount > 0
-              ? `Pulls the latest from ${connectedCount} connected service${connectedCount === 1 ? "" : "s"} and pushes local changes`
-              : "No services connected yet — local data is always live. Connect services to sync them here."}
+              ? (connectedCount === 1 ? t("sync.pullsOne") : t("sync.pullsMany")).replace("{n}", String(connectedCount))
+              : t("sync.noneConnected")}
           </p>
         </div>
         <motion.button
@@ -165,7 +169,7 @@ export function DataSync() {
           >
             <RefreshCw size={15} />
           </motion.span>
-          {running ? "Syncing…" : "Sync Data"}
+          {running ? t("sync.syncing") : t("sync.syncData")}
         </motion.button>
       </div>
 
@@ -212,10 +216,10 @@ export function DataSync() {
 
       <p className="mt-3 text-xs text-faint">
         {lastFull
-          ? `Last full sync ${formatDistanceToNow(parseISO(lastFull), { addSuffix: true })}`
-          : "Never synced on this device"}
+          ? t("sync.lastFull").replace("{rel}", formatDistanceToNow(parseISO(lastFull), { addSuffix: true, locale: dfLocale(lang) }))
+          : t("sync.never")}
         {cloud.configured && cloud.signedIn && cloud.lastSync && (
-          <> · cloud {formatDistanceToNow(parseISO(cloud.lastSync), { addSuffix: true })}</>
+          <> · {t("sync.cloud").replace("{rel}", formatDistanceToNow(parseISO(cloud.lastSync), { addSuffix: true, locale: dfLocale(lang) }))}</>
         )}
       </p>
     </section>
