@@ -1,0 +1,67 @@
+name: Desktop release
+
+# Build + publish the EmberOS desktop app whenever a version tag is pushed.
+#   git tag v0.1.1 && git push origin v0.1.1
+# The Netlify web deploy is completely separate and unaffected by this workflow.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch: {}
+
+# Needed so tauri-action can create the GitHub Release + upload installers.
+permissions:
+  contents: write
+
+concurrency:
+  group: desktop-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Windows installers
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "src-tauri -> target"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build, sign & release desktop app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Updater signing — the private key lives only in repo secrets.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          # tauri-action finds src-tauri/tauri.conf.json automatically.
+          tagName: ${{ github.ref_name }}
+          releaseName: "EmberOS ${{ github.ref_name }}"
+          releaseBody: |
+            EmberOS desktop — automatic update.
+
+            Installed EmberOS apps update themselves in the background; you'll
+            get a one-click "Restart & update" prompt. Fresh installs: download
+            the `.exe` (NSIS) or `.msi` below.
+          releaseDraft: false
+          prerelease: false
+          # Produces the NSIS + MSI installers and the signed `latest.json`
+          # updater manifest that the app polls.
+          args: ""

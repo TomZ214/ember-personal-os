@@ -29,7 +29,6 @@ log = "0.4"
 
 # Smaller, faster release binaries — matters for a "feels instant" desktop app.
 [profile.release]
-panic = "abort"
 codegen-units = 1
 lto = true
 opt-level = "s"
