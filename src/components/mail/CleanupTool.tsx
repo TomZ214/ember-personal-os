@@ -5,6 +5,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { format, subYears } from "date-fns";
 import { AlertTriangle, Check, Eraser, Loader2, Trash2, Undo2, X } from "lucide-react";
 import { invalidateApi } from "@/hooks/useApi";
+import { useLang, useT } from "@/lib/i18n";
+import { dfLocale } from "@/lib/dates";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input, Label } from "@/components/ui/inputs";
@@ -42,6 +44,9 @@ interface Progress {
 
 /** Mail → Tools: bulk-clean old email, safely (Trash, not permanent delete). */
 export function CleanupTool({ open, onClose, onFinished }: { open: boolean; onClose: () => void; onFinished: () => void }) {
+  const t = useT();
+  const lang = useLang();
+  const fmtDate = (d: Date) => format(d, lang === "de" ? "d. MMM yyyy" : "MMM d, yyyy", { locale: dfLocale(lang) });
   const [phase, setPhase] = useState<Phase>("configure");
   const [before, setBefore] = useState(() => format(subYears(new Date(), 1), "yyyy-MM-dd"));
   const [preset, setPreset] = useState<number | "custom">(1);
@@ -142,12 +147,12 @@ export function CleanupTool({ open, onClose, onFinished }: { open: boolean; onCl
   const pct = progress && progress.total > 0 ? Math.min(100, (progress.done / progress.total) * 100) : 0;
 
   return (
-    <Modal open={open} onClose={close} title="Clean up old mail" wide>
+    <Modal open={open} onClose={close} title={t("clean.title")} wide>
       <AnimatePresence mode="wait" initial={false}>
         {(phase === "configure" || phase === "previewing") && (
           <motion.div key="cfg" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-5">
             <div>
-              <Label>Delete mail older than</Label>
+              <Label>{t("clean.olderThan")}</Label>
               <div className="flex flex-wrap items-center gap-1.5">
                 {AGE_PRESETS.map((p) => (
                   <button
@@ -161,7 +166,7 @@ export function CleanupTool({ open, onClose, onFinished }: { open: boolean; onCl
                       preset === p.years ? "bg-accent/15 text-accent" : "bg-white/[0.05] text-muted hover:bg-white/[0.08] hover:text-ink"
                     }`}
                   >
-                    {p.label}
+                    {t(`clean.y${p.years}`)}
                   </button>
                 ))}
                 <button
@@ -171,19 +176,19 @@ export function CleanupTool({ open, onClose, onFinished }: { open: boolean; onCl
                     preset === "custom" ? "bg-accent/15 text-accent" : "bg-white/[0.05] text-muted hover:bg-white/[0.08] hover:text-ink"
                   }`}
                 >
-                  Custom date
+                  {t("clean.customDate")}
                 </button>
                 {preset === "custom" && (
                   <Input type="date" value={before} onChange={(e) => setBefore(e.target.value)} className="h-9 w-40" />
                 )}
               </div>
               <p className="mt-1.5 text-xs text-faint">
-                Everything received before {format(new Date(before), "MMM d, yyyy")} is affected.
+                {t("clean.affectedBefore").replace("{date}", fmtDate(new Date(before)))}
               </p>
             </div>
 
             <div>
-              <Label>Search in</Label>
+              <Label>{t("clean.searchIn")}</Label>
               <div className="flex flex-wrap gap-1.5">
                 {SCOPES.map((s) => {
                   const on = include.has(s.id);
@@ -197,7 +202,7 @@ export function CleanupTool({ open, onClose, onFinished }: { open: boolean; onCl
                       }`}
                     >
                       {on && <Check size={12} />}
-                      {s.label}
+                      {t(`clean.scope.${s.id}`)}
                     </button>
                   );
                 })}
@@ -205,27 +210,26 @@ export function CleanupTool({ open, onClose, onFinished }: { open: boolean; onCl
             </div>
 
             <label>
-              <Label>Never touch these labels (comma separated, optional)</Label>
+              <Label>{t("clean.neverTouch")}</Label>
               <Input
                 value={excludeLabels}
                 onChange={(e) => setExcludeLabels(e.target.value)}
-                placeholder="e.g. Receipts, Taxes"
+                placeholder={t("clean.neverTouchPh")}
               />
             </label>
 
             <p className="flex items-start gap-2 rounded-xl bg-white/[0.04] px-3.5 py-2.5 text-xs leading-relaxed text-muted">
               <Undo2 size={14} className="mt-0.5 shrink-0 text-success" />
-              Starred and Important mail is always skipped. Mail is moved to Gmail&apos;s Trash — you can undo for
-              30 days, then Gmail removes it permanently.
+              {t("clean.safetyNote")}
             </p>
 
             {error && <p className="text-[13px] text-danger">{error}</p>}
 
             <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={close}>Cancel</Button>
+              <Button variant="ghost" onClick={close}>{t("clean.cancel")}</Button>
               <Button variant="primary" onClick={runPreview} disabled={include.size === 0 || phase === "previewing"}>
                 {phase === "previewing" ? <Loader2 size={14} className="animate-spin" /> : <Eraser size={14} />}
-                {phase === "previewing" ? "Counting…" : "Preview cleanup"}
+                {phase === "previewing" ? t("clean.counting") : t("clean.previewCleanup")}
               </Button>
             </div>
           </motion.div>
@@ -235,28 +239,28 @@ export function CleanupTool({ open, onClose, onFinished }: { open: boolean; onCl
           <motion.div key="confirm" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex flex-col gap-4">
             <div className="grid grid-cols-3 gap-3">
               <div className="rounded-2xl bg-white/[0.04] p-4 text-center">
-                <p className="num text-2xl font-semibold">{preview.count.toLocaleString("en")}</p>
-                <p className="mt-0.5 text-[11px] uppercase tracking-wide text-faint">emails</p>
+                <p className="num text-2xl font-semibold">{preview.count.toLocaleString(lang === "de" ? "de-DE" : "en")}</p>
+                <p className="mt-0.5 text-[11px] uppercase tracking-wide text-faint">{t("clean.emails")}</p>
               </div>
               <div className="rounded-2xl bg-white/[0.04] p-4 text-center">
                 <p className="num text-2xl font-semibold">≈ {fmtBytes(preview.count * preview.avgBytes)}</p>
-                <p className="mt-0.5 text-[11px] uppercase tracking-wide text-faint">storage freed</p>
+                <p className="mt-0.5 text-[11px] uppercase tracking-wide text-faint">{t("clean.storageFreed")}</p>
               </div>
               <div className="rounded-2xl bg-white/[0.04] p-4 text-center">
-                <p className="truncate text-sm font-medium leading-8">{[...include].join(" · ")}</p>
-                <p className="mt-0.5 text-[11px] uppercase tracking-wide text-faint">affected</p>
+                <p className="truncate text-sm font-medium leading-8">{[...include].map((s) => t(`clean.scope.${s}`)).join(" · ")}</p>
+                <p className="mt-0.5 text-[11px] uppercase tracking-wide text-faint">{t("clean.affected")}</p>
               </div>
             </div>
             <p className="flex items-start gap-2 text-[13px] leading-relaxed text-muted">
               <AlertTriangle size={15} className="mt-0.5 shrink-0 text-warning" />
-              Older than {format(new Date(before), "MMM d, yyyy")} · starred, important
-              {options().excludeLabels.length > 0 && <> and {options().excludeLabels.join(", ")}</>} stay untouched.
-              Counts and sizes are Gmail estimates.
+              {t("clean.confirmNote")
+                .replace("{date}", fmtDate(new Date(before)))
+                .replace("{extra}", options().excludeLabels.length > 0 ? t("clean.andLabels").replace("{labels}", options().excludeLabels.join(", ")) : "")}
             </p>
             <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={reset}>Back</Button>
+              <Button variant="ghost" onClick={reset}>{t("clean.back")}</Button>
               <Button variant="danger" onClick={run} disabled={preview.count === 0}>
-                <Trash2 size={14} /> Move {preview.count.toLocaleString("en")} to Trash
+                <Trash2 size={14} /> {t("clean.moveToTrash").replace("{n}", preview.count.toLocaleString(lang === "de" ? "de-DE" : "en"))}
               </Button>
             </div>
           </motion.div>
@@ -265,8 +269,8 @@ export function CleanupTool({ open, onClose, onFinished }: { open: boolean; onCl
         {phase === "running" && progress && (
           <motion.div key="run" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-4 py-4">
             <p className="num text-3xl font-semibold tracking-tight">
-              {progress.done.toLocaleString("en")}
-              <span className="text-muted"> / {progress.total.toLocaleString("en")}</span>
+              {progress.done.toLocaleString(lang === "de" ? "de-DE" : "en")}
+              <span className="text-muted"> / {progress.total.toLocaleString(lang === "de" ? "de-DE" : "en")}</span>
             </p>
             <div className="h-2 w-full overflow-hidden rounded-full bg-white/[0.07]">
               <motion.div
@@ -275,15 +279,15 @@ export function CleanupTool({ open, onClose, onFinished }: { open: boolean; onCl
                 transition={{ type: "spring", stiffness: 60, damping: 20 }}
               />
             </div>
-            <p className="text-xs text-faint">Working in batches of 500 — you can keep using Ember meanwhile.</p>
+            <p className="text-xs text-faint">{t("clean.working")}</p>
             <Button
               size="sm"
               onClick={() => {
                 cancelled.current = true;
-                toast("Stopping after the current batch — rerun anytime to resume", "info");
+                toast(t("clean.stopping"), "info");
               }}
             >
-              <X size={14} /> Cancel
+              <X size={14} /> {t("clean.cancel")}
             </Button>
           </motion.div>
         )}
@@ -300,19 +304,19 @@ export function CleanupTool({ open, onClose, onFinished }: { open: boolean; onCl
             </motion.span>
             <div>
               <p className="text-lg font-semibold">
-                {progress.done.toLocaleString("en")} emails moved to Trash
+                {t("clean.movedToTrash").replace("{n}", progress.done.toLocaleString(lang === "de" ? "de-DE" : "en"))}
               </p>
               <p className="mt-1 text-sm text-muted">
-                ≈ {fmtBytes(progress.done * (preview?.avgBytes ?? 0))} freed · {progress.seconds}s
-                {progress.cancelled && " · cancelled — rerun to continue"}
-                {error && ` · stopped: ${error}`}
+                {t("clean.freed").replace("{size}", fmtBytes(progress.done * (preview?.avgBytes ?? 0))).replace("{secs}", String(progress.seconds))}
+                {progress.cancelled && t("clean.cancelledResume")}
+                {error && t("clean.stopped").replace("{error}", error)}
               </p>
             </div>
             <div className="flex gap-2">
               {(progress.cancelled || error) && (
-                <Button onClick={reset}>Resume cleanup</Button>
+                <Button onClick={reset}>{t("clean.resume")}</Button>
               )}
-              <Button variant="primary" onClick={close}>Done</Button>
+              <Button variant="primary" onClick={close}>{t("clean.done")}</Button>
             </div>
           </motion.div>
         )}

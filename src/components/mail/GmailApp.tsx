@@ -12,6 +12,8 @@ import {
 import { CleanupTool } from "./CleanupTool";
 import { useApi, invalidateApi } from "@/hooks/useApi";
 import { markSynced } from "@/hooks/useIntegrations";
+import { useLang, useT } from "@/lib/i18n";
+import { dfLocale } from "@/lib/dates";
 import type { GmailBox, GmailDetail, GmailHeader, GmailSendInput } from "@/lib/integrations/types";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -68,6 +70,8 @@ interface ComposeSeed {
 
 export function GmailApp({ provider = GMAIL_PROVIDER }: { provider?: MailProvider }) {
   const params = useSearchParams();
+  const tr = useT();
+  const lang = useLang();
   const [box, setBox] = useState<GmailBox>("inbox");
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -97,7 +101,7 @@ export function GmailApp({ provider = GMAIL_PROVIDER }: { provider?: MailProvide
       body: JSON.stringify({ id, action, box }),
     });
     if (!res.ok) {
-      toast((await res.json()).error ?? "Action failed", "info");
+      toast((await res.json()).error ?? tr("mail.actionFailed"), "info");
       return false;
     }
     if (note) toast(note, "info");
@@ -143,7 +147,7 @@ export function GmailApp({ provider = GMAIL_PROVIDER }: { provider?: MailProvide
       } catch (e) {
         failures++;
         if (failures >= 3) {
-          toast(e instanceof Error ? e.message : "Read all failed — progress is saved, run it again to continue", "info");
+          toast(e instanceof Error ? e.message : tr("mail.readAllFailed"), "info");
           break;
         }
         await new Promise((r) => setTimeout(r, 1000 * failures));
@@ -156,8 +160,8 @@ export function GmailApp({ provider = GMAIL_PROVIDER }: { provider?: MailProvide
     const secs = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
     toast(
       done === 0
-        ? "Nothing was unread"
-        : `${done.toLocaleString("en")} email${done === 1 ? "" : "s"} marked as read in ${secs}s${cancelReadAll.current ? " (cancelled)" : ""}`,
+        ? tr("mail.nothingUnread")
+        : tr("mail.markedReadIn").replace("{n}", done.toLocaleString(lang === "de" ? "de-DE" : "en")).replace("{secs}", String(secs)) + (cancelReadAll.current ? tr("mail.cancelledSuffix") : ""),
     );
     setTimeout(() => setReadAll(null), 4000);
   };
@@ -165,17 +169,17 @@ export function GmailApp({ provider = GMAIL_PROVIDER }: { provider?: MailProvide
   if (list.errorStatus === 401) {
     return (
       <div>
-        <PageHeader title="Mail" />
+        <PageHeader title={tr("mail.title")} />
         <div className="panel">
           <EmptyState
             icon={<MailIcon size={20} />}
-            title={`${provider.name} access expired`}
-            hint={provider.reconnectHint}
+            title={tr("mail.accessExpired").replace("{provider}", provider.name)}
+            hint={tr(`mail.reconnectHint.${provider.key}`, provider.reconnectHint)}
             action={
               provider.key === "gmail" ? (
-                <Button variant="primary" onClick={() => (window.location.href = "/api/google/auth")}>Reconnect Google</Button>
+                <Button variant="primary" onClick={() => (window.location.href = "/api/google/auth")}>{tr("mail.reconnectGoogle")}</Button>
               ) : (
-                <Button variant="primary" onClick={() => (window.location.href = "/settings/connections")}>Open Connections</Button>
+                <Button variant="primary" onClick={() => (window.location.href = "/settings/connections")}>{tr("mail.openConnections")}</Button>
               )
             }
           />
@@ -187,15 +191,15 @@ export function GmailApp({ provider = GMAIL_PROVIDER }: { provider?: MailProvide
   return (
     <div>
       <PageHeader
-        title="Mail"
-        sub={list.data ? (unread ? `${unread.toLocaleString("en")} unread · ${provider.name} connected` : "Inbox zero — enjoy it") : `Connecting to ${provider.name}…`}
+        title={tr("mail.title")}
+        sub={list.data ? (unread ? tr("mail.unreadConnected").replace("{n}", unread.toLocaleString(lang === "de" ? "de-DE" : "en")).replace("{provider}", provider.name) : tr("mail.inboxZero")) : tr("mail.connectingTo").replace("{provider}", provider.name)}
         actions={
           <>
-            <Button size="sm" variant="ghost" onClick={() => list.refresh()} aria-label="Sync now" title="Sync now">
+            <Button size="sm" variant="ghost" onClick={() => list.refresh()} aria-label={tr("mail.syncNow")} title={tr("mail.syncNow")}>
               {list.loading ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
             </Button>
             {provider.canCleanup && (
-              <Button size="sm" variant="ghost" onClick={() => setCleanupOpen(true)} aria-label="Clean up old mail" title="Clean up old mail">
+              <Button size="sm" variant="ghost" onClick={() => setCleanupOpen(true)} aria-label={tr("mail.cleanup")} title={tr("mail.cleanup")}>
                 <Eraser size={15} />
               </Button>
             )}
@@ -212,14 +216,14 @@ export function GmailApp({ provider = GMAIL_PROVIDER }: { provider?: MailProvide
                   <CheckCheck size={13} className="relative shrink-0 text-success" />
                 )}
                 <span className="num relative whitespace-nowrap text-xs font-medium">
-                  {readAll.done.toLocaleString("en")} / {readAll.total.toLocaleString("en")} read
+                  {tr("mail.readProgress").replace("{done}", readAll.done.toLocaleString(lang === "de" ? "de-DE" : "en")).replace("{total}", readAll.total.toLocaleString(lang === "de" ? "de-DE" : "en"))}
                 </span>
                 {readAll.running && (
                   <button
                     onClick={() => {
                       cancelReadAll.current = true;
                     }}
-                    aria-label="Cancel read all"
+                    aria-label={tr("mail.cancelReadAll")}
                     className="relative shrink-0 text-faint transition-colors hover:text-ink"
                   >
                     <X size={13} />
@@ -228,14 +232,14 @@ export function GmailApp({ provider = GMAIL_PROVIDER }: { provider?: MailProvide
               </div>
             ) : (
               unread > 0 && (
-                <Button size="sm" onClick={runReadAll} title="Mark every unread email as read">
+                <Button size="sm" onClick={runReadAll} title={tr("mail.markEveryUnread")}>
                   <CheckCheck size={14} />
-                  Read all
+                  {tr("mail.readAll")}
                 </Button>
               )
             )}
             <Button variant="primary" onClick={() => setCompose({})}>
-              <PenLine size={15} /> Compose
+              <PenLine size={15} /> {tr("mail.compose")}
             </Button>
           </>
         }
@@ -255,7 +259,7 @@ export function GmailApp({ provider = GMAIL_PROVIDER }: { provider?: MailProvide
               }`}
             >
               <Icon size={13} />
-              {b.label}
+              {tr(`mail.box.${b.id}`)}
               {b.id === "inbox" && unread > 0 && (
                 <span className="num rounded-full bg-primary px-1.5 text-[10px] font-semibold text-(--on-sunset)">{unread}</span>
               )}
@@ -264,7 +268,7 @@ export function GmailApp({ provider = GMAIL_PROVIDER }: { provider?: MailProvide
         })}
         <div className="relative ml-auto w-full sm:w-60">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
-          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={`Search ${provider.name}…`} className="h-9 pl-9" aria-label="Search mail" />
+          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={tr("mail.searchProvider").replace("{provider}", provider.name)} className="h-9 pl-9" aria-label={tr("mail.search")} />
         </div>
       </div>
 
@@ -283,10 +287,10 @@ export function GmailApp({ provider = GMAIL_PROVIDER }: { provider?: MailProvide
               </div>
             )}
             {list.error && list.errorStatus !== 401 && (
-              <EmptyState icon={<MailIcon size={20} />} title="Couldn't load mail" hint={list.error} />
+              <EmptyState icon={<MailIcon size={20} />} title={tr("mail.couldntLoad")} hint={list.error} />
             )}
             {list.data?.messages.length === 0 && (
-              <EmptyState icon={<MailIcon size={20} />} title="Nothing here" hint={debounced ? "No mail matches your search." : "This folder is empty."} />
+              <EmptyState icon={<MailIcon size={20} />} title={tr("mail.nothingHere")} hint={debounced ? tr("mail.noMatch") : tr("mail.folderEmpty")} />
             )}
             {list.data?.messages.map((m) => (
               <button
@@ -300,7 +304,7 @@ export function GmailApp({ provider = GMAIL_PROVIDER }: { provider?: MailProvide
                   {m.unread && <span className="h-2 w-2 shrink-0 rounded-full bg-primary-bright shadow-[0_0_6px_var(--primary)]" />}
                   <p className={`min-w-0 flex-1 truncate text-sm ${m.unread ? "font-semibold" : "text-muted"}`}>{m.from}</p>
                   <span className="num shrink-0 text-[11px] text-faint">
-                    {isToday(parseISO(m.date)) ? format(parseISO(m.date), "HH:mm") : format(parseISO(m.date), "MMM d")}
+                    {isToday(parseISO(m.date)) ? format(parseISO(m.date), "HH:mm") : format(parseISO(m.date), lang === "de" ? "d. MMM" : "MMM d", { locale: dfLocale(lang) })}
                   </span>
                 </div>
                 <p className={`mt-0.5 truncate text-[13px] ${m.unread ? "" : "text-muted"}`}>{m.subject}</p>
@@ -317,7 +321,7 @@ export function GmailApp({ provider = GMAIL_PROVIDER }: { provider?: MailProvide
         <div className={`min-w-0 flex-1 flex-col md:flex ${mobilePane === "read" ? "flex" : "hidden"}`}>
           {!activeId ? (
             <div className="panel flex flex-1 items-center justify-center">
-              <EmptyState icon={<MailIcon size={20} />} title="Select a message" hint="Choose a conversation from the list to read it here." />
+              <EmptyState icon={<MailIcon size={20} />} title={tr("mail.selectMsg")} hint={tr("mail.selectMsgHint")} />
             </div>
           ) : !active ? (
             <div className="panel flex flex-1 flex-col gap-3 p-5">
@@ -336,59 +340,59 @@ export function GmailApp({ provider = GMAIL_PROVIDER }: { provider?: MailProvide
                 className="panel flex flex-1 flex-col overflow-hidden"
               >
                 <div className="flex items-center gap-1 border-b border-white/[0.06] px-3 py-2.5">
-                  <button onClick={() => setMobilePane("list")} className="mr-1 text-muted md:hidden" aria-label="Back to list">
+                  <button onClick={() => setMobilePane("list")} className="mr-1 text-muted md:hidden" aria-label={tr("mail.back")}>
                     <ChevronLeft size={18} />
                   </button>
                   <span className="min-w-0 flex-1 truncate px-1 text-sm font-semibold">{active.subject}</span>
-                  <IconBtn label="Reply" onClick={() =>
+                  <IconBtn label={tr("mail.reply")} onClick={() =>
                     setCompose({
                       to: active.fromEmail,
                       subject: active.subject.startsWith("Re:") ? active.subject : `Re: ${active.subject}`,
                       threadId: active.threadId,
                       inReplyTo: active.messageIdHeader,
-                      body: `\n\n---\nOn ${format(parseISO(active.date), "MMM d, HH:mm")}, ${active.from} wrote:\n> ${active.body.split("\n").slice(0, 6).join("\n> ")}`,
+                      body: `\n\n---\n${tr("mail.wrote").replace("{date}", format(parseISO(active.date), lang === "de" ? "d. MMM, HH:mm" : "MMM d, HH:mm", { locale: dfLocale(lang) })).replace("{name}", active.from)}\n> ${active.body.split("\n").slice(0, 6).join("\n> ")}`,
                     })
                   }>
                     <CornerUpLeft size={15} />
                   </IconBtn>
-                  <IconBtn label="Forward" onClick={() =>
+                  <IconBtn label={tr("mail.forward")} onClick={() =>
                     setCompose({
                       subject: active.subject.startsWith("Fwd:") ? active.subject : `Fwd: ${active.subject}`,
-                      body: `\n\n---------- Forwarded message ----------\nFrom: ${active.from} <${active.fromEmail}>\nDate: ${format(parseISO(active.date), "MMM d, yyyy HH:mm")}\nSubject: ${active.subject}\n\n${active.body}`,
+                      body: `\n\n---------- ${tr("mail.forwardedMessage")} ----------\nFrom: ${active.from} <${active.fromEmail}>\nDate: ${format(parseISO(active.date), lang === "de" ? "d. MMM yyyy HH:mm" : "MMM d, yyyy HH:mm", { locale: dfLocale(lang) })}\nSubject: ${active.subject}\n\n${active.body}`,
                     })
                   }>
                     <CornerUpRight size={15} />
                   </IconBtn>
-                  <IconBtn label={active.starred ? "Unstar" : "Star"} onClick={() => act(active.id, active.starred ? "unstar" : "star")}>
+                  <IconBtn label={active.starred ? tr("mail.unstar") : tr("mail.star")} onClick={() => act(active.id, active.starred ? "unstar" : "star")}>
                     <Star size={15} className={active.starred ? "fill-accent text-accent" : ""} />
                   </IconBtn>
-                  <IconBtn label="Mark unread" onClick={async () => {
-                    if (await act(active.id, "unread", "Marked unread")) { setActiveId(null); setMobilePane("list"); }
+                  <IconBtn label={tr("mail.markUnread")} onClick={async () => {
+                    if (await act(active.id, "unread", tr("mail.markedUnread"))) { setActiveId(null); setMobilePane("list"); }
                   }}>
                     <MailOpen size={15} />
                   </IconBtn>
                   {box === "archive" ? (
-                    <IconBtn label="Move to inbox" onClick={async () => {
-                      if (await act(active.id, "unarchive", "Moved to inbox")) { setActiveId(null); setMobilePane("list"); }
+                    <IconBtn label={tr("mail.moveToInbox")} onClick={async () => {
+                      if (await act(active.id, "unarchive", tr("mail.movedToInbox"))) { setActiveId(null); setMobilePane("list"); }
                     }}>
                       <ArchiveRestore size={15} />
                     </IconBtn>
                   ) : (
-                    <IconBtn label="Archive" onClick={async () => {
-                      if (await act(active.id, "archive", "Archived")) { setActiveId(null); setMobilePane("list"); }
+                    <IconBtn label={tr("mail.archive")} onClick={async () => {
+                      if (await act(active.id, "archive", tr("mail.archived"))) { setActiveId(null); setMobilePane("list"); }
                     }}>
                       <Archive size={15} />
                     </IconBtn>
                   )}
                   {box !== "spam" && (
-                    <IconBtn label="Spam" onClick={async () => {
-                      if (await act(active.id, "spam", "Marked as spam")) { setActiveId(null); setMobilePane("list"); }
+                    <IconBtn label={tr("mail.spam")} onClick={async () => {
+                      if (await act(active.id, "spam", tr("mail.markedSpam"))) { setActiveId(null); setMobilePane("list"); }
                     }}>
                       <AlertOctagon size={15} />
                     </IconBtn>
                   )}
-                  <IconBtn label={box === "trash" ? "Restore" : "Delete"} onClick={async () => {
-                    if (await act(active.id, box === "trash" ? "untrash" : "trash", box === "trash" ? "Restored" : "Moved to trash")) {
+                  <IconBtn label={box === "trash" ? tr("mail.restore") : tr("mail.delete")} onClick={async () => {
+                    if (await act(active.id, box === "trash" ? "untrash" : "trash", box === "trash" ? tr("mail.restored") : tr("mail.movedToTrash"))) {
                       setActiveId(null);
                       setMobilePane("list");
                     }
@@ -405,8 +409,8 @@ export function GmailApp({ provider = GMAIL_PROVIDER }: { provider?: MailProvide
                     <div className="min-w-0">
                       <p className="text-sm font-medium">{active.from}</p>
                       <p className="truncate text-xs text-faint">
-                        {active.fromEmail} · {format(parseISO(active.date), "MMM d, HH:mm")}
-                        {active.to ? ` · to ${active.to.split(",")[0]}` : ""}
+                        {active.fromEmail} · {format(parseISO(active.date), lang === "de" ? "d. MMM, HH:mm" : "MMM d, HH:mm", { locale: dfLocale(lang) })}
+                        {active.to ? ` · ${tr("mail.toLower")} ${active.to.split(",")[0]}` : ""}
                       </p>
                     </div>
                   </div>
@@ -467,6 +471,7 @@ function IconBtn({ label, onClick, children }: { label: string; onClick: () => v
 /* ---------------- AI summary ---------------- */
 
 function AiSummary({ mail, enabled }: { mail: GmailDetail; enabled: boolean }) {
+  const tr = useT();
   const [summary, setSummary] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -481,10 +486,10 @@ function AiSummary({ mail, enabled }: { mail: GmailDetail; enabled: boolean }) {
         body: JSON.stringify({ kind: "summarize", subject: mail.subject, from: mail.from, body: mail.body }),
       });
       const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? "AI failed");
+      if (!res.ok) throw new Error(body.error ?? tr("mail.aiFailed"));
       setSummary(body.summary);
     } catch (e) {
-      toast(e instanceof Error ? e.message : "Summary failed", "info");
+      toast(e instanceof Error ? e.message : tr("mail.summaryFailed"), "info");
     }
     setBusy(false);
   };
@@ -494,7 +499,7 @@ function AiSummary({ mail, enabled }: { mail: GmailDetail; enabled: boolean }) {
       <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
         className="mb-5 rounded-2xl border border-accent/15 bg-accent/[0.05] p-4">
         <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-accent">
-          <Sparkles size={12} /> AI summary
+          <Sparkles size={12} /> {tr("mail.aiSummary")}
         </p>
         <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-muted">{summary}</p>
       </motion.div>
@@ -508,7 +513,7 @@ function AiSummary({ mail, enabled }: { mail: GmailDetail; enabled: boolean }) {
       className="mb-5 flex items-center gap-2 rounded-full border border-accent/25 bg-accent/[0.07] px-3.5 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/15 disabled:opacity-60"
     >
       {busy ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-      {busy ? "Summarizing…" : "Summarize with AI"}
+      {busy ? tr("mail.summarizing") : tr("mail.summarizeAi")}
     </button>
   );
 }
@@ -525,6 +530,7 @@ function GmailCompose({
   onSent: () => void;
   provider: MailProvider;
 }) {
+  const tr = useT();
   const [to, setTo] = useState("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
@@ -561,10 +567,10 @@ function GmailCompose({
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "AI failed");
+      if (!res.ok) throw new Error(data.error ?? tr("mail.aiFailed"));
       setReplies(data.replies);
     } catch (e) {
-      toast(e instanceof Error ? e.message : "Smart replies failed", "info");
+      toast(e instanceof Error ? e.message : tr("mail.smartRepliesFailed"), "info");
     }
     setLoadingReplies(false);
   };
@@ -599,25 +605,25 @@ function GmailCompose({
         body: JSON.stringify({ input, draft }),
       });
       if (!res.ok) throw new Error((await res.json()).error ?? "send failed");
-      toast(draft ? `Saved to ${provider.name} drafts` : `Sent via ${provider.name}`);
+      toast(draft ? tr("mail.savedToProviderDrafts").replace("{provider}", provider.name) : tr("mail.sentViaProvider").replace("{provider}", provider.name));
       onSent();
       onClose();
     } catch (e) {
-      toast(e instanceof Error ? e.message : "Send failed", "info");
+      toast(e instanceof Error ? e.message : tr("mail.sendFailed"), "info");
     }
     setSending(false);
   };
 
   return (
-    <Modal open={!!seed} onClose={onClose} title={seed?.threadId ? "Reply" : seed?.subject?.startsWith("Fwd:") ? "Forward" : "New message"} wide>
+    <Modal open={!!seed} onClose={onClose} title={seed?.threadId ? tr("mail.replyTitle") : seed?.subject?.startsWith("Fwd:") ? tr("mail.forwardTitle") : tr("mail.newMessage")} wide>
       <div className="flex flex-col gap-4">
         <label>
-          <Label>To</Label>
+          <Label>{tr("mail.to")}</Label>
           <Input value={to} onChange={(e) => setTo(e.target.value)} placeholder="name@example.com" type="email" autoFocus />
         </label>
         <label>
-          <Label>Subject</Label>
-          <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" />
+          <Label>{tr("mail.subject")}</Label>
+          <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder={tr("mail.subject")} />
         </label>
 
         {replyContext && aiEnabled && (
@@ -629,7 +635,7 @@ function GmailCompose({
                 className="flex items-center gap-2 rounded-full border border-accent/25 bg-accent/[0.07] px-3.5 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/15 disabled:opacity-60"
               >
                 {loadingReplies ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                {loadingReplies ? "Drafting…" : "Smart replies"}
+                {loadingReplies ? tr("mail.drafting") : tr("mail.smartReplies")}
               </button>
             ) : (
               <div className="flex flex-col gap-1.5">
@@ -648,35 +654,35 @@ function GmailCompose({
         )}
 
         <label>
-          <Label>Message</Label>
-          <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={8} placeholder="Write your message…" />
+          <Label>{tr("mail.message")}</Label>
+          <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={8} placeholder={tr("mail.messagePh")} />
         </label>
 
         <div className="flex flex-wrap items-center gap-2">
           <Button size="sm" onClick={() => fileRef.current?.click()}>
-            <Paperclip size={13} /> Attach
+            <Paperclip size={13} /> {tr("mail.attach")}
           </Button>
           <input
-            ref={fileRef} type="file" multiple className="hidden" aria-label="Attach files"
+            ref={fileRef} type="file" multiple className="hidden" aria-label={tr("mail.attachFiles")}
             onChange={(e) => setFiles((f) => [...f, ...Array.from(e.target.files ?? [])])}
           />
           {files.map((f, i) => (
             <span key={i} className="flex items-center gap-1.5 rounded-full bg-white/[0.06] px-2.5 py-1 text-xs">
               {f.name}
-              <button onClick={() => setFiles(files.filter((_, j) => j !== i))} aria-label={`Remove ${f.name}`} className="text-faint hover:text-danger">×</button>
+              <button onClick={() => setFiles(files.filter((_, j) => j !== i))} aria-label={tr("mail.removeAttachment").replace("{name}", f.name)} className="text-faint hover:text-danger">×</button>
             </span>
           ))}
-          {totalSize > 15 * 1_048_576 && <span className="text-xs text-danger">Attachments over 15 MB</span>}
+          {totalSize > 15 * 1_048_576 && <span className="text-xs text-danger">{tr("mail.attachmentsOver")}</span>}
         </div>
 
         <div className="flex justify-between gap-2">
           <Button variant="ghost" disabled={sending || (!to && !subject && !body)} onClick={() => submit(true)}>
-            Save draft
+            {tr("mail.saveDraft")}
           </Button>
           <div className="flex gap-2">
-            <Button variant="ghost" onClick={onClose}>Discard</Button>
+            <Button variant="ghost" onClick={onClose}>{tr("mail.discard")}</Button>
             <Button variant="primary" disabled={!to.trim() || sending || totalSize > 15 * 1_048_576} onClick={() => submit(false)}>
-              {sending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />} Send
+              {sending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />} {tr("mail.send")}
             </Button>
           </div>
         </div>

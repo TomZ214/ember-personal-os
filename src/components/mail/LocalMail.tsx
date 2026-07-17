@@ -10,6 +10,8 @@ import {
   Send, Sparkles, Star, Trash2,
 } from "lucide-react";
 import { useEmber, useHydrated } from "@/lib/store";
+import { useLang, useT } from "@/lib/i18n";
+import { dfLocale } from "@/lib/dates";
 import type { Mail, MailFolder, MailLabel } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -29,6 +31,8 @@ type Box = MailFolder | "starred";
 export function LocalMail() {
   const hydrated = useHydrated();
   const params = useSearchParams();
+  const t = useT();
+  const lang = useLang();
   const { mails, updateMail, deleteMail, markAllMailsRead } = useEmber();
   const [box, setBox] = useState<Box>("inbox");
   const [query, setQuery] = useState("");
@@ -51,11 +55,11 @@ export function LocalMail() {
   const unread = mails.filter((m) => m.folder === "inbox" && !m.read).length;
 
   const boxes: { id: Box; label: string; icon: typeof Inbox; count?: number }[] = [
-    { id: "inbox", label: "Inbox", icon: Inbox, count: unread },
-    { id: "starred", label: "Starred", icon: Star },
-    { id: "sent", label: "Sent", icon: Send },
-    { id: "drafts", label: "Drafts", icon: FileText, count: mails.filter((m) => m.folder === "drafts").length || undefined },
-    { id: "archive", label: "Archive", icon: Archive },
+    { id: "inbox", label: t("mail.box.inbox"), icon: Inbox, count: unread },
+    { id: "starred", label: t("mail.box.starred"), icon: Star },
+    { id: "sent", label: t("mail.box.sent"), icon: Send },
+    { id: "drafts", label: t("mail.box.drafts"), icon: FileText, count: mails.filter((m) => m.folder === "drafts").length || undefined },
+    { id: "archive", label: t("mail.box.archive"), icon: Archive },
   ];
 
   const openMail = (m: Mail) => {
@@ -67,8 +71,8 @@ export function LocalMail() {
   return (
     <div>
       <PageHeader
-        title="Mail"
-        sub={unread ? `${unread} unread in inbox` : mails.length ? "Inbox zero — enjoy it" : "Local mailbox — connect Gmail for the real thing"}
+        title={t("mail.title")}
+        sub={unread ? t("mail.unreadInInbox").replace("{n}", String(unread)) : mails.length ? t("mail.inboxZero") : t("mail.localMailbox")}
         actions={
           <>
             {unread > 0 && (
@@ -76,15 +80,15 @@ export function LocalMail() {
                 size="sm"
                 onClick={() => {
                   markAllMailsRead();
-                  toast(`Marked ${unread} message${unread === 1 ? "" : "s"} as read`);
+                  toast((unread === 1 ? t("mail.markedReadOne") : t("mail.markedReadMany")).replace("{n}", String(unread)));
                 }}
-                title="Mark everything as read"
+                title={t("mail.markAllRead")}
               >
-                <CheckCheck size={14} /> Read all
+                <CheckCheck size={14} /> {t("mail.readAll")}
               </Button>
             )}
             <Button variant="primary" onClick={() => setComposing(true)}>
-              <PenLine size={15} /> Compose
+              <PenLine size={15} /> {t("mail.compose")}
             </Button>
           </>
         }
@@ -111,7 +115,7 @@ export function LocalMail() {
         })}
         <div className="relative ml-auto w-full sm:w-60">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
-          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search mail…" className="h-9 pl-9" aria-label="Search mail" />
+          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("mail.searchLocal")} className="h-9 pl-9" aria-label={t("mail.search")} />
         </div>
       </div>
 
@@ -123,16 +127,16 @@ export function LocalMail() {
               (mails.length === 0 && !query ? (
                 <EmptyState
                   icon={<MailIcon size={20} />}
-                  title="Connect Gmail to see your emails"
-                  hint="Your real inbox, labels, search and compose — one sign-in away."
+                  title={t("mail.connectGmailTitle")}
+                  hint={t("mail.connectGmailHint")}
                   action={
                     <Link href="/settings/connections">
-                      <Button variant="primary">Connect Gmail</Button>
+                      <Button variant="primary">{t("mail.connectGmail")}</Button>
                     </Link>
                   }
                 />
               ) : (
-                <EmptyState icon={<MailIcon size={20} />} title="Nothing here" hint={query ? "No mail matches your search." : "This folder is empty."} />
+                <EmptyState icon={<MailIcon size={20} />} title={t("mail.nothingHere")} hint={query ? t("mail.noMatch") : t("mail.folderEmpty")} />
               ))}
             {list.map((m) => (
               <button
@@ -146,7 +150,7 @@ export function LocalMail() {
                   {!m.read && <span className="h-2 w-2 shrink-0 rounded-full bg-primary-bright shadow-[0_0_6px_var(--primary)]" />}
                   <p className={`min-w-0 flex-1 truncate text-sm ${m.read ? "text-muted" : "font-semibold"}`}>{m.from}</p>
                   <span className="num shrink-0 text-[11px] text-faint">
-                    {isToday(parseISO(m.date)) ? format(parseISO(m.date), "HH:mm") : format(parseISO(m.date), "MMM d")}
+                    {isToday(parseISO(m.date)) ? format(parseISO(m.date), "HH:mm") : format(parseISO(m.date), lang === "de" ? "d. MMM" : "MMM d", { locale: dfLocale(lang) })}
                   </span>
                 </div>
                 <p className={`mt-0.5 truncate text-[13px] ${m.read ? "text-muted" : ""}`}>{m.subject}</p>
@@ -165,7 +169,7 @@ export function LocalMail() {
         <div className={`min-w-0 flex-1 flex-col md:flex ${mobilePane === "read" ? "flex" : "hidden"}`}>
           {!active ? (
             <div className="panel flex flex-1 items-center justify-center">
-              <EmptyState icon={<MailIcon size={20} />} title="Select a message" hint="Choose a conversation from the list to read it here." />
+              <EmptyState icon={<MailIcon size={20} />} title={t("mail.selectMsg")} hint={t("mail.selectMsgHint")} />
             </div>
           ) : (
             <AnimatePresence mode="wait">
@@ -178,22 +182,22 @@ export function LocalMail() {
                 className="panel flex flex-1 flex-col overflow-hidden"
               >
                 <div className="flex items-center gap-1.5 border-b border-white/[0.06] px-4 py-2.5">
-                  <button onClick={() => setMobilePane("list")} className="mr-1 text-muted md:hidden" aria-label="Back to list">
+                  <button onClick={() => setMobilePane("list")} className="mr-1 text-muted md:hidden" aria-label={t("mail.back")}>
                     <ChevronLeft size={18} />
                   </button>
                   <span className="min-w-0 flex-1 truncate text-sm font-semibold">{active.subject}</span>
                   <IconBtn
-                    label={active.starred ? "Unstar" : "Star"}
+                    label={active.starred ? t("mail.unstar") : t("mail.star")}
                     onClick={() => updateMail(active.id, { starred: !active.starred })}
                   >
                     <Star size={15} className={active.starred ? "fill-accent text-accent" : ""} />
                   </IconBtn>
                   {active.folder !== "archive" && (
-                    <IconBtn label="Archive" onClick={() => { updateMail(active.id, { folder: "archive" }); toast("Archived", "info"); setActiveId(null); setMobilePane("list"); }}>
+                    <IconBtn label={t("mail.archive")} onClick={() => { updateMail(active.id, { folder: "archive" }); toast(t("mail.archived"), "info"); setActiveId(null); setMobilePane("list"); }}>
                       <Archive size={15} />
                     </IconBtn>
                   )}
-                  <IconBtn label="Delete" onClick={() => { deleteMail(active.id); toast("Deleted", "info"); setActiveId(null); setMobilePane("list"); }}>
+                  <IconBtn label={t("mail.delete")} onClick={() => { deleteMail(active.id); toast(t("mail.deleted"), "info"); setActiveId(null); setMobilePane("list"); }}>
                     <Trash2 size={15} />
                   </IconBtn>
                 </div>
@@ -206,11 +210,11 @@ export function LocalMail() {
                     </span>
                     <div className="min-w-0">
                       <p className="text-sm font-medium">{active.from}</p>
-                      <p className="truncate text-xs text-faint">{active.fromEmail} · {format(parseISO(active.date), "MMM d, HH:mm")}</p>
+                      <p className="truncate text-xs text-faint">{active.fromEmail} · {format(parseISO(active.date), lang === "de" ? "d. MMM, HH:mm" : "MMM d, HH:mm", { locale: dfLocale(lang) })}</p>
                     </div>
-                    <span className="ml-auto rounded-full px-2.5 py-0.5 text-[11px] font-medium capitalize"
+                    <span className="ml-auto rounded-full px-2.5 py-0.5 text-[11px] font-medium"
                       style={{ background: `color-mix(in oklch, ${LABEL_COLOR[active.label]} 14%, transparent)`, color: LABEL_COLOR[active.label] }}>
-                      {active.label}
+                      {t(`mail.label.${active.label}`)}
                     </span>
                   </div>
 
@@ -252,6 +256,7 @@ function IconBtn({ label, onClick, children }: { label: string; onClick: () => v
 
 /** Extractive quick summary: first sentence + detected bullet lines. */
 function Summary({ body }: { body: string }) {
+  const t = useT();
   const summary = useMemo(() => {
     const lines = body.split("\n").map((l) => l.trim()).filter(Boolean);
     const bullets = lines.filter((l) => /^[•\-–*]/.test(l)).slice(0, 3);
@@ -265,7 +270,7 @@ function Summary({ body }: { body: string }) {
   return (
     <div className="mb-5 rounded-2xl border border-accent/15 bg-accent/[0.05] p-4">
       <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-accent">
-        <Sparkles size={12} /> Quick summary
+        <Sparkles size={12} /> {t("mail.quickSummary")}
       </p>
       <p className="text-[13px] leading-relaxed text-muted">{summary.first}</p>
       {summary.bullets.length > 0 && (
@@ -281,6 +286,7 @@ function Summary({ body }: { body: string }) {
 
 function Compose({ open, onClose }: { open: boolean; onClose: () => void }) {
   const sendMail = useEmber((s) => s.sendMail);
+  const t = useT();
   const [to, setTo] = useState("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
@@ -288,32 +294,32 @@ function Compose({ open, onClose }: { open: boolean; onClose: () => void }) {
   const reset = () => { setTo(""); setSubject(""); setBody(""); };
 
   return (
-    <Modal open={open} onClose={onClose} title="New message" wide>
+    <Modal open={open} onClose={onClose} title={t("mail.newMessage")} wide>
       <div className="flex flex-col gap-4">
         <label>
-          <Label>To</Label>
+          <Label>{t("mail.to")}</Label>
           <Input value={to} onChange={(e) => setTo(e.target.value)} placeholder="name@example.com" type="email" autoFocus />
         </label>
         <label>
-          <Label>Subject</Label>
-          <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" />
+          <Label>{t("mail.subject")}</Label>
+          <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder={t("mail.subject")} />
         </label>
         <label>
-          <Label>Message</Label>
-          <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={8} placeholder="Write your message…" />
+          <Label>{t("mail.message")}</Label>
+          <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={8} placeholder={t("mail.messagePh")} />
         </label>
         <div className="flex justify-between gap-2">
           <Button
             variant="ghost"
             disabled={!to && !subject && !body}
-            onClick={() => { sendMail({ to, subject, body, draft: true }); toast("Saved to drafts", "info"); reset(); onClose(); }}
+            onClick={() => { sendMail({ to, subject, body, draft: true }); toast(t("mail.savedToDrafts"), "info"); reset(); onClose(); }}
           >
-            Save draft
+            {t("mail.saveDraft")}
           </Button>
           <div className="flex gap-2">
-            <Button variant="ghost" onClick={onClose}>Discard</Button>
-            <Button variant="primary" disabled={!to.trim()} onClick={() => { sendMail({ to, subject, body }); toast("Message sent"); reset(); onClose(); }}>
-              <Send size={14} /> Send
+            <Button variant="ghost" onClick={onClose}>{t("mail.discard")}</Button>
+            <Button variant="primary" disabled={!to.trim()} onClick={() => { sendMail({ to, subject, body }); toast(t("mail.messageSent")); reset(); onClose(); }}>
+              <Send size={14} /> {t("mail.send")}
             </Button>
           </div>
         </div>
