@@ -7,6 +7,7 @@ import {
   Gauge, Sun, Sunrise, Sunset, Umbrella, Wind, WifiOff,
 } from "lucide-react";
 import { useEmber, useHydrated } from "@/lib/store";
+import { useLang, useT } from "@/lib/i18n";
 import {
   aqiMeta, condition, conditionLabel, fetchWeather, hhmm, moonPhase, uvMeta, windCompass,
   type Condition, type WeatherData,
@@ -22,6 +23,8 @@ const ICONS: Record<Condition, typeof Sun> = {
 export default function WeatherPage() {
   const hydrated = useHydrated();
   const { latitude, longitude, place } = useEmber((s) => s.settings);
+  const t = useT();
+  const lang = useLang();
   const [wx, setWx] = useState<WeatherData | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -44,10 +47,10 @@ export default function WeatherPage() {
   if (failed)
     return (
       <div>
-        <PageHeader title="Weather" sub={place} />
+        <PageHeader title={t("wx.title")} sub={place} />
         <div className="panel flex flex-col items-center gap-2 py-20 text-center">
           <WifiOff size={22} className="text-faint" />
-          <p className="text-sm text-muted">Weather is unavailable right now.</p>
+          <p className="text-sm text-muted">{t("wx.unavailable")}</p>
         </div>
       </div>
     );
@@ -57,14 +60,14 @@ export default function WeatherPage() {
   const c = wx.current;
   const cond = condition(c.code);
   const Icon = ICONS[cond];
-  const moon = moonPhase();
-  const uv = uvMeta(c.uv);
-  const air = aqiMeta(c.aqi);
+  const moon = moonPhase(new Date(), lang);
+  const uv = uvMeta(c.uv, lang);
+  const air = aqiMeta(c.aqi, lang);
   const today = wx.daily[0];
 
   return (
     <div>
-      <PageHeader title="Weather" sub={place} />
+      <PageHeader title={t("wx.title")} sub={place} />
 
       {/* hero */}
       <motion.div
@@ -81,9 +84,9 @@ export default function WeatherPage() {
               <p className="num mt-1 text-7xl font-semibold leading-none tracking-tight text-white drop-shadow-sm sm:text-8xl">
                 {c.temp}°
               </p>
-              <p className="mt-2 text-[15px] text-white/90">{conditionLabel(c.code)}</p>
+              <p className="mt-2 text-[15px] text-white/90">{conditionLabel(c.code, lang)}</p>
               <p className="num text-sm text-white/70">
-                H {wx.todayHi}° · L {wx.todayLo}° · Feels {c.feels}°
+                H {wx.todayHi}° · L {wx.todayLo}° · {t("wx.feels")} {c.feels}°
               </p>
             </div>
             <motion.span
@@ -99,14 +102,14 @@ export default function WeatherPage() {
       </motion.div>
 
       {/* hourly 48h */}
-      <Section title="Next 48 hours">
+      <Section title={t("wx.next48")}>
         <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1">
           {wx.hourly.map((h, i) => {
             const HIcon = ICONS[condition(h.code)];
             return (
               <div key={h.time} className="flex min-w-[58px] flex-col items-center gap-2 rounded-2xl bg-white/[0.03] px-2 py-3">
                 <span className="text-[11px] text-faint">
-                  {i === 0 ? "Now" : new Date(h.time).toLocaleTimeString("en-GB", { hour: "2-digit" })}
+                  {i === 0 ? t("wx.now") : new Date(h.time).toLocaleTimeString(lang === "de" ? "de-DE" : "en-GB", { hour: "2-digit" })}
                 </span>
                 <HIcon size={18} className={h.isDay ? "text-accent" : "text-info"} strokeWidth={1.8} />
                 {h.precipProb > 10 && <span className="text-[10px] text-info">{h.precipProb}%</span>}
@@ -119,39 +122,39 @@ export default function WeatherPage() {
       </Section>
 
       {/* 10-day */}
-      <Section title="10-day forecast">
+      <Section title={t("wx.tenDay")}>
         <TenDay wx={wx} />
       </Section>
 
       {/* detail grid */}
-      <Section title="Details">
+      <Section title={t("wx.details")}>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          <Detail icon={<Sun size={15} />} label="UV index" value={String(c.uv)} sub={uv.label} tone={uv.color} />
-          <Detail icon={<Droplets size={15} />} label="Humidity" value={`${c.humidity}%`} sub={`Feels ${c.feels}°`} />
-          <Detail icon={<Wind size={15} />} label="Wind" value={`${c.wind} km/h`} sub={`${windCompass(c.windDir)} · gust ${c.gust}`} />
-          <Detail icon={<Umbrella size={15} />} label="Rain chance" value={`${c.precipProb}%`} sub="today" />
-          <Detail icon={<Gauge size={15} />} label="Pressure" value={`${c.pressure}`} sub="hPa" />
-          <Detail icon={<Eye size={15} />} label="Visibility" value={`${c.visibility} km`} sub={c.visibility >= 10 ? "Clear" : "Reduced"} />
-          <Detail icon={<span className="text-[15px] leading-none">{moon.emoji}</span>} label="Moon" value={moon.name} sub={`${Math.round(moon.fraction * 100)}% cycle`} small />
-          <Detail icon={<Cloud size={15} />} label="Air quality" value={c.aqi != null ? String(c.aqi) : "—"} sub={air.label} tone={air.color} small />
+          <Detail icon={<Sun size={15} />} label={t("wx.uvIndex")} value={String(c.uv)} sub={uv.label} tone={uv.color} />
+          <Detail icon={<Droplets size={15} />} label={t("wx.humidity")} value={`${c.humidity}%`} sub={`${t("wx.feels")} ${c.feels}°`} />
+          <Detail icon={<Wind size={15} />} label={t("wx.wind")} value={`${c.wind} km/h`} sub={`${windCompass(c.windDir)} · ${t("wx.gust")} ${c.gust}`} />
+          <Detail icon={<Umbrella size={15} />} label={t("wx.rainChance")} value={`${c.precipProb}%`} sub={t("wx.todayLower")} />
+          <Detail icon={<Gauge size={15} />} label={t("wx.pressure")} value={`${c.pressure}`} sub="hPa" />
+          <Detail icon={<Eye size={15} />} label={t("wx.visibility")} value={`${c.visibility} km`} sub={c.visibility >= 10 ? t("wx.clear") : t("wx.reduced")} />
+          <Detail icon={<span className="text-[15px] leading-none">{moon.emoji}</span>} label={t("wx.moon")} value={moon.name} sub={`${Math.round(moon.fraction * 100)}% ${t("wx.cycle")}`} small />
+          <Detail icon={<Cloud size={15} />} label={t("wx.airQuality")} value={c.aqi != null ? String(c.aqi) : "—"} sub={air.label} tone={air.color} small />
         </div>
       </Section>
 
       {/* sun + radar */}
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="panel p-5">
-          <p className="mb-4 text-[13px] font-medium text-muted">Sun</p>
+          <p className="mb-4 text-[13px] font-medium text-muted">{t("wx.sun")}</p>
           <SunArc sunrise={today.sunrise} sunset={today.sunset} />
         </div>
         <div className="panel relative flex min-h-40 flex-col items-center justify-center gap-2 overflow-hidden p-5 text-center">
           <div aria-hidden className="pointer-events-none absolute inset-0 opacity-40" style={{ background: "repeating-radial-gradient(circle at 50% 60%, transparent 0 18px, rgba(255,255,255,0.05) 18px 19px)" }} />
-          <p className="relative text-[13px] font-medium text-muted">Radar</p>
-          <p className="relative max-w-[30ch] text-xs text-faint">Live precipitation radar is coming soon — the map layer will render here.</p>
+          <p className="relative text-[13px] font-medium text-muted">{t("wx.radar")}</p>
+          <p className="relative max-w-[30ch] text-xs text-faint">{t("wx.radarHint")}</p>
         </div>
       </div>
 
       <p className="mt-5 text-center text-[11px] text-faint">
-        Updated {hhmm(new Date(wx.fetchedAt).toISOString())} · Open-Meteo · change your location in Settings
+        {t("wx.updated")} {hhmm(new Date(wx.fetchedAt).toISOString())} · Open-Meteo · {t("wx.changeLocation")}
       </p>
     </div>
   );
@@ -188,6 +191,7 @@ function Detail({
 }
 
 function HourlyChart({ data }: { data: WeatherData["hourly"] }) {
+  const t = useT();
   const { area, line, labels, min, max } = useMemo(() => {
     const temps = data.map((h) => h.temp);
     const min = Math.min(...temps);
@@ -228,7 +232,7 @@ function HourlyChart({ data }: { data: WeatherData["hourly"] }) {
   return (
     <div className="mt-4 border-t border-white/[0.06] pt-4">
       <div className="mb-1 flex justify-between text-[11px] text-faint">
-        <span>Next 24 h</span>
+        <span>{t("wx.next24")}</span>
         <span className="num">▲ {max}° ▽ {min}°</span>
       </div>
       <div className="relative h-28 w-full">
@@ -276,6 +280,8 @@ function HourlyChart({ data }: { data: WeatherData["hourly"] }) {
 }
 
 function TenDay({ wx }: { wx: WeatherData }) {
+  const t = useT();
+  const lang = useLang();
   const lo = Math.min(...wx.daily.map((d) => d.lo));
   const hi = Math.max(...wx.daily.map((d) => d.hi));
   const span = Math.max(1, hi - lo);
@@ -288,7 +294,7 @@ function TenDay({ wx }: { wx: WeatherData }) {
         return (
           <li key={d.date} className="flex items-center gap-3 border-b border-white/[0.05] py-2.5 last:border-0">
             <span className="w-10 shrink-0 text-[13px] font-medium">
-              {i === 0 ? "Today" : new Date(d.date).toLocaleDateString("en", { weekday: "short" })}
+              {i === 0 ? t("wx.today") : new Date(d.date).toLocaleDateString(lang === "de" ? "de-DE" : "en", { weekday: "short" })}
             </span>
             <span className="flex w-10 shrink-0 items-center gap-1 text-info">
               <DIcon size={16} strokeWidth={1.8} />
@@ -337,9 +343,10 @@ function SunArc({ sunrise, sunset }: { sunrise: string; sunset: string }) {
 }
 
 function WeatherSkeleton({ place }: { place: string }) {
+  const t = useT();
   return (
     <div>
-      <PageHeader title="Weather" sub={place} />
+      <PageHeader title={t("wx.title")} sub={place} />
       <div className="skeleton h-56" style={{ borderRadius: 26 }} />
       <div className="mt-6 skeleton h-28" style={{ borderRadius: 18 }} />
       <div className="mt-6 skeleton h-72" style={{ borderRadius: 18 }} />

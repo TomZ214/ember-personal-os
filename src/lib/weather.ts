@@ -154,12 +154,18 @@ export function condition(code: number): Condition {
   return "thunder";
 }
 
-export function conditionLabel(code: number): string {
-  const map: Record<Condition, string> = {
+type WxLang = "en" | "de";
+
+export function conditionLabel(code: number, lang: WxLang = "en"): string {
+  const en: Record<Condition, string> = {
     clear: "Clear", partly: "Partly cloudy", cloudy: "Overcast", fog: "Fog",
     drizzle: "Drizzle", rain: "Rain", snow: "Snow", showers: "Showers", thunder: "Thunderstorm",
   };
-  return map[condition(code)];
+  const de: Record<Condition, string> = {
+    clear: "Klar", partly: "Teils bewölkt", cloudy: "Bedeckt", fog: "Nebel",
+    drizzle: "Nieselregen", rain: "Regen", snow: "Schnee", showers: "Schauer", thunder: "Gewitter",
+  };
+  return (lang === "de" ? de : en)[condition(code)];
 }
 
 const COMPASS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
@@ -168,44 +174,47 @@ export function windCompass(deg: number): string {
 }
 
 /** US AQI → label + token color */
-export function aqiMeta(aqi: number | null): { label: string; color: string } {
+export function aqiMeta(aqi: number | null, lang: WxLang = "en"): { label: string; color: string } {
+  const de = lang === "de";
   if (aqi === null) return { label: "—", color: "var(--faint)" };
-  if (aqi <= 50) return { label: "Good", color: "var(--success)" };
-  if (aqi <= 100) return { label: "Moderate", color: "var(--c-amber)" };
-  if (aqi <= 150) return { label: "Unhealthy (sensitive)", color: "var(--warning)" };
-  if (aqi <= 200) return { label: "Unhealthy", color: "var(--danger)" };
-  if (aqi <= 300) return { label: "Very unhealthy", color: "var(--c-lilac)" };
-  return { label: "Hazardous", color: "var(--c-rose)" };
+  if (aqi <= 50) return { label: de ? "Gut" : "Good", color: "var(--success)" };
+  if (aqi <= 100) return { label: de ? "Mäßig" : "Moderate", color: "var(--c-amber)" };
+  if (aqi <= 150) return { label: de ? "Ungesund (empfindlich)" : "Unhealthy (sensitive)", color: "var(--warning)" };
+  if (aqi <= 200) return { label: de ? "Ungesund" : "Unhealthy", color: "var(--danger)" };
+  if (aqi <= 300) return { label: de ? "Sehr ungesund" : "Very unhealthy", color: "var(--c-lilac)" };
+  return { label: de ? "Gefährlich" : "Hazardous", color: "var(--c-rose)" };
 }
 
-export function uvMeta(uv: number): { label: string; color: string } {
-  if (uv <= 2) return { label: "Low", color: "var(--success)" };
-  if (uv <= 5) return { label: "Moderate", color: "var(--c-amber)" };
-  if (uv <= 7) return { label: "High", color: "var(--warning)" };
-  if (uv <= 10) return { label: "Very high", color: "var(--danger)" };
-  return { label: "Extreme", color: "var(--c-lilac)" };
+export function uvMeta(uv: number, lang: WxLang = "en"): { label: string; color: string } {
+  const de = lang === "de";
+  if (uv <= 2) return { label: de ? "Niedrig" : "Low", color: "var(--success)" };
+  if (uv <= 5) return { label: de ? "Mäßig" : "Moderate", color: "var(--c-amber)" };
+  if (uv <= 7) return { label: de ? "Hoch" : "High", color: "var(--warning)" };
+  if (uv <= 10) return { label: de ? "Sehr hoch" : "Very high", color: "var(--danger)" };
+  return { label: de ? "Extrem" : "Extreme", color: "var(--c-lilac)" };
 }
 
 /** approximate moon phase (0=new, 0.5=full) with a friendly name + emoji */
-export function moonPhase(date = new Date()): { name: string; emoji: string; fraction: number } {
+export function moonPhase(date = new Date(), lang: WxLang = "en"): { name: string; emoji: string; fraction: number } {
   // days since a known new moon (2000-01-06 18:14 UTC)
   const synodic = 29.53058867;
   const knownNew = Date.UTC(2000, 0, 6, 18, 14) / 86_400_000;
   const days = date.getTime() / 86_400_000 - knownNew;
   const frac = ((days % synodic) + synodic) % synodic / synodic;
-  const phases: { max: number; name: string; emoji: string }[] = [
-    { max: 0.03, name: "New moon", emoji: "🌑" },
-    { max: 0.22, name: "Waxing crescent", emoji: "🌒" },
-    { max: 0.28, name: "First quarter", emoji: "🌓" },
-    { max: 0.47, name: "Waxing gibbous", emoji: "🌔" },
-    { max: 0.53, name: "Full moon", emoji: "🌕" },
-    { max: 0.72, name: "Waning gibbous", emoji: "🌖" },
-    { max: 0.78, name: "Last quarter", emoji: "🌗" },
-    { max: 0.97, name: "Waning crescent", emoji: "🌘" },
-    { max: 1.01, name: "New moon", emoji: "🌑" },
+  const de = lang === "de";
+  const phases: { max: number; en: string; de: string; emoji: string }[] = [
+    { max: 0.03, en: "New moon", de: "Neumond", emoji: "🌑" },
+    { max: 0.22, en: "Waxing crescent", de: "Zunehmende Sichel", emoji: "🌒" },
+    { max: 0.28, en: "First quarter", de: "Erstes Viertel", emoji: "🌓" },
+    { max: 0.47, en: "Waxing gibbous", de: "Zunehmender Mond", emoji: "🌔" },
+    { max: 0.53, en: "Full moon", de: "Vollmond", emoji: "🌕" },
+    { max: 0.72, en: "Waning gibbous", de: "Abnehmender Mond", emoji: "🌖" },
+    { max: 0.78, en: "Last quarter", de: "Letztes Viertel", emoji: "🌗" },
+    { max: 0.97, en: "Waning crescent", de: "Abnehmende Sichel", emoji: "🌘" },
+    { max: 1.01, en: "New moon", de: "Neumond", emoji: "🌑" },
   ];
   const p = phases.find((x) => frac <= x.max)!;
-  return { name: p.name, emoji: p.emoji, fraction: frac };
+  return { name: de ? p.de : p.en, emoji: p.emoji, fraction: frac };
 }
 
 export const hhmm = (iso: string) =>
