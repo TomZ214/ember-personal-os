@@ -878,6 +878,27 @@ const en: Dict = {
   "conn.deleteLink": "Delete link",
   "conn.aiLive": "Email summaries and smart replies are live",
   "conn.aiTagline": "Powers mail summaries + smart replies — optional (Claude or ChatGPT)",
+
+  // welcome alert
+  "wel.overdueOne": "{n} overdue task",
+  "wel.overdueMany": "{n} overdue tasks",
+  "wel.dueTodayOne": "{n} task due today",
+  "wel.dueTodayMany": "{n} tasks due today",
+  "wel.dueTomOne": "{n} task due within 24 hours",
+  "wel.dueTomMany": "{n} tasks due within 24 hours",
+  "wel.eventNow": "{title} is starting now",
+  "wel.eventIn": "{title} in {n} minutes",
+  "wel.mailOne": "{n} unread message from the Sparkasse",
+  "wel.mailMany": "{n} unread messages from the Sparkasse",
+  "wel.needsYouMany": "Here's what needs you.",
+  "wel.needsYouOne": "One thing needs you.",
+  "wel.controlMany": "Let's get everything under control.",
+  "wel.controlOne": "Let's take care of it.",
+  "wel.dismiss": "Dismiss",
+  "wel.viewDashboard": "View Dashboard",
+  "wel.viewTasks": "View Tasks",
+  "wel.openCalendar": "Open Calendar",
+  "wel.openMail": "Open Mail",
 };
 
 const de: Dict = {
@@ -1745,6 +1766,27 @@ const de: Dict = {
   "conn.deleteLink": "Link löschen",
   "conn.aiLive": "E-Mail-Zusammenfassungen und schnelle Antworten sind aktiv",
   "conn.aiTagline": "Treibt Mail-Zusammenfassungen + schnelle Antworten an — optional (Claude oder ChatGPT)",
+
+  // welcome alert
+  "wel.overdueOne": "{n} überfällige Aufgabe",
+  "wel.overdueMany": "{n} überfällige Aufgaben",
+  "wel.dueTodayOne": "{n} Aufgabe heute fällig",
+  "wel.dueTodayMany": "{n} Aufgaben heute fällig",
+  "wel.dueTomOne": "{n} Aufgabe in den nächsten 24 Stunden fällig",
+  "wel.dueTomMany": "{n} Aufgaben in den nächsten 24 Stunden fällig",
+  "wel.eventNow": "{title} beginnt jetzt",
+  "wel.eventIn": "{title} in {n} Minuten",
+  "wel.mailOne": "{n} ungelesene Nachricht von der Sparkasse",
+  "wel.mailMany": "{n} ungelesene Nachrichten von der Sparkasse",
+  "wel.needsYouMany": "Das braucht deine Aufmerksamkeit.",
+  "wel.needsYouOne": "Eine Sache braucht dich.",
+  "wel.controlMany": "Bringen wir alles unter Kontrolle.",
+  "wel.controlOne": "Kümmern wir uns darum.",
+  "wel.dismiss": "Schließen",
+  "wel.viewDashboard": "Dashboard öffnen",
+  "wel.viewTasks": "Aufgaben ansehen",
+  "wel.openCalendar": "Kalender öffnen",
+  "wel.openMail": "Mail öffnen",
 };
 
 const DICT: Record<Language, Dict> = { en, de };

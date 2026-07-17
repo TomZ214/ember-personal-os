@@ -48,6 +48,7 @@ interface Snapshot {
 
 export function WelcomeAlert() {
   const hydrated = useHydrated();
+  const t = useT();
   const tasks = useEmber((s) => s.tasks);
   const events = useEmber((s) => s.events);
   const userName = useEmber((s) => s.settings.userName);
@@ -84,24 +85,24 @@ export function WelcomeAlert() {
 
     const items: AlertItem[] = [];
     if (overdue > 0)
-      items.push({ id: "overdue", emoji: "⚠️", kind: "task", text: `${overdue} overdue task${overdue === 1 ? "" : "s"}` });
+      items.push({ id: "overdue", emoji: "⚠️", kind: "task", text: (overdue === 1 ? t("wel.overdueOne") : t("wel.overdueMany")).replace("{n}", String(overdue)) });
     if (dueToday > 0)
-      items.push({ id: "today", emoji: "🔥", kind: "task", text: `${dueToday} task${dueToday === 1 ? "" : "s"} due today` });
+      items.push({ id: "today", emoji: "🔥", kind: "task", text: (dueToday === 1 ? t("wel.dueTodayOne") : t("wel.dueTodayMany")).replace("{n}", String(dueToday)) });
     if (dueTomorrow > 0)
-      items.push({ id: "soon", emoji: "⚡", kind: "task", text: `${dueTomorrow} task${dueTomorrow === 1 ? "" : "s"} due within 24 hours` });
+      items.push({ id: "soon", emoji: "⚡", kind: "task", text: (dueTomorrow === 1 ? t("wel.dueTomOne") : t("wel.dueTomMany")).replace("{n}", String(dueTomorrow)) });
     if (soon)
       items.push({
         id: "event",
         emoji: "📅",
         kind: "event",
-        text: soon.inMin <= 1 ? `${soon.e.title} is starting now` : `${soon.e.title} in ${soon.inMin} minutes`,
+        text: soon.inMin <= 1 ? t("wel.eventNow").replace("{title}", soon.e.title) : t("wel.eventIn").replace("{title}", soon.e.title).replace("{n}", String(soon.inMin)),
       });
     if (gmail.important > 0)
       items.push({
         id: "mail",
         emoji: "🏦",
         kind: "mail",
-        text: `${gmail.important} unread message${gmail.important === 1 ? "" : "s"} from the Sparkasse`,
+        text: (gmail.important === 1 ? t("wel.mailOne") : t("wel.mailMany")).replace("{n}", String(gmail.important)),
       });
 
     return {
@@ -109,7 +110,7 @@ export function WelcomeAlert() {
       hasTasks: items.some((i) => i.kind === "task"),
       hasEvent: items.some((i) => i.kind === "event"),
     };
-  }, [tasks, events, gmail.important]);
+  }, [tasks, events, gmail.important, t]);
 
   useEffect(() => {
     if (!hydrated || decided.current || dismissedThisLoad) return;
@@ -159,6 +160,7 @@ function AlertCard({
 }) {
   const reduced = useReducedMotion();
   const lang = useLang();
+  const t = useT();
   const { items, hasTasks, hasEvent } = snapshot;
   const multiple = items.length > 1;
 
@@ -191,10 +193,10 @@ function AlertCard({
 
   // primary route: everything at once → dashboard, calendar-only → calendar, else tasks
   const routes: { label: string; href: string }[] = [];
-  if (multiple) routes.push({ label: "View Dashboard", href: "/" });
-  if (hasTasks) routes.push({ label: "View Tasks", href: "/tasks" });
-  if (hasEvent) routes.push({ label: "Open Calendar", href: "/calendar" });
-  if (routes.length === 0) routes.push({ label: "Open Mail", href: "/mail" });
+  if (multiple) routes.push({ label: t("wel.viewDashboard"), href: "/" });
+  if (hasTasks) routes.push({ label: t("wel.viewTasks"), href: "/tasks" });
+  if (hasEvent) routes.push({ label: t("wel.openCalendar"), href: "/calendar" });
+  if (routes.length === 0) routes.push({ label: t("wel.openMail"), href: "/mail" });
   const actions = routes.slice(0, 2);
 
   const particles = useMemo(
@@ -277,7 +279,7 @@ function AlertCard({
 
           <button
             onClick={onClose}
-            aria-label="Dismiss"
+            aria-label={t("wel.dismiss")}
             className="absolute right-4 top-4 z-10 rounded-lg p-1.5 text-faint transition-colors hover:bg-white/[0.08] hover:text-ink"
           >
             <X size={16} />
@@ -298,7 +300,7 @@ function AlertCard({
                   {greetingFor(lang, userName)}
                 </h2>
                 <p className="text-[13px] text-muted">
-                  {multiple ? "Here's what needs you." : "One thing needs you."}
+                  {multiple ? t("wel.needsYouMany") : t("wel.needsYouOne")}
                 </p>
               </div>
             </div>
@@ -324,7 +326,7 @@ function AlertCard({
               transition={{ delay: 0.14 + items.length * 0.07 + 0.05 }}
               className="mt-4 text-[13px] text-muted"
             >
-              {multiple ? "Let's get everything under control." : "Let's take care of it."}
+              {multiple ? t("wel.controlMany") : t("wel.controlOne")}
             </motion.p>
 
             <div className="mt-5 flex flex-wrap items-center gap-2">
@@ -334,7 +336,7 @@ function AlertCard({
                 </Link>
               ))}
               <Button variant="ghost" onClick={onClose} className="ml-auto">
-                Dismiss
+                {t("wel.dismiss")}
               </Button>
             </div>
           </div>

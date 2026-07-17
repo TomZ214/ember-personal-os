@@ -218,7 +218,7 @@ function AddHabit({ open, onClose }: { open: boolean; onClose: () => void }) {
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="New habit">
+    <Modal open={open} onClose={onClose} title={t("habits.new")}>
       <div className="flex flex-col gap-4">
         <label>
           <Label>{t("habits.name")}</Label>
