@@ -8,6 +8,7 @@ import {
   Trash2, UploadCloud,
 } from "lucide-react";
 import { useEmber, useHydrated } from "@/lib/store";
+import { useT } from "@/lib/i18n";
 import { deleteBlob, getBlob, putBlob } from "@/lib/idb";
 import type { FileMeta } from "@/lib/types";
 import { EmptyState, PageHeader } from "@/components/ui/misc";
@@ -28,6 +29,7 @@ const fmtSize = (b: number) =>
 
 export default function FilesPage() {
   const hydrated = useHydrated();
+  const t = useT();
   const files = useEmber((s) => s.files);
   const addFile = useEmber((s) => s.addFile);
   const removeFile = useEmber((s) => s.deleteFile);
@@ -61,7 +63,7 @@ export default function FilesPage() {
     async (list: FileList | File[]) => {
       for (const file of Array.from(list)) {
         if (file.size > 50 * 1_048_576) {
-          toast(`"${file.name}" is over 50 MB — skipped`, "info");
+          toast(`"${file.name}" > 50 MB — ${t("files.skipped")}`, "info");
           continue;
         }
         const meta: FileMeta = {
@@ -74,14 +76,14 @@ export default function FilesPage() {
         await putBlob(meta.id, file);
         addFile(meta);
       }
-      toast("Upload complete");
+      toast(t("files.uploadComplete"));
     },
-    [addFile],
+    [addFile, t],
   );
 
   const download = async (f: FileMeta) => {
     const blob = await getBlob(f.id);
-    if (!blob) return toast("File data missing", "info");
+    if (!blob) return toast(t("files.dataMissing"), "info");
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -96,7 +98,7 @@ export default function FilesPage() {
 
   return (
     <div>
-      <PageHeader title="Files" sub={files.length ? `${files.length} files · ${fmtSize(totalSize)} stored locally` : "Your private local drive"} />
+      <PageHeader title={t("files.title")} sub={files.length ? `${files.length} ${t("files.count")} · ${fmtSize(totalSize)} ${t("files.stored")}` : t("files.sub")} />
 
       {/* dropzone */}
       <button
@@ -115,8 +117,8 @@ export default function FilesPage() {
         <motion.span animate={dragOver ? { y: [-2, 2, -2] } : {}} transition={{ repeat: Infinity, duration: 0.8 }}>
           <UploadCloud size={26} className={dragOver ? "text-accent" : "text-muted"} />
         </motion.span>
-        <p className="text-sm font-medium">{dragOver ? "Drop to upload" : "Drop files here, or click to browse"}</p>
-        <p className="text-xs text-faint">Stored in your browser (IndexedDB) — never leaves this device · 50 MB max</p>
+        <p className="text-sm font-medium">{dragOver ? t("files.dropToUpload") : t("files.dropHere")}</p>
+        <p className="text-xs text-faint">{t("files.storedHint")}</p>
       </button>
       <input
         ref={inputRef}
@@ -124,12 +126,12 @@ export default function FilesPage() {
         multiple
         className="hidden"
         onChange={(e) => e.target.files?.length && ingest(e.target.files)}
-        aria-label="Upload files"
+        aria-label={t("files.uploadFiles")}
       />
 
       {files.length === 0 ? (
         <div className="panel">
-          <EmptyState icon={<FileBox size={20} />} title="No files yet" hint="Drag anything onto the zone above — images get previews." />
+          <EmptyState icon={<FileBox size={20} />} title={t("files.none")} hint={t("files.noneHint")} />
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
@@ -166,7 +168,7 @@ export default function FilesPage() {
                         <Download size={14} className="mx-auto" />
                       </button>
                       <button
-                        onClick={async () => { await deleteBlob(f.id); removeFile(f.id); toast("File deleted", "info"); }}
+                        onClick={async () => { await deleteBlob(f.id); removeFile(f.id); toast(t("files.deleted"), "info"); }}
                         aria-label={`Delete ${f.name}`}
                         className="flex-1 rounded-lg bg-white/[0.06] py-1.5 text-muted transition-colors hover:text-danger"
                       >

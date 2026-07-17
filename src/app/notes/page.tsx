@@ -8,6 +8,7 @@ import {
   ChevronLeft, Eye, FolderPlus, NotebookPen, Pencil, Pin, Plus, Search, Trash2,
 } from "lucide-react";
 import { useEmber, useHydrated } from "@/lib/store";
+import { useT } from "@/lib/i18n";
 import { renderMarkdown } from "@/lib/markdown";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/inputs";
@@ -25,6 +26,7 @@ export default function NotesPage() {
 function Notes() {
   const hydrated = useHydrated();
   const params = useSearchParams();
+  const t = useT();
   const { notes, folders, addNote, updateNote, deleteNote, addFolder } = useEmber();
   const [folderId, setFolderId] = useState<string | "all">("all");
   const [query, setQuery] = useState("");
@@ -66,24 +68,24 @@ function Notes() {
         <div className="mb-3 flex items-center gap-2">
           <div className="relative flex-1">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
-            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search notes…" className="h-9 pl-9" aria-label="Search notes" />
+            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("notes.searchPh")} className="h-9 pl-9" aria-label={t("notes.search")} />
           </div>
-          <Button size="sm" variant="primary" onClick={createNote} aria-label="New note">
+          <Button size="sm" variant="primary" onClick={createNote} aria-label={t("notes.new")}>
             <Plus size={15} />
           </Button>
         </div>
 
         <div className="mb-3 flex flex-wrap items-center gap-1.5">
-          <FolderChip label="All" active={folderId === "all"} onClick={() => setFolderId("all")} />
+          <FolderChip label={t("notes.all")} active={folderId === "all"} onClick={() => setFolderId("all")} />
           {folders.map((f) => (
             <FolderChip key={f.id} label={f.name} active={folderId === f.id} onClick={() => setFolderId(f.id)} />
           ))}
           <button
             onClick={() => {
-              const name = prompt("Folder name");
+              const name = prompt(t("notes.folderName"));
               if (name?.trim()) addFolder(name.trim());
             }}
-            aria-label="New folder"
+            aria-label={t("notes.newFolder")}
             className="flex h-7 w-7 items-center justify-center rounded-full text-faint transition-colors hover:bg-white/[0.06] hover:text-ink"
           >
             <FolderPlus size={14} />
@@ -92,7 +94,7 @@ function Notes() {
 
         <div className="panel flex-1 divide-y divide-white/[0.05] overflow-y-auto">
           {filtered.length === 0 && (
-            <EmptyState icon={<NotebookPen size={20} />} title="No notes here" hint="Create one — first line becomes the title." />
+            <EmptyState icon={<NotebookPen size={20} />} title={t("notes.none")} hint={t("notes.noneHint")} />
           )}
           {filtered.map((n) => (
             <button
@@ -104,10 +106,10 @@ function Notes() {
             >
               <div className="flex items-center gap-2">
                 {n.pinned && <Pin size={12} className="shrink-0 rotate-45 text-accent" />}
-                <p className="truncate text-sm font-medium">{n.title || "Untitled"}</p>
+                <p className="truncate text-sm font-medium">{n.title || t("notes.untitled")}</p>
               </div>
               <p className="mt-1 truncate text-xs text-faint">
-                {n.body.replace(/[#*`>\-]/g, "").trim().slice(0, 80) || "Empty note"}
+                {n.body.replace(/[#*`>\-]/g, "").trim().slice(0, 80) || t("notes.emptyNote")}
               </p>
               <p className="mt-1 text-[11px] text-faint">
                 {formatDistanceToNow(parseISO(n.updatedAt), { addSuffix: true })}
@@ -121,24 +123,24 @@ function Notes() {
       <div className={`min-w-0 flex-1 flex-col md:flex ${mobilePane === "editor" ? "flex" : "hidden"}`}>
         {!active ? (
           <div className="panel flex flex-1 items-center justify-center">
-            <EmptyState icon={<NotebookPen size={20} />} title="Select a note" hint="Or create a new one — markdown supported." />
+            <EmptyState icon={<NotebookPen size={20} />} title={t("notes.selectNote")} hint={t("notes.selectHint")} />
           </div>
         ) : (
           <div className="panel flex flex-1 flex-col overflow-hidden">
             <div className="flex items-center gap-2 border-b border-white/[0.06] px-4 py-2.5">
-              <button onClick={() => setMobilePane("list")} className="mr-1 text-muted md:hidden" aria-label="Back to list">
+              <button onClick={() => setMobilePane("list")} className="mr-1 text-muted md:hidden" aria-label={t("notes.backToList")}>
                 <ChevronLeft size={18} />
               </button>
               <input
                 value={active.title}
                 onChange={(e) => updateNote(active.id, { title: e.target.value })}
                 className="min-w-0 flex-1 bg-transparent text-[15px] font-semibold tracking-tight focus:outline-none"
-                placeholder="Untitled"
-                aria-label="Note title"
+                placeholder={t("notes.untitled")}
+                aria-label={t("notes.untitled")}
               />
               <button
                 onClick={() => updateNote(active.id, { pinned: !active.pinned })}
-                aria-label={active.pinned ? "Unpin" : "Pin"}
+                aria-label={active.pinned ? t("notes.unpin") : t("notes.pin")}
                 aria-pressed={active.pinned}
                 className={`rounded-lg p-1.5 transition-colors ${active.pinned ? "text-accent" : "text-faint hover:text-ink"}`}
               >
@@ -146,20 +148,20 @@ function Notes() {
               </button>
               <button
                 onClick={() => setMode(mode === "edit" ? "preview" : "edit")}
-                aria-label={mode === "edit" ? "Preview" : "Edit"}
+                aria-label={mode === "edit" ? t("notes.preview") : t("notes.edit")}
                 className="flex items-center gap-1.5 rounded-lg bg-white/[0.06] px-2.5 py-1.5 text-xs font-medium text-muted transition-colors hover:text-ink"
               >
                 {mode === "edit" ? <Eye size={13} /> : <Pencil size={13} />}
-                {mode === "edit" ? "Preview" : "Edit"}
+                {mode === "edit" ? t("notes.preview") : t("notes.edit")}
               </button>
               <button
                 onClick={() => {
                   deleteNote(active.id);
                   setActiveId(null);
                   setMobilePane("list");
-                  toast("Note deleted", "info");
+                  toast(t("notes.deleted"), "info");
                 }}
-                aria-label="Delete note"
+                aria-label={t("notes.deleteNote")}
                 className="rounded-lg p-1.5 text-faint transition-colors hover:text-danger"
               >
                 <Trash2 size={15} />
@@ -176,9 +178,9 @@ function Notes() {
                   transition={{ duration: 0.12 }}
                   value={active.body}
                   onChange={(e) => updateNote(active.id, { body: e.target.value })}
-                  placeholder={"Write in markdown…\n\n# Heading\n- list item\n**bold** and *italic*\n```\ncode\n```"}
+                  placeholder={t("notes.writePh") + "\n\n# Heading\n- list item\n**bold** and *italic*\n```\ncode\n```"}
                   className="flex-1 resize-none bg-transparent p-5 font-mono text-[13px] leading-relaxed placeholder:text-faint focus:outline-none"
-                  aria-label="Note body"
+                  aria-label={t("notes.bodyPh")}
                   autoFocus
                 />
               ) : (
@@ -194,7 +196,7 @@ function Notes() {
                   {active.body.trim() ? (
                     <div className="prose-ember text-[15px]" dangerouslySetInnerHTML={{ __html: renderMarkdown(active.body) }} />
                   ) : (
-                    <p className="text-sm text-faint">Empty note — double-click or hit Edit to start writing.</p>
+                    <p className="text-sm text-faint">{t("notes.emptyHint")}</p>
                   )}
                 </motion.div>
               )}

@@ -8,6 +8,7 @@ import { Cake, Mail, Pencil, Phone, Plus, Search, Trash2, Users } from "lucide-r
 import { useEmber, useHydrated } from "@/lib/store";
 import { useGoogleContacts } from "@/hooks/useIntegrations";
 import type { Contact } from "@/lib/types";
+import { useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input, Label, Select, Textarea } from "@/components/ui/inputs";
@@ -47,6 +48,7 @@ export default function ContactsPage() {
   const hydrated = useHydrated();
   const contacts = useEmber((s) => s.contacts);
   const google = useGoogleContacts();
+  const t = useT();
   const [group, setGroup] = useState("all");
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<Contact | null>(null);
@@ -98,11 +100,11 @@ export default function ContactsPage() {
   return (
     <div>
       <PageHeader
-        title="Contacts"
-        sub={`${people.length} people${google.connected ? ` · ${google.contacts.length} from Google` : ""}`}
+        title={t("contacts.title")}
+        sub={`${people.length} ${t("contacts.people")}${google.connected ? ` · ${google.contacts.length} ${t("contacts.fromGoogle")}` : ""}`}
         actions={
           <Button variant="primary" onClick={() => setCreating(true)}>
-            <Plus size={16} /> New contact
+            <Plus size={16} /> {t("contacts.new")}
           </Button>
         }
       />
@@ -118,7 +120,7 @@ export default function ContactsPage() {
             >
               <Cake size={13} style={{ color: "var(--c-rose)" }} />
               <span className="font-medium">{c.name}</span>
-              <span className="text-faint">{days === 0 ? "today! 🎉" : days === 1 ? "tomorrow" : `in ${days} days`}</span>
+              <span className="text-faint">{days === 0 ? t("contacts.bdayToday") : days === 1 ? t("contacts.bdayTomorrow") : t("contacts.bdayInDays").replace("{n}", String(days))}</span>
             </motion.span>
           ))}
         </div>
@@ -130,16 +132,16 @@ export default function ContactsPage() {
             key={g}
             onClick={() => setGroup(g)}
             aria-pressed={group === g}
-            className={`rounded-full px-3.5 py-1.5 text-[13px] font-medium capitalize transition-colors ${
+            className={`rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
               group === g ? "bg-accent/15 text-accent" : "bg-white/[0.05] text-muted hover:bg-white/[0.08] hover:text-ink"
             }`}
           >
-            {g}
+            {t(`contacts.g.${g}`)}
           </button>
         ))}
         <div className="relative ml-auto w-full sm:w-60">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
-          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search people…" className="h-9 pl-9" aria-label="Search contacts" />
+          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("contacts.searchPh")} className="h-9 pl-9" aria-label={t("contacts.search")} />
         </div>
       </div>
 
@@ -148,21 +150,21 @@ export default function ContactsPage() {
           {people.length === 0 && !query ? (
             <EmptyState
               icon={<Users size={20} />}
-              title="No contacts yet"
+              title={t("contacts.none")}
               hint="Add the people who matter — or pull them straight from your Google account."
               action={
                 <div className="flex gap-2">
-                  <Button variant="primary" onClick={() => setCreating(true)}>Add contact</Button>
+                  <Button variant="primary" onClick={() => setCreating(true)}>{t("contacts.add")}</Button>
                   {!google.connected && (
                     <Link href="/settings/connections">
-                      <Button>Connect Google</Button>
+                      <Button>{t("contacts.connectGoogle")}</Button>
                     </Link>
                   )}
                 </div>
               }
             />
           ) : (
-            <EmptyState icon={<Users size={20} />} title="No one here" hint="Nothing matches this filter." />
+            <EmptyState icon={<Users size={20} />} title={t("contacts.noOne")} hint={t("contacts.nothingMatches")} />
           )}
         </div>
       ) : (
@@ -192,8 +194,8 @@ export default function ContactsPage() {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <p className="truncate font-medium">{c.name}</p>
-                  <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] capitalize text-faint">
-                    {c.source === "google" ? "Google" : c.group}
+                  <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] text-faint">
+                    {c.source === "google" ? "Google" : t(`contacts.g.${c.group}`)}
                   </span>
                 </div>
                 <div className="mt-1.5 flex flex-col gap-1 text-[13px] text-muted">
@@ -226,6 +228,7 @@ export default function ContactsPage() {
 }
 
 function ContactEditor({ open, contact, onClose }: { open: boolean; contact?: Contact; onClose: () => void }) {
+  const t = useT();
   const addContact = useEmber((s) => s.addContact);
   const updateContact = useEmber((s) => s.updateContact);
   const deleteContact = useEmber((s) => s.deleteContact);
@@ -262,58 +265,58 @@ function ContactEditor({ open, contact, onClose }: { open: boolean; contact?: Co
     };
     if (contact) {
       updateContact(contact.id, data);
-      toast("Contact updated");
+      toast(t("contacts.updated"));
     } else {
       addContact(data);
-      toast("Contact added");
+      toast(t("contacts.added"));
     }
     onClose();
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={contact ? "Edit contact" : "New contact"}>
+    <Modal open={open} onClose={onClose} title={contact ? t("contacts.edit") : t("contacts.new")}>
       <div className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-3">
           <label>
-            <Label>Name</Label>
+            <Label>{t("contacts.name")}</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} autoFocus />
           </label>
           <label>
-            <Label>Group</Label>
+            <Label>{t("contacts.group")}</Label>
             <Select value={group} onChange={(e) => setGroup(e.target.value as Contact["group"])}>
-              <option value="friends">Friends</option>
-              <option value="family">Family</option>
-              <option value="work">Work</option>
+              <option value="friends">{t("contacts.friends")}</option>
+              <option value="family">{t("contacts.family")}</option>
+              <option value="work">{t("contacts.work")}</option>
             </Select>
           </label>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <label>
-            <Label>Phone</Label>
+            <Label>{t("contacts.phone")}</Label>
             <Input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" />
           </label>
           <label>
-            <Label>Email</Label>
+            <Label>{t("contacts.email")}</Label>
             <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
           </label>
         </div>
         <label>
-          <Label>Birthday</Label>
+          <Label>{t("contacts.birthday")}</Label>
           <Input type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)} />
         </label>
         <label>
-          <Label>Notes</Label>
-          <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="How you met, what they love…" />
+          <Label>{t("contacts.notes")}</Label>
+          <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder={t("contacts.notesPh")} />
         </label>
         <div className="flex items-center justify-between gap-2">
           {contact ? (
-            <Button variant="danger" size="sm" onClick={() => { deleteContact(contact.id); toast("Contact removed", "info"); onClose(); }}>
+            <Button variant="danger" size="sm" onClick={() => { deleteContact(contact.id); toast(t("contacts.removed"), "info"); onClose(); }}>
               <Trash2 size={14} /> Delete
             </Button>
           ) : <span />}
           <div className="flex gap-2">
-            <Button variant="ghost" onClick={onClose}>Cancel</Button>
-            <Button variant="primary" onClick={save} disabled={!name.trim()}>{contact ? "Save" : "Add contact"}</Button>
+            <Button variant="ghost" onClick={onClose}>{t("action.cancel")}</Button>
+            <Button variant="primary" onClick={save} disabled={!name.trim()}>{contact ? t("action.save") : t("contacts.add")}</Button>
           </div>
         </div>
       </div>

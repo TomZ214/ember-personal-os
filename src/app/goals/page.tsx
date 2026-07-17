@@ -6,6 +6,7 @@ import { differenceInDays, parseISO } from "date-fns";
 import { Check, Flag, Plus, Trash2 } from "lucide-react";
 import { useEmber, useHydrated } from "@/lib/store";
 import { CATEGORY_VAR, type CategoryColor, type Goal } from "@/lib/types";
+import { useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input, Label, Textarea } from "@/components/ui/inputs";
@@ -17,6 +18,7 @@ const COLORS: CategoryColor[] = ["ember", "amber", "sage", "sky", "lilac", "rose
 export default function GoalsPage() {
   const hydrated = useHydrated();
   const goals = useEmber((s) => s.goals);
+  const t = useT();
   const [adding, setAdding] = useState(false);
 
   if (!hydrated) return <div className="skeleton h-[70vh]" style={{ borderRadius: 18 }} />;
@@ -27,11 +29,11 @@ export default function GoalsPage() {
   return (
     <div>
       <PageHeader
-        title="Goals"
-        sub={goals.length ? `${goals.length} active · ${milestonesDone}/${milestonesAll} milestones reached` : "The long game"}
+        title={t("goals.title")}
+        sub={goals.length ? `${goals.length} ${t("goals.active")} · ${milestonesDone}/${milestonesAll} ${t("goals.milestonesReached")}` : t("goals.sub")}
         actions={
           <Button variant="primary" onClick={() => setAdding(true)}>
-            <Plus size={16} /> New goal
+            <Plus size={16} /> {t("goals.new")}
           </Button>
         }
       />
@@ -40,9 +42,9 @@ export default function GoalsPage() {
         <div className="panel">
           <EmptyState
             icon={<Flag size={20} />}
-            title="No goals yet"
-            hint="Pick one thing that matters this year and break it into milestones."
-            action={<Button variant="primary" onClick={() => setAdding(true)}>Set your first goal</Button>}
+            title={t("goals.none")}
+            hint={t("goals.noneHint")}
+            action={<Button variant="primary" onClick={() => setAdding(true)}>{t("goals.setFirst")}</Button>}
           />
         </div>
       ) : (
@@ -66,6 +68,7 @@ export default function GoalsPage() {
 }
 
 function GoalCard({ goal }: { goal: Goal }) {
+  const t = useT();
   const toggleMilestone = useEmber((s) => s.toggleMilestone);
   const deleteGoal = useEmber((s) => s.deleteGoal);
   const c = CATEGORY_VAR[goal.color];
@@ -109,11 +112,11 @@ function GoalCard({ goal }: { goal: Goal }) {
 
       <div className="mt-4 flex items-center justify-between border-t border-white/[0.06] pt-3">
         <span className="num text-xs text-faint">
-          {daysLeft === null ? "No deadline" : daysLeft >= 0 ? `${daysLeft} days left` : `${-daysLeft} days overdue`}
+          {daysLeft === null ? t("goals.noDeadline") : daysLeft >= 0 ? `${daysLeft} ${t("goals.daysLeft")}` : `${-daysLeft} ${t("goals.daysOverdue")}`}
         </span>
         <button
-          onClick={() => { deleteGoal(goal.id); toast("Goal removed", "info"); }}
-          aria-label={`Delete ${goal.title}`}
+          onClick={() => { deleteGoal(goal.id); toast(t("goals.removed"), "info"); }}
+          aria-label={`${t("action.delete")} ${goal.title}`}
           className="rounded-lg p-1.5 text-faint opacity-0 transition-all hover:text-danger group-hover:opacity-100"
         >
           <Trash2 size={14} />
@@ -124,6 +127,7 @@ function GoalCard({ goal }: { goal: Goal }) {
 }
 
 function AddGoal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useT();
   const addGoal = useEmber((s) => s.addGoal);
   const [title, setTitle] = useState("");
   const [why, setWhy] = useState("");
@@ -144,30 +148,30 @@ function AddGoal({ open, onClose }: { open: boolean; onClose: () => void }) {
         .filter(Boolean)
         .map((m) => ({ id: crypto.randomUUID(), title: m, done: false })),
     });
-    toast("Goal set — first milestone awaits");
+    toast(t("goals.created"));
     setTitle(""); setWhy(""); setDeadline(""); setMilestones("");
     onClose();
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="New goal">
+    <Modal open={open} onClose={onClose} title={t("goals.new")}>
       <div className="flex flex-col gap-4">
         <label>
-          <Label>Goal</Label>
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Run a half marathon" autoFocus />
+          <Label>{t("goals.goal")}</Label>
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("goals.goalPh")} autoFocus />
         </label>
         <label>
-          <Label>Why it matters</Label>
+          <Label>{t("goals.why")}</Label>
           <Textarea value={why} onChange={(e) => setWhy(e.target.value)} rows={2}
-            placeholder="You'll read this on the hard days." />
+            placeholder={t("goals.whyPh")} />
         </label>
         <div className="grid grid-cols-2 gap-3">
           <label>
-            <Label>Deadline</Label>
+            <Label>{t("goals.deadline")}</Label>
             <Input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
           </label>
           <div>
-            <Label>Color</Label>
+            <Label>{t("goals.color")}</Label>
             <div className="flex h-10 items-center gap-2">
               {COLORS.map((cc) => (
                 <button key={cc} onClick={() => setColor(cc)} aria-label={cc} aria-pressed={color === cc}
@@ -178,13 +182,13 @@ function AddGoal({ open, onClose }: { open: boolean; onClose: () => void }) {
           </div>
         </div>
         <label>
-          <Label>Milestones (one per line)</Label>
+          <Label>{t("goals.milestones")}</Label>
           <Textarea value={milestones} onChange={(e) => setMilestones(e.target.value)} rows={4}
-            placeholder={"Run 5k without stopping\nRun 10k\nRegister for the race"} />
+            placeholder={t("goals.milestonesPh")} />
         </label>
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button variant="primary" onClick={save} disabled={!title.trim()}>Set goal</Button>
+          <Button variant="ghost" onClick={onClose}>{t("action.cancel")}</Button>
+          <Button variant="primary" onClick={save} disabled={!title.trim()}>{t("goals.set")}</Button>
         </div>
       </div>
     </Modal>

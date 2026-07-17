@@ -7,6 +7,7 @@ import { Flame, Plus, Repeat, Trash2 } from "lucide-react";
 import { useEmber, useHydrated } from "@/lib/store";
 import { dayKey, todayKey } from "@/lib/dates";
 import { CATEGORY_VAR, type CategoryColor, type Habit } from "@/lib/types";
+import { useT } from "@/lib/i18n";
 import { streak } from "@/components/widgets/HabitsToday";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -20,6 +21,7 @@ const EMOJIS = ["🏃", "📖", "🧘", "💧", "🎸", "✍️", "🥗", "😴"
 export default function HabitsPage() {
   const hydrated = useHydrated();
   const habits = useEmber((s) => s.habits);
+  const t = useT();
   const [adding, setAdding] = useState(false);
   const today = todayKey();
   const doneToday = habits.filter((h) => h.log[today]).length;
@@ -29,11 +31,11 @@ export default function HabitsPage() {
   return (
     <div>
       <PageHeader
-        title="Habits"
-        sub={habits.length ? `${doneToday} of ${habits.length} kept today` : "Small things, repeated"}
+        title={t("habits.title")}
+        sub={habits.length ? `${doneToday} ${t("habits.of")} ${habits.length} ${t("habits.keptToday")}` : t("habits.sub")}
         actions={
           <Button variant="primary" onClick={() => setAdding(true)}>
-            <Plus size={16} /> New habit
+            <Plus size={16} /> {t("habits.new")}
           </Button>
         }
       />
@@ -42,9 +44,9 @@ export default function HabitsPage() {
         <div className="panel">
           <EmptyState
             icon={<Repeat size={20} />}
-            title="No habits yet"
-            hint="Start with one tiny daily habit — reading two pages beats reading none."
-            action={<Button variant="primary" onClick={() => setAdding(true)}>Create your first habit</Button>}
+            title={t("habits.none")}
+            hint={t("habits.noneHint")}
+            action={<Button variant="primary" onClick={() => setAdding(true)}>{t("habits.createFirst")}</Button>}
           />
         </div>
       ) : (
@@ -68,6 +70,7 @@ export default function HabitsPage() {
 }
 
 function HabitRow({ habit }: { habit: Habit }) {
+  const t = useT();
   const toggleHabit = useEmber((s) => s.toggleHabit);
   const deleteHabit = useEmber((s) => s.deleteHabit);
   const c = CATEGORY_VAR[habit.color];
@@ -101,7 +104,7 @@ function HabitRow({ habit }: { habit: Habit }) {
           <div>
             <p className="font-medium">{habit.name}</p>
             <p className="text-xs text-muted">
-              {habit.target === 7 ? "Every day" : `${habit.target}× per week`} ·{" "}
+              {habit.target === 7 ? t("habits.everyDay") : habit.target === 1 ? t("habits.onceWeek") : `${habit.target}× ${t("habits.perWeek")}`} ·{" "}
               <span className="num" style={{ color: weekDone >= habit.target ? c : undefined }}>
                 {weekDone}/{habit.target} this week
               </span>
@@ -135,12 +138,12 @@ function HabitRow({ habit }: { habit: Habit }) {
         </div>
 
         <div className="flex items-center gap-5 text-center">
-          <Stat label="Streak" value={<span className="flex items-center justify-center gap-1" style={{ color: c }}><Flame size={14} />{s}</span>} />
-          <Stat label="Best" value={best} />
-          <Stat label="Total" value={total} />
+          <Stat label={t("habits.streak")} value={<span className="flex items-center justify-center gap-1" style={{ color: c }}><Flame size={14} />{s}</span>} />
+          <Stat label={t("habits.best")} value={best} />
+          <Stat label={t("habits.total")} value={total} />
           <button
-            onClick={() => { deleteHabit(habit.id); toast("Habit removed", "info"); }}
-            aria-label={`Delete ${habit.name}`}
+            onClick={() => { deleteHabit(habit.id); toast(t("habits.removed"), "info"); }}
+            aria-label={`${t("action.delete")} ${habit.name}`}
             className="rounded-lg p-2 text-faint transition-colors hover:text-danger"
           >
             <Trash2 size={15} />
@@ -199,6 +202,7 @@ function Heatmap({ habit }: { habit: Habit }) {
 }
 
 function AddHabit({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useT();
   const addHabit = useEmber((s) => s.addHabit);
   const [name, setName] = useState("");
   const [emoji, setEmoji] = useState("🏃");
@@ -208,7 +212,7 @@ function AddHabit({ open, onClose }: { open: boolean; onClose: () => void }) {
   const save = () => {
     if (!name.trim()) return;
     addHabit({ name: name.trim(), emoji, color, target });
-    toast("Habit created — day one starts now");
+    toast(t("habits.created"));
     setName("");
     onClose();
   };
@@ -217,11 +221,11 @@ function AddHabit({ open, onClose }: { open: boolean; onClose: () => void }) {
     <Modal open={open} onClose={onClose} title="New habit">
       <div className="flex flex-col gap-4">
         <label>
-          <Label>Name</Label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Read 20 pages" autoFocus />
+          <Label>{t("habits.name")}</Label>
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("habits.namePh")} autoFocus />
         </label>
         <div>
-          <Label>Icon</Label>
+          <Label>{t("habits.icon")}</Label>
           <div className="flex flex-wrap gap-1.5">
             {EMOJIS.map((e) => (
               <button
@@ -239,7 +243,7 @@ function AddHabit({ open, onClose }: { open: boolean; onClose: () => void }) {
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <Label>Color</Label>
+            <Label>{t("habits.color")}</Label>
             <div className="flex h-10 items-center gap-2">
               {COLORS.map((cc) => (
                 <button
@@ -254,20 +258,20 @@ function AddHabit({ open, onClose }: { open: boolean; onClose: () => void }) {
             </div>
           </div>
           <label>
-            <Label>Frequency</Label>
+            <Label>{t("habits.frequency")}</Label>
             <Select value={target} onChange={(e) => setTarget(Number(e.target.value))}>
-              <option value={7}>Every day</option>
-              <option value={5}>5× per week</option>
-              <option value={4}>4× per week</option>
-              <option value={3}>3× per week</option>
-              <option value={2}>2× per week</option>
-              <option value={1}>Once a week</option>
+              <option value={7}>{t("habits.everyDay")}</option>
+              <option value={5}>{`5× ${t("habits.perWeek")}`}</option>
+              <option value={4}>{`4× ${t("habits.perWeek")}`}</option>
+              <option value={3}>{`3× ${t("habits.perWeek")}`}</option>
+              <option value={2}>{`2× ${t("habits.perWeek")}`}</option>
+              <option value={1}>{t("habits.onceWeek")}</option>
             </Select>
           </label>
         </div>
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button variant="primary" onClick={save} disabled={!name.trim()}>Create habit</Button>
+          <Button variant="ghost" onClick={onClose}>{t("action.cancel")}</Button>
+          <Button variant="primary" onClick={save} disabled={!name.trim()}>{t("habits.create")}</Button>
         </div>
       </div>
     </Modal>
