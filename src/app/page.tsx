@@ -6,7 +6,7 @@ import { Mail } from "lucide-react";
 import { useEmber, useHydrated } from "@/lib/store";
 import { useGmailUnread } from "@/hooks/useIntegrations";
 import { greetingFor, useLang, useT } from "@/lib/i18n";
-import { todayKey } from "@/lib/dates";
+import { todayKey, dfLocale } from "@/lib/dates";
 import { ProgressRing } from "@/components/ui/misc";
 import { AgendaWidget } from "@/components/widgets/Agenda";
 import { BankGlanceWidget } from "@/components/widgets/BankGlance";
@@ -51,7 +51,7 @@ export default function Dashboard() {
     <div>
       <header className="mb-7 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-sm text-faint">{format(new Date(), "EEEE, MMMM d")}</p>
+          <p className="text-sm text-faint">{format(new Date(), lang === "de" ? "EEEE, d. MMMM" : "EEEE, MMMM d", { locale: dfLocale(lang) })}</p>
           <h1 className="mt-1 text-[26px] font-semibold tracking-tight sm:text-3xl">
             {greetingFor(lang, settings.userName)}
           </h1>
@@ -70,9 +70,9 @@ export default function Dashboard() {
             <span className="num text-lg font-semibold">{score}</span>
           </ProgressRing>
           <div className="leading-snug">
-            <p className="text-sm font-medium">Productivity</p>
+            <p className="text-sm font-medium">{t("dash.productivity")}</p>
             <p className="max-w-[18ch] text-xs text-muted">
-              {score >= 70 ? "You're on fire today." : score >= 35 ? "Solid momentum — keep going." : "The day is still young."}
+              {score >= 70 ? t("dash.onFire") : score >= 35 ? t("dash.momentum") : t("dash.dayYoung")}
             </p>
           </div>
         </div>

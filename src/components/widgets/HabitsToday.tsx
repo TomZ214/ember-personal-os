@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { ArrowUpRight, Flame } from "lucide-react";
 import { useEmber } from "@/lib/store";
 import { dayKey, todayKey } from "@/lib/dates";
+import { useT } from "@/lib/i18n";
 import { CATEGORY_VAR, type Habit } from "@/lib/types";
 import { subDays } from "date-fns";
 
@@ -24,6 +25,7 @@ export function streak(h: Habit): number {
 export function HabitsTodayWidget() {
   const habits = useEmber((s) => s.habits);
   const toggleHabit = useEmber((s) => s.toggleHabit);
+  const t = useT();
   const today = todayKey();
   const done = habits.filter((h) => h.log[today]).length;
 
@@ -31,17 +33,17 @@ export function HabitsTodayWidget() {
     <div className="panel flex h-full flex-col p-5">
       <div className="mb-4 flex items-center justify-between">
         <p className="text-[13px] font-medium text-muted">
-          Habits <span className="text-faint">· {done}/{habits.length}</span>
+          {t("w.habits")} <span className="text-faint">· {done}/{habits.length}</span>
         </p>
         <Link href="/habits" className="flex items-center gap-1 text-xs text-faint transition-colors hover:text-accent">
-          Streaks <ArrowUpRight size={13} />
+          {t("w.streaks")} <ArrowUpRight size={13} />
         </Link>
       </div>
 
       {habits.length === 0 && (
         <Link href="/habits" className="flex flex-1 flex-col items-center justify-center gap-1.5 py-6 text-center">
-          <p className="text-sm font-medium">No habits yet</p>
-          <p className="max-w-[26ch] text-xs text-muted">Start with one tiny daily habit — tap to create it.</p>
+          <p className="text-sm font-medium">{t("w.noHabits")}</p>
+          <p className="max-w-[26ch] text-xs text-muted">{t("w.noHabitsHint")}</p>
         </Link>
       )}
       <ul className="flex flex-col gap-1">

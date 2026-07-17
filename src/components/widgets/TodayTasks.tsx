@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUpRight, Check, CheckSquare, Plus } from "lucide-react";
 import { useEmber } from "@/lib/store";
 import { todayKey } from "@/lib/dates";
+import { useT } from "@/lib/i18n";
 import { PRIORITY_META } from "@/lib/types";
 import { celebrate } from "@/components/ui/celebrate";
 import { EmptyState } from "@/components/ui/misc";
@@ -15,6 +16,7 @@ export function TodayTasksWidget() {
   const updateTask = useEmber((s) => s.updateTask);
   const addTask = useEmber((s) => s.addTask);
   const [draft, setDraft] = useState("");
+  const tr = useT();
 
   const today = todayKey();
   const open = tasks
@@ -33,18 +35,18 @@ export function TodayTasksWidget() {
     <div className="panel flex h-full flex-col p-5">
       <div className="mb-4 flex items-center justify-between">
         <p className="text-[13px] font-medium text-muted">
-          Tasks <span className="text-faint">· {doneToday} done today</span>
+          {tr("w.tasks")} <span className="text-faint">· {tr("w.doneToday").replace("{n}", String(doneToday))}</span>
         </p>
         <Link href="/tasks" className="flex items-center gap-1 text-xs text-faint transition-colors hover:text-accent">
-          Board <ArrowUpRight size={13} />
+          {tr("w.taskBoard")} <ArrowUpRight size={13} />
         </Link>
       </div>
 
       {open.length === 0 ? (
         tasks.length === 0 ? (
-          <EmptyState icon={<CheckSquare size={20} />} title="Create your first task" hint="Type it in the box below — or press ⌘K from anywhere." />
+          <EmptyState icon={<CheckSquare size={20} />} title={tr("w.firstTask")} hint={tr("w.firstTaskHint")} />
         ) : (
-          <EmptyState icon={<CheckSquare size={20} />} title="All clear" hint="Nothing open. Enjoy it — it won't last." />
+          <EmptyState icon={<CheckSquare size={20} />} title={tr("w.allClear")} hint={tr("w.allClearHint")} />
         )
       ) : (
         <ul className="flex flex-col">
@@ -76,7 +78,7 @@ export function TodayTasksWidget() {
                     <span className="min-w-0 flex-1 truncate text-sm">{t.title}</span>
                     {t.due && (
                       <span className={`num shrink-0 text-[11px] ${overdue ? "font-medium text-danger" : "text-faint"}`}>
-                        {overdue ? "overdue" : t.due === today ? "today" : t.due.slice(5).replace("-", "/")}
+                        {overdue ? tr("w.overdue") : t.due === today ? tr("w.todayLower") : t.due.slice(5).replace("-", "/")}
                       </span>
                     )}
                     <span
@@ -99,9 +101,9 @@ export function TodayTasksWidget() {
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && submit()}
-          placeholder="Quick add for today…"
+          placeholder={tr("w.quickAddPh")}
           className="w-full bg-transparent text-sm placeholder:text-faint focus:outline-none"
-          aria-label="Quick add task"
+          aria-label={tr("w.quickAddPh")}
         />
       </div>
     </div>

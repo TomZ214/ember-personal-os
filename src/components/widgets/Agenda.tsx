@@ -6,10 +6,12 @@ import { motion } from "framer-motion";
 import { ArrowUpRight, CalendarDays, MapPin } from "lucide-react";
 import { eventOccursOn, useCalendarSource } from "@/hooks/useIntegrations";
 import { minutesToLabel, todayKey } from "@/lib/dates";
+import { useT } from "@/lib/i18n";
 import { EmptyState } from "@/components/ui/misc";
 
 export function AgendaWidget() {
   const cal = useCalendarSource();
+  const t = useT();
   const [nowMin, setNowMin] = useState(-1);
 
   useEffect(() => {
@@ -34,19 +36,19 @@ export function AgendaWidget() {
     <div className="panel flex h-full flex-col p-5">
       <div className="mb-4 flex items-center justify-between">
         <p className="text-[13px] font-medium text-muted">
-          Today’s agenda
-          {cal.connected && <span className="ml-2 text-[11px] text-faint">· Google synced</span>}
+          {t("w.agenda")}
+          {cal.connected && <span className="ml-2 text-[11px] text-faint">· {t("w.googleSynced")}</span>}
         </p>
         <Link href="/calendar" className="flex items-center gap-1 text-xs text-faint transition-colors hover:text-accent">
-          Calendar <ArrowUpRight size={13} />
+          {t("w.calendar")} <ArrowUpRight size={13} />
         </Link>
       </div>
 
       {list.length === 0 ? (
         <EmptyState
           icon={<CalendarDays size={20} />}
-          title="A clear day"
-          hint="No events today. Protect the calm — or press ⌘K and type one."
+          title={t("w.clearDay")}
+          hint={t("w.clearDayHint")}
         />
       ) : (
         <ol className="relative flex flex-col">
@@ -63,7 +65,7 @@ export function AgendaWidget() {
               >
                 <div className="flex w-11 shrink-0 flex-col items-end pt-0.5">
                   {e.allDay ? (
-                    <span className="text-[11px] font-medium text-faint">all day</span>
+                    <span className="text-[11px] font-medium text-faint">{t("w.allDay")}</span>
                   ) : (
                     <>
                       <span className="num text-[13px] font-medium">{minutesToLabel(e.start)}</span>
@@ -86,7 +88,7 @@ export function AgendaWidget() {
                     {e.title}
                     {current && (
                       <span className="ml-2 rounded-full bg-white/[0.08] px-2 py-0.5 text-[10px] font-medium text-accent">
-                        now
+                        {t("w.now")}
                       </span>
                     )}
                   </p>

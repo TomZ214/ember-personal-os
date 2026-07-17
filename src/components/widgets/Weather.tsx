@@ -7,6 +7,8 @@ import {
   Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Sun, WifiOff,
 } from "lucide-react";
 import { useEmber } from "@/lib/store";
+import { useLang, useT } from "@/lib/i18n";
+import { conditionLabel } from "@/lib/weather";
 
 interface Wx {
   temp: number;
@@ -17,21 +19,23 @@ interface Wx {
   days: { code: number; hi: number; lo: number; label: string }[];
 }
 
-function meta(code: number): { icon: typeof Sun; label: string } {
-  if (code === 0) return { icon: Sun, label: "Clear" };
-  if (code <= 2) return { icon: CloudSun, label: "Partly cloudy" };
-  if (code === 3) return { icon: Cloud, label: "Overcast" };
-  if (code <= 48) return { icon: CloudFog, label: "Fog" };
-  if (code <= 57) return { icon: CloudDrizzle, label: "Drizzle" };
-  if (code <= 67) return { icon: CloudRain, label: "Rain" };
-  if (code <= 77) return { icon: CloudSnow, label: "Snow" };
-  if (code <= 82) return { icon: CloudRain, label: "Showers" };
-  if (code <= 86) return { icon: CloudSnow, label: "Snow showers" };
-  return { icon: CloudLightning, label: "Thunderstorm" };
+function iconFor(code: number): typeof Sun {
+  if (code === 0) return Sun;
+  if (code <= 2) return CloudSun;
+  if (code === 3) return Cloud;
+  if (code <= 48) return CloudFog;
+  if (code <= 57) return CloudDrizzle;
+  if (code <= 67) return CloudRain;
+  if (code <= 77) return CloudSnow;
+  if (code <= 82) return CloudRain;
+  if (code <= 86) return CloudSnow;
+  return CloudLightning;
 }
 
 export function WeatherWidget() {
   const { latitude, longitude, place } = useEmber((s) => s.settings);
+  const t = useT();
+  const lang = useLang();
   const [wx, setWx] = useState<Wx | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -54,14 +58,14 @@ export function WeatherWidget() {
       })
       .then((d) => {
         if (cancelled || !d) return;
-        const days = ["Today", "Tomorrow", d.daily.time[2], d.daily.time[3]].map((label, i) => ({
+        const days = [0, 1, 2, 3].map((_, i) => ({
           code: d.daily.weather_code[i],
           hi: Math.round(d.daily.temperature_2m_max[i]),
           lo: Math.round(d.daily.temperature_2m_min[i]),
           label:
             i < 2
-              ? (label as string)
-              : new Date(d.daily.time[i]).toLocaleDateString("en", { weekday: "short" }),
+              ? ["__today__", "__tomorrow__"][i]
+              : new Date(d.daily.time[i]).toLocaleDateString(lang === "de" ? "de-DE" : "en", { weekday: "short" }),
         }));
         const data: Wx = {
           temp: Math.round(d.current.temperature_2m),
@@ -78,13 +82,13 @@ export function WeatherWidget() {
     return () => {
       cancelled = true;
     };
-  }, [latitude, longitude]);
+  }, [latitude, longitude, lang]);
 
   if (failed)
     return (
       <div className="panel flex h-full min-h-40 flex-col items-center justify-center gap-2 p-5 text-center">
         <WifiOff size={18} className="text-faint" />
-        <p className="text-sm text-muted">Weather unavailable offline</p>
+        <p className="text-sm text-muted">{t("w.wxOffline")}</p>
       </div>
     );
 
@@ -97,8 +101,9 @@ export function WeatherWidget() {
       </div>
     );
 
-  const m = meta(wx.code);
-  const Icon = m.icon;
+  const Icon = iconFor(wx.code);
+  const dayLabel = (label: string) =>
+    label === "__today__" ? t("w.today") : label === "__tomorrow__" ? t("w.tomorrow") : label;
 
   return (
     <Link href="/weather" className="panel panel-hover relative block h-full overflow-hidden p-5">
@@ -112,7 +117,7 @@ export function WeatherWidget() {
           <p className="text-[13px] font-medium text-muted">{place}</p>
           <p className="num mt-1 text-5xl font-semibold tracking-tight">{wx.temp}°</p>
           <p className="mt-1 text-sm text-muted">
-            {m.label} · H {wx.hi}° L {wx.lo}°
+            {conditionLabel(wx.code, lang)} · H {wx.hi}° L {wx.lo}°
           </p>
         </div>
         <motion.span
@@ -126,10 +131,10 @@ export function WeatherWidget() {
       </div>
       <div className="mt-5 grid grid-cols-4 gap-1 border-t border-white/[0.06] pt-4">
         {wx.days.map((d, i) => {
-          const DIcon = meta(d.code).icon;
+          const DIcon = iconFor(d.code);
           return (
             <div key={i} className="flex flex-col items-center gap-1.5">
-              <span className="text-[11px] text-faint">{d.label === "Today" ? "Now" : d.label.slice(0, 3)}</span>
+              <span className="text-[11px] text-faint">{d.label === "__today__" ? t("w.now") : dayLabel(d.label).slice(0, 3)}</span>
               <DIcon size={16} className="text-muted" strokeWidth={1.8} />
               <span className="num text-xs">
                 {d.hi}° <span className="text-faint">{d.lo}°</span>

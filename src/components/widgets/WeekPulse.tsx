@@ -3,19 +3,22 @@
 import { motion } from "framer-motion";
 import { subDays, format } from "date-fns";
 import { useEmber } from "@/lib/store";
-import { dayKey, todayKey } from "@/lib/dates";
+import { dayKey, todayKey, dfLocale } from "@/lib/dates";
+import { useLang, useT } from "@/lib/i18n";
 
 /** Last 14 days of completed tasks + habit check-ins as a mini bar chart. */
 export function WeekPulseWidget() {
   const tasks = useEmber((s) => s.tasks);
   const habits = useEmber((s) => s.habits);
+  const t = useT();
+  const lang = useLang();
 
   const days = Array.from({ length: 14 }, (_, i) => {
     const d = subDays(new Date(), 13 - i);
     const key = dayKey(d);
-    const t = tasks.filter((x) => x.completedAt?.slice(0, 10) === key).length;
+    const tc = tasks.filter((x) => x.completedAt?.slice(0, 10) === key).length;
     const h = habits.filter((x) => x.log[key]).length;
-    return { key, label: format(d, "EEEEE"), tasks: t, habits: h, total: t + h };
+    return { key, label: format(d, "EEEEE", { locale: dfLocale(lang) }), tasks: tc, habits: h, total: tc + h };
   });
   const max = Math.max(4, ...days.map((d) => d.total));
   const thisWeek = days.slice(7).reduce((a, d) => a + d.total, 0);
@@ -25,13 +28,13 @@ export function WeekPulseWidget() {
   return (
     <div className="panel flex h-full flex-col p-5">
       <div className="mb-1 flex items-center justify-between">
-        <p className="text-[13px] font-medium text-muted">Two-week pulse</p>
+        <p className="text-[13px] font-medium text-muted">{t("w.twoWeekPulse")}</p>
         <p className={`num text-xs font-medium ${delta >= 0 ? "text-success" : "text-danger"}`}>
           {delta >= 0 ? "+" : ""}
-          {delta}% vs last week
+          {delta}{t("w.vsLastWeek")}
         </p>
       </div>
-      <p className="mb-4 text-xs text-faint">Tasks completed + habits kept, per day</p>
+      <p className="mb-4 text-xs text-faint">{t("w.pulseSub")}</p>
 
       <div className="flex flex-1 items-end gap-1.5">
         {days.map((d, i) => {
