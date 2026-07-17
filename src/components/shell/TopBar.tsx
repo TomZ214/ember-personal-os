@@ -6,6 +6,8 @@ import { format } from "date-fns";
 import { Flame, Search } from "lucide-react";
 import { useEmber } from "@/lib/store";
 import { useT } from "@/lib/i18n";
+import { useIsDesktop } from "@/lib/desktop";
+import { WindowControls } from "@/components/desktop/WindowControls";
 import { Kbd } from "@/components/ui/misc";
 
 function subscribeClock(cb: () => void) {
@@ -20,11 +22,20 @@ export function TopBar() {
   const clock = useSyncExternalStore(subscribeClock, clockSnapshot, clockServerSnapshot);
   const [time, date] = clock ? clock.split("|") : ["--:--", ""];
   const t = useT();
+  const desktop = useIsDesktop();
 
   return (
-    // pt-safe: in the iOS home-screen app the page runs under the status bar
-    <header className="sticky top-0 z-(--z-sticky) border-b border-white/[0.06] bg-bg-deep/70 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
-      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
+    // pt-safe: in the iOS home-screen app the page runs under the status bar.
+    // In the desktop shell this header doubles as the frameless title bar, so
+    // the whole strip (minus the interactive controls) is a drag region.
+    <header
+      className="sticky top-0 z-(--z-sticky) border-b border-white/[0.06] bg-bg-deep/70 pt-[env(safe-area-inset-top)] backdrop-blur-xl"
+      {...(desktop ? { "data-tauri-drag-region": true } : {})}
+    >
+      <div
+        className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6"
+        {...(desktop ? { "data-tauri-drag-region": true } : {})}
+      >
         <Link href="/" className="flex items-center gap-2.5">
           <span className="flex h-7 w-7 items-center justify-center rounded-[9px] bg-primary/15 text-primary-bright shadow-[0_0_18px_-2px_var(--primary-glow)]">
             <Flame size={15} strokeWidth={2.2} />
@@ -48,6 +59,12 @@ export function TopBar() {
             <p className="text-sm font-medium">{time}</p>
             <p className="text-[11px] text-faint">{date}</p>
           </div>
+          {desktop && (
+            <>
+              <span className="hidden h-6 w-px bg-white/[0.1] sm:block" aria-hidden />
+              <WindowControls />
+            </>
+          )}
         </div>
       </div>
     </header>

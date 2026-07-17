@@ -7,6 +7,7 @@ import { useEmber, useHydrated } from "@/lib/store";
 import { useT } from "@/lib/i18n";
 import { useBankStatus, useGoogleStatus } from "@/hooks/useIntegrations";
 import { DataSync } from "@/components/settings/DataSync";
+import { DesktopSettings } from "@/components/desktop/DesktopSettings";
 import { Button } from "@/components/ui/Button";
 import { LanguageToggle } from "@/components/ui/LanguageToggle";
 import { Input, Label } from "@/components/ui/inputs";
@@ -48,6 +49,8 @@ export default function SettingsPage() {
       <PageHeader title={t("settings.title")} sub={t("settings.sub")} />
 
       <div className="flex flex-col gap-4">
+        <DesktopSettings />
+
         <ConnectionsLink />
 
         <DataSync />

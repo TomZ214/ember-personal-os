@@ -4,6 +4,9 @@ import { usePathname } from "next/navigation";
 import { Celebrations } from "@/components/ui/celebrate";
 import { Toaster } from "@/components/ui/toast";
 import { CloudSyncEngine } from "@/hooks/useCloudSync";
+import { useIsDesktop } from "@/lib/desktop";
+import { DesktopProvider } from "@/components/desktop/DesktopProvider";
+import { ResizeHandles } from "@/components/desktop/ResizeHandles";
 import { CommandPalette } from "./CommandPalette";
 import { Dock } from "./Dock";
 import { MobileTabs } from "./MobileTabs";
@@ -13,6 +16,7 @@ import { WelcomeAlert } from "./WelcomeAlert";
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const desktop = useIsDesktop();
 
   // /add/<token> is the public family quick-add page: no nav, no sync engine —
   // visitors get a single form and zero access to anything else
@@ -26,7 +30,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <>
+    <DesktopProvider>
       <div className="ambient" aria-hidden />
       <TopBar />
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 pb-32 pt-6 sm:px-6 md:pb-28">
@@ -40,6 +44,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <CloudSyncEngine />
       <ViewportFix />
       <WelcomeAlert />
-    </>
+      {desktop && <ResizeHandles />}
+    </DesktopProvider>
   );
 }

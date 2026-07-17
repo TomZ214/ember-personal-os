@@ -899,6 +899,22 @@ const en: Dict = {
   "wel.viewTasks": "View Tasks",
   "wel.openCalendar": "Open Calendar",
   "wel.openMail": "Open Mail",
+
+  // desktop app (Tauri shell)
+  "desktop.section": "Desktop app",
+  "desktop.sectionSub": "EmberOS is running as a native app on this device.",
+  "desktop.version": "Version {v}",
+  "desktop.launchAtStartup": "Launch at startup",
+  "desktop.launchAtStartupSub": "Open EmberOS automatically when you sign in to Windows.",
+  "desktop.checkUpdates": "Check for updates",
+  "desktop.checking": "Checking…",
+  "desktop.updateTitle": "Update available",
+  "desktop.updateReady": "EmberOS {version} is ready to install.",
+  "desktop.later": "Later",
+  "desktop.restartUpdate": "Restart & update",
+  "desktop.downloading": "Downloading update…",
+  "desktop.upToDate": "EmberOS is up to date",
+  "desktop.updateFailed": "Update failed — please try again later",
 };
 
 const de: Dict = {
@@ -1787,6 +1803,22 @@ const de: Dict = {
   "wel.viewTasks": "Aufgaben ansehen",
   "wel.openCalendar": "Kalender öffnen",
   "wel.openMail": "Mail öffnen",
+
+  // desktop app (Tauri shell)
+  "desktop.section": "Desktop-App",
+  "desktop.sectionSub": "EmberOS läuft auf diesem Gerät als native App.",
+  "desktop.version": "Version {v}",
+  "desktop.launchAtStartup": "Beim Start öffnen",
+  "desktop.launchAtStartupSub": "EmberOS automatisch öffnen, wenn du dich bei Windows anmeldest.",
+  "desktop.checkUpdates": "Nach Updates suchen",
+  "desktop.checking": "Suche…",
+  "desktop.updateTitle": "Update verfügbar",
+  "desktop.updateReady": "EmberOS {version} ist installationsbereit.",
+  "desktop.later": "Später",
+  "desktop.restartUpdate": "Neu starten & aktualisieren",
+  "desktop.downloading": "Update wird geladen…",
+  "desktop.upToDate": "EmberOS ist aktuell",
+  "desktop.updateFailed": "Update fehlgeschlagen — bitte später erneut versuchen",
 };
 
 const DICT: Record<Language, Dict> = { en, de };

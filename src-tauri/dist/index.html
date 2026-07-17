@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>EmberOS</title>
+    <style>
+      html, body {
+        margin: 0; height: 100%;
+        background: #0b0a0f; color: #f4f1ee;
+        font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+        display: grid; place-items: center; text-align: center;
+      }
+      .wrap { max-width: 30ch; padding: 24px; }
+      h1 { font-size: 20px; font-weight: 650; letter-spacing: -0.02em; }
+      p { color: #a7a1b4; font-size: 13px; line-height: 1.6; }
+      button {
+        margin-top: 16px; padding: 9px 18px; border-radius: 999px; border: 0;
+        background: linear-gradient(90deg, #ff6b3d, #ff9d5c); color: #1a0f0a;
+        font-weight: 600; font-size: 13px; cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>EmberOS is offline</h1>
+      <p>Couldn't reach the EmberOS servers. Check your connection and try again.</p>
+      <button onclick="location.href='https://ember-os.netlify.app/'">Retry</button>
+    </div>
+  </body>
+</html>
