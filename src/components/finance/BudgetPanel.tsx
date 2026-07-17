@@ -5,7 +5,8 @@ import { motion } from "framer-motion";
 import { format, getDaysInMonth, subMonths } from "date-fns";
 import { AlertTriangle, Check, PiggyBank, Plus, Target, TrendingDown, TrendingUp } from "lucide-react";
 import { useEmber } from "@/lib/store";
-import { eur, todayKey } from "@/lib/dates";
+import { eur, todayKey, dfLocale } from "@/lib/dates";
+import { useLang, useT } from "@/lib/i18n";
 import type { Budgets } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -35,6 +36,8 @@ const TONE: Record<Status, { color: string; label: string }> = {
 export function BudgetPanel({ txns, blur }: { txns: Movement[]; blur: boolean }) {
   const settings = useEmber((s) => s.settings);
   const updateSettings = useEmber((s) => s.updateSettings);
+  const tr = useT();
+  const lang = useLang();
   const budgets: Budgets = useMemo(() => settings.budgets ?? {}, [settings.budgets]);
   const [editing, setEditing] = useState(false);
 
@@ -108,40 +111,44 @@ export function BudgetPanel({ txns, blur }: { txns: Movement[]; blur: boolean })
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="flex items-center gap-2 text-[13px] font-medium text-muted">
-            <Target size={14} /> Budgets
+            <Target size={14} /> {tr("fin.budgets")}
           </p>
           <p className="mt-0.5 text-xs text-faint">
-            Day {dayOfMonth} of {daysInMonth} · {Math.round(monthProgress * 100)}% through {format(now, "MMMM")}
+            {tr("fin.dayProgress")
+              .replace("{d}", String(dayOfMonth))
+              .replace("{total}", String(daysInMonth))
+              .replace("{pct}", String(Math.round(monthProgress * 100)))
+              .replace("{month}", format(now, "MMMM", { locale: dfLocale(lang) }))}
           </p>
         </div>
         <Button size="sm" onClick={() => setEditing(true)}>
-          {rows.length === 0 ? <><Plus size={13} /> Set budgets</> : "Edit budgets"}
+          {rows.length === 0 ? <><Plus size={13} /> {tr("fin.setBudgets")}</> : tr("fin.editBudgets")}
         </Button>
       </div>
 
       {rows.length === 0 ? (
         <EmptyState
           icon={<PiggyBank size={20} />}
-          title="No budgets yet"
-          hint="Set a monthly limit per category and Ember will tell you — mid-month — whether your pace is about to blow through it."
-          action={<Button variant="primary" onClick={() => setEditing(true)}>Set up budgets</Button>}
+          title={tr("fin.noBudgets")}
+          hint={tr("fin.noBudgetsHint")}
+          action={<Button variant="primary" onClick={() => setEditing(true)}>{tr("fin.setupBudgets")}</Button>}
         />
       ) : (
         <>
           {/* overall */}
           <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Stat label="Budgeted" value={money(totalLimit)} />
-            <Stat label="Spent" value={money(totalSpent)} tone="var(--c-ember)" />
+            <Stat label={tr("fin.budgeted")} value={money(totalLimit)} />
+            <Stat label={tr("fin.spentLabel")} value={money(totalSpent)} tone="var(--c-ember)" />
             <Stat
-              label={left >= 0 ? "Left" : "Over"}
+              label={left >= 0 ? tr("fin.left") : tr("fin.over")}
               value={money(Math.abs(left))}
               tone={left >= 0 ? "var(--success)" : "var(--danger)"}
             />
             <Stat
-              label="Projected"
+              label={tr("fin.projected")}
               value={money(totalProjected)}
               tone={totalProjected > totalLimit ? "var(--danger)" : "var(--success)"}
-              hint={totalProjected > totalLimit ? `over by ${money(totalProjected - totalLimit)}` : "within budget"}
+              hint={totalProjected > totalLimit ? tr("fin.overBy").replace("{amount}", money(totalProjected - totalLimit)) : tr("fin.withinBudget")}
             />
           </div>
 
@@ -155,7 +162,7 @@ export function BudgetPanel({ txns, blur }: { txns: Movement[]; blur: boolean })
               >
                 <div className="mb-1.5 flex items-baseline justify-between gap-3">
                   <span className="flex items-center gap-2 text-sm font-medium">
-                    {r.category}
+                    {tr(`fin.cat.${r.category}`, r.category)}
                     {r.status === "over" && <AlertTriangle size={12} className="text-danger" />}
                     {r.status === "ok" && !r.willOvershoot && <Check size={12} className="text-success" />}
                   </span>
@@ -176,7 +183,7 @@ export function BudgetPanel({ txns, blur }: { txns: Movement[]; blur: boolean })
                   />
                   <span
                     aria-hidden
-                    title="Where the month is right now"
+                    title={tr("fin.monthHere")}
                     className="absolute top-0 h-full w-px bg-white/45"
                     style={{ left: `${monthProgress * 100}%` }}
                   />
@@ -185,18 +192,18 @@ export function BudgetPanel({ txns, blur }: { txns: Movement[]; blur: boolean })
                 <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
                   <span style={{ color: TONE[r.status].color }}>
                     {r.status === "over"
-                      ? `${eur(Math.round(r.spent - r.limit))} over`
-                      : `${eur(Math.round(r.limit - r.spent))} left`}
+                      ? tr("fin.overSuffix").replace("{amount}", eur(Math.round(r.spent - r.limit)))
+                      : tr("fin.leftSuffix").replace("{amount}", eur(Math.round(r.limit - r.spent)))}
                   </span>
                   {r.willOvershoot && r.status !== "over" && (
                     <span className="flex items-center gap-1 text-warning">
-                      <TrendingUp size={11} /> at this pace: {eur(Math.round(r.projected))} by month end
+                      <TrendingUp size={11} /> {tr("fin.atThisPace").replace("{amount}", eur(Math.round(r.projected)))}
                     </span>
                   )}
                   {r.delta !== null && (
                     <span className="flex items-center gap-1 text-faint">
                       {r.delta >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
-                      {Math.abs(r.delta)}% vs last month
+                      {tr("fin.vsLastMonth").replace("{pct}", String(Math.abs(r.delta)))}
                     </span>
                   )}
                 </div>
@@ -206,7 +213,7 @@ export function BudgetPanel({ txns, blur }: { txns: Movement[]; blur: boolean })
 
           {unbudgeted.length > 0 && (
             <div className="mt-5 border-t border-white/[0.06] pt-3.5">
-              <p className="mb-2 text-[11px] uppercase tracking-wide text-faint">No budget set</p>
+              <p className="mb-2 text-[11px] uppercase tracking-wide text-faint">{tr("fin.noBudgetSet")}</p>
               <div className="flex flex-wrap gap-2">
                 {unbudgeted.map((u) => (
                   <button
@@ -215,7 +222,7 @@ export function BudgetPanel({ txns, blur }: { txns: Movement[]; blur: boolean })
                     className="flex items-center gap-1.5 rounded-full bg-white/[0.05] px-3 py-1.5 text-[12px] text-muted transition-colors hover:bg-white/[0.09] hover:text-ink"
                   >
                     <Plus size={11} />
-                    {u.category}
+                    {tr(`fin.cat.${u.category}`, u.category)}
                     <span className={`num text-faint ${blur ? "money-blur" : ""}`}>{eur(Math.round(u.spent))}</span>
                   </button>
                 ))}
@@ -233,7 +240,7 @@ export function BudgetPanel({ txns, blur }: { txns: Movement[]; blur: boolean })
         suggest={(c) => Math.round((model.avg.get(c) ?? 0) / 10) * 10}
         onSave={(next) => {
           updateSettings({ budgets: next });
-          toast("Budgets saved");
+          toast(tr("fin.budgetsSaved"));
           setEditing(false);
         }}
       />
@@ -265,6 +272,7 @@ function BudgetEditor({
   suggest: (c: string) => number;
   onSave: (b: Budgets) => void;
 }) {
+  const tr = useT();
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [inited, setInited] = useState(false);
 
@@ -294,15 +302,15 @@ function BudgetEditor({
     );
 
   return (
-    <Modal open={open} onClose={onClose} title="Monthly budgets">
+    <Modal open={open} onClose={onClose} title={tr("fin.monthlyBudgets")}>
       <div className="flex flex-col gap-4">
         <p className="text-[13px] text-muted">
-          A limit per category, per month. Leave a field empty to track that category without a limit.
+          {tr("fin.budgetEditorIntro")}
         </p>
 
         {categories.length === 0 ? (
           <p className="py-4 text-sm text-faint">
-            No spending categories yet — they appear once your bank transactions are synced.
+            {tr("fin.noCatsYet")}
           </p>
         ) : (
           <>
@@ -310,12 +318,12 @@ function BudgetEditor({
               onClick={fillSuggestions}
               className="self-start text-xs text-accent underline underline-offset-2 hover:text-ink"
             >
-              Suggest from my 3-month average
+              {tr("fin.suggestAvg")}
             </button>
             <div className="flex flex-col gap-2.5">
               {categories.map((c) => (
                 <label key={c} className="flex items-center gap-3">
-                  <span className="min-w-0 flex-1 truncate text-sm">{c}</span>
+                  <span className="min-w-0 flex-1 truncate text-sm">{tr(`fin.cat.${c}`, c)}</span>
                   <span className="flex w-32 shrink-0 items-center gap-1.5">
                     <Input
                       inputMode="decimal"
@@ -323,7 +331,7 @@ function BudgetEditor({
                       onChange={(e) => setDraft((d) => ({ ...d, [c]: e.target.value }))}
                       placeholder={suggest(c) > 0 ? String(suggest(c)) : "—"}
                       className="h-9 text-right"
-                      aria-label={`Monthly budget for ${c}`}
+                      aria-label={tr("fin.monthlyBudgetFor").replace("{c}", tr(`fin.cat.${c}`, c))}
                     />
                     <span className="text-xs text-faint">€</span>
                   </span>
@@ -334,8 +342,8 @@ function BudgetEditor({
         )}
 
         <div className="mt-1 flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button variant="primary" onClick={save}>Save budgets</Button>
+          <Button variant="ghost" onClick={onClose}>{tr("action.cancel")}</Button>
+          <Button variant="primary" onClick={save}>{tr("fin.saveBudgets")}</Button>
         </div>
       </div>
     </Modal>

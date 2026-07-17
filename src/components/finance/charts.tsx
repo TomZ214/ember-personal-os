@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { eur } from "@/lib/dates";
+import { useT } from "@/lib/i18n";
 
 export function SummaryCard({ label, value, tone, icon, blur }: { label: string; value: string; tone: string; icon?: React.ReactNode; blur?: boolean }) {
   return (
@@ -16,6 +17,7 @@ export function SummaryCard({ label, value, tone, icon, blur }: { label: string;
 }
 
 export function MonthBars({ months }: { months: { label: string; income: number; expenses: number }[] }) {
+  const t = useT();
   const max = Math.max(1, ...months.flatMap((m) => [m.income, m.expenses]));
   return (
     <div>
@@ -48,14 +50,15 @@ export function MonthBars({ months }: { months: { label: string; income: number;
         ))}
       </div>
       <div className="mt-3 flex justify-center gap-5 text-xs text-muted">
-        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-success" /> Income</span>
-        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: "var(--c-ember)" }} /> Expenses</span>
+        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-success" /> {t("fin.income")}</span>
+        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: "var(--c-ember)" }} /> {t("fin.expenses")}</span>
       </div>
     </div>
   );
 }
 
 export function Donut({ categories, total, blur }: { categories: { name: string; amount: number; color: string }[]; total: number; blur?: boolean }) {
+  const t = useT();
   const size = 150, stroke = 16;
   const r = (size - stroke) / 2;
   const circ = 2 * Math.PI * r;
@@ -84,14 +87,14 @@ export function Donut({ categories, total, blur }: { categories: { name: string;
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span className={`num text-lg font-semibold ${blur ? "money-blur" : ""}`}>{eur(Math.round(total))}</span>
-          <span className="text-[10px] uppercase tracking-wide text-faint">spent</span>
+          <span className="text-[10px] uppercase tracking-wide text-faint">{t("fin.spent")}</span>
         </div>
       </div>
       <ul className="flex min-w-36 flex-1 flex-col gap-2">
         {categories.slice(0, 6).map((c) => (
           <li key={c.name} className="flex items-center gap-2.5 text-sm">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: c.color }} />
-            <span className="flex-1 truncate text-muted">{c.name}</span>
+            <span className="flex-1 truncate text-muted">{t(`fin.cat.${c.name}`, c.name)}</span>
             <span className={`num ${blur ? "money-blur" : ""}`}>{eur(Math.round(c.amount))}</span>
           </li>
         ))}

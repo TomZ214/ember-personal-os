@@ -10,6 +10,7 @@ import {
 import { useEmber } from "@/lib/store";
 import { parseQuickEvent } from "@/lib/nlp";
 import { friendlyDay, minutesToLabel } from "@/lib/dates";
+import { useLang, useT } from "@/lib/i18n";
 import { toast } from "@/components/ui/toast";
 import { Kbd } from "@/components/ui/misc";
 import { NAV } from "./nav";
@@ -28,6 +29,8 @@ export function CommandPalette() {
   const open = useEmber((s) => s.paletteOpen);
   const setOpen = useEmber((s) => s.setPaletteOpen);
   const { tasks, notes, events, contacts, mails, addEvent, addTask } = useEmber();
+  const tr = useT();
+  const lang = useLang();
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -75,25 +78,26 @@ export function CommandPalette() {
       if (parsed) {
         out.push({
           id: "nl-event",
-          group: "Create",
-          title: `New event: "${parsed.title}"`,
-          hint: `${friendlyDay(parsed.date)} · ${minutesToLabel(parsed.start)}–${minutesToLabel(parsed.end)}`,
+          group: tr("cmd.gCreate"),
+          title: tr("cmd.newEvent").replace("{title}", parsed.title),
+          hint: `${friendlyDay(parsed.date, lang)} · ${minutesToLabel(parsed.start)}–${minutesToLabel(parsed.end)}`,
           icon: <CalendarPlus size={16} />,
           run: () => {
             addEvent({ ...parsed, color: "sky", recurrence: "none" });
-            toast(`Event "${parsed.title}" scheduled`);
+            toast(tr("cmd.eventScheduled").replace("{title}", parsed.title));
             setOpen(false);
           },
         });
       }
+      const taskTitle = q.trim().replace(/^todo:?\s*/i, "");
       out.push({
         id: "nl-task",
-        group: "Create",
-        title: `New task: "${q.trim().replace(/^todo:?\s*/i, "")}"`,
+        group: tr("cmd.gCreate"),
+        title: tr("cmd.newTask").replace("{title}", taskTitle),
         icon: <ListPlus size={16} />,
         run: () => {
-          addTask({ title: q.trim().replace(/^todo:?\s*/i, "") });
-          toast("Task added");
+          addTask({ title: taskTitle });
+          toast(tr("cmd.taskAdded"));
           setOpen(false);
         },
       });
@@ -102,12 +106,13 @@ export function CommandPalette() {
     const match = (s: string) => query === "" || s.toLowerCase().includes(query);
 
     for (const n of NAV) {
-      if (match(n.label)) {
+      const label = tr(`nav.${n.key}`);
+      if (match(n.label) || match(label)) {
         const Icon = n.icon;
         out.push({
           id: `nav-${n.href}`,
-          group: "Go to",
-          title: n.label,
+          group: tr("cmd.gGoTo"),
+          title: label,
           icon: <Icon size={16} />,
           run: go(n.href),
         });
@@ -117,33 +122,33 @@ export function CommandPalette() {
     if (query.length > 0) {
       for (const t of tasks.filter((t) => match(t.title)).slice(0, 4))
         out.push({
-          id: `task-${t.id}`, group: "Tasks", title: t.title,
+          id: `task-${t.id}`, group: tr("cmd.gTasks"), title: t.title,
           hint: t.status, icon: <CheckSquare size={16} />, run: go("/tasks"),
         });
       for (const n of notes.filter((n) => match(n.title) || match(n.body)).slice(0, 4))
         out.push({
-          id: `note-${n.id}`, group: "Notes", title: n.title,
+          id: `note-${n.id}`, group: tr("cmd.gNotes"), title: n.title,
           icon: <NotebookPen size={16} />, run: go(`/notes?id=${n.id}`),
         });
       for (const e of events.filter((e) => match(e.title)).slice(0, 4))
         out.push({
-          id: `event-${e.id}`, group: "Calendar", title: e.title,
-          hint: `${friendlyDay(e.date)} · ${minutesToLabel(e.start)}`,
+          id: `event-${e.id}`, group: tr("cmd.gCalendar"), title: e.title,
+          hint: `${friendlyDay(e.date, lang)} · ${minutesToLabel(e.start)}`,
           icon: <CalendarDays size={16} />, run: go("/calendar"),
         });
       for (const c of contacts.filter((c) => match(c.name)).slice(0, 3))
         out.push({
-          id: `contact-${c.id}`, group: "Contacts", title: c.name,
+          id: `contact-${c.id}`, group: tr("cmd.gContacts"), title: c.name,
           hint: c.group, icon: <User size={16} />, run: go("/contacts"),
         });
       for (const m of mails.filter((m) => match(m.subject) || match(m.from)).slice(0, 3))
         out.push({
-          id: `mail-${m.id}`, group: "Mail", title: m.subject,
+          id: `mail-${m.id}`, group: tr("cmd.gMail"), title: m.subject,
           hint: m.from, icon: <Mail size={16} />, run: go(`/mail?id=${m.id}`),
         });
     }
     return out.slice(0, 14);
-  }, [q, tasks, notes, events, contacts, mails, addEvent, addTask, router, setOpen]);
+  }, [q, tasks, notes, events, contacts, mails, addEvent, addTask, router, setOpen, tr, lang]);
 
   // new query -> selection back to the top (render-time adjustment)
   const [prevQ, setPrevQ] = useState(q);
@@ -204,9 +209,9 @@ export function CommandPalette() {
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 onKeyDown={onKeyDown}
-                placeholder='Search, or try "Dentist tomorrow 14:30"…'
+                placeholder={tr("cmd.searchPh")}
                 className="h-13 w-full bg-transparent py-4 text-[15px] text-ink placeholder:text-faint focus:outline-none"
-                aria-label="Search"
+                aria-label={tr("cmd.searchPh")}
               />
               <Kbd>esc</Kbd>
             </div>
@@ -215,8 +220,8 @@ export function CommandPalette() {
               {results.length === 0 && (
                 <div className="flex flex-col items-center gap-2 py-10 text-center">
                   <Sparkles size={20} className="text-faint" />
-                  <p className="text-sm text-muted">Nothing found for “{q}”</p>
-                  <p className="text-xs text-faint">Try a page name, task, note or “Lunch friday 12:30”</p>
+                  <p className="text-sm text-muted">{tr("cmd.nothingFound").replace("{q}", q)}</p>
+                  <p className="text-xs text-faint">{tr("cmd.tryHint")}</p>
                 </div>
               )}
               {results.map((r, i) => {

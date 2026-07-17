@@ -7,7 +7,8 @@ import { format, parseISO, subMonths } from "date-fns";
 import { ArrowDownLeft, ArrowUpRight, Coins, Eye, EyeOff, Landmark, NotebookPen, Plus, Trash2 } from "lucide-react";
 import { useEmber, useHydrated } from "@/lib/store";
 import { useBank } from "@/hooks/useIntegrations";
-import { eur, todayKey } from "@/lib/dates";
+import { eur, todayKey, dfLocale } from "@/lib/dates";
+import { useLang, useT } from "@/lib/i18n";
 import { CATEGORY_VAR, type Txn } from "@/lib/types";
 import { BankPanel } from "@/components/finance/BankPanel";
 import { BudgetPanel } from "@/components/finance/BudgetPanel";
@@ -31,6 +32,8 @@ export default function FinancePage() {
   const togglePrivacy = useEmber((s) => s.togglePrivacy);
   const [tab, setTab] = useState<"bank" | "manual">("bank");
   const showBank = bank.connected && tab === "bank";
+  const tr = useT();
+  const lang = useLang();
 
   const monthKey = todayKey().slice(0, 7);
 
@@ -43,7 +46,7 @@ export default function FinancePage() {
       const key = format(subMonths(new Date(), 3 - i), "yyyy-MM");
       const list = txns.filter((t) => t.date.startsWith(key));
       return {
-        label: format(subMonths(new Date(), 3 - i), "MMM"),
+        label: format(subMonths(new Date(), 3 - i), "MMM", { locale: dfLocale(lang) }),
         income: list.filter((t) => t.kind === "income").reduce((a, t) => a + t.amount, 0),
         expenses: list.filter((t) => t.kind === "expense").reduce((a, t) => a + t.amount, 0),
       };
@@ -57,7 +60,7 @@ export default function FinancePage() {
       .map(([name, amount], i) => ({ name, amount, color: CATEGORY_VAR[CAT_COLORS[i % CAT_COLORS.length]] }));
 
     return { income, expenses, months, categories };
-  }, [txns, monthKey]);
+  }, [txns, monthKey, lang]);
 
   const subsMonthly = subs.reduce((a, s) => a + (s.cycle === "monthly" ? s.amount : s.amount / 12), 0);
   const recent = useMemo(() => [...txns].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 12), [txns]);
@@ -78,16 +81,16 @@ export default function FinancePage() {
   return (
     <div>
       <PageHeader
-        title="Finance"
-        sub={showBank ? `${format(new Date(), "MMMM yyyy")} · live from ${bank.status?.account}` : format(new Date(), "MMMM yyyy")}
+        title={tr("fin.title")}
+        sub={showBank ? `${format(new Date(), "MMMM yyyy", { locale: dfLocale(lang) })} · ${tr("fin.liveFrom")} ${bank.status?.account}` : format(new Date(), "MMMM yyyy", { locale: dfLocale(lang) })}
         actions={
           <>
             <Button
               size="sm"
               variant="ghost"
               onClick={togglePrivacy}
-              aria-label={privacy ? "Show amounts" : "Hide amounts"}
-              title={privacy ? "Show amounts" : "Privacy screen"}
+              aria-label={privacy ? tr("fin.showAmounts") : tr("fin.hideAmounts")}
+              title={privacy ? tr("fin.showAmounts") : tr("fin.privacyScreen")}
               aria-pressed={privacy}
             >
               {privacy ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -99,7 +102,7 @@ export default function FinancePage() {
                     key={v}
                     onClick={() => setTab(v)}
                     aria-pressed={tab === v}
-                    className={`relative flex h-8 items-center gap-1.5 rounded-[9px] px-3 text-[13px] font-medium capitalize transition-colors ${
+                    className={`relative flex h-8 items-center gap-1.5 rounded-[9px] px-3 text-[13px] font-medium transition-colors ${
                       tab === v ? "text-ink" : "text-faint hover:text-muted"
                     }`}
                   >
@@ -112,7 +115,7 @@ export default function FinancePage() {
                     )}
                     <span className="relative flex items-center gap-1.5">
                       {v === "bank" ? <Landmark size={13} /> : <NotebookPen size={13} />}
-                      <span className="hidden sm:inline">{v === "bank" ? "Bank" : "Manual"}</span>
+                      <span className="hidden sm:inline">{v === "bank" ? tr("fin.bank") : tr("fin.manual")}</span>
                     </span>
                   </button>
                 ))}
@@ -120,7 +123,7 @@ export default function FinancePage() {
             )}
             {!showBank && (
               <Button variant="primary" onClick={() => setAdding(true)}>
-                <Plus size={16} /> Add transaction
+                <Plus size={16} /> {tr("fin.addTxn")}
               </Button>
             )}
           </>
@@ -133,25 +136,25 @@ export default function FinancePage() {
       <>
       {/* month summary */}
       <div className="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <SummaryCard blur={privacy} label="Income" value={eur(income)} tone="var(--success)" icon={<ArrowDownLeft size={15} />} />
-        <SummaryCard blur={privacy} label="Expenses" value={eur(expenses)} tone="var(--c-ember)" icon={<ArrowUpRight size={15} />} />
-        <SummaryCard blur={privacy} label="Net" value={`${income - expenses >= 0 ? "+" : ""}${eur(income - expenses)}`}
+        <SummaryCard blur={privacy} label={tr("fin.income")} value={eur(income)} tone="var(--success)" icon={<ArrowDownLeft size={15} />} />
+        <SummaryCard blur={privacy} label={tr("fin.expenses")} value={eur(expenses)} tone="var(--c-ember)" icon={<ArrowUpRight size={15} />} />
+        <SummaryCard blur={privacy} label={tr("fin.net")} value={`${income - expenses >= 0 ? "+" : ""}${eur(income - expenses)}`}
           tone={income - expenses >= 0 ? "var(--success)" : "var(--danger)"} />
-        <SummaryCard blur={privacy} label="Subscriptions" value={`${eur(subsMonthly)}/mo`} tone="var(--c-lilac)" />
+        <SummaryCard blur={privacy} label={tr("fin.subscriptions")} value={`${eur(subsMonthly)}/${tr("fin.moAbbr")}`} tone="var(--c-lilac)" />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         {/* 4-month bars */}
         <div className="panel p-5 lg:col-span-7">
-          <p className="mb-1 text-[13px] font-medium text-muted">Income vs expenses</p>
-          <p className="mb-5 text-xs text-faint">Last four months</p>
+          <p className="mb-1 text-[13px] font-medium text-muted">{tr("fin.incomeVsExpenses")}</p>
+          <p className="mb-5 text-xs text-faint">{tr("fin.lastFourMonths")}</p>
           <MonthBars months={months} />
         </div>
 
         {/* category breakdown */}
         <div className="panel p-5 lg:col-span-5">
-          <p className="mb-1 text-[13px] font-medium text-muted">Where it went</p>
-          <p className="mb-4 text-xs text-faint">This month&apos;s spending by category</p>
+          <p className="mb-1 text-[13px] font-medium text-muted">{tr("fin.whereItWent")}</p>
+          <p className="mb-4 text-xs text-faint">{tr("fin.spendingByCat")}</p>
           <Donut categories={categories} total={expenses} blur={privacy} />
         </div>
 
@@ -162,7 +165,7 @@ export default function FinancePage() {
 
         {/* subscriptions */}
         <div className="panel p-5 lg:col-span-5">
-          <p className="mb-4 text-[13px] font-medium text-muted">Subscriptions</p>
+          <p className="mb-4 text-[13px] font-medium text-muted">{tr("fin.subscriptions")}</p>
           <ul className="flex flex-col gap-2.5">
             {subs.map((s) => (
               <li key={s.id} className="flex items-center gap-3">
@@ -172,30 +175,30 @@ export default function FinancePage() {
                 </span>
                 <span className="flex-1 text-sm">{s.name}</span>
                 <span className={`num text-sm text-muted ${privacy ? "money-blur" : ""}`}>
-                  {eur(s.amount)}<span className="text-faint">/{s.cycle === "monthly" ? "mo" : "yr"}</span>
+                  {eur(s.amount)}<span className="text-faint">/{s.cycle === "monthly" ? tr("fin.moAbbr") : tr("fin.yrAbbr")}</span>
                 </span>
               </li>
             ))}
           </ul>
           <p className="num mt-4 border-t border-white/[0.06] pt-3 text-right text-sm text-muted">
-            ≈ {eur(subsMonthly)} per month
+            ≈ {eur(subsMonthly)} {tr("fin.perMonth")}
           </p>
         </div>
 
         {/* recent transactions */}
         <div className="panel overflow-hidden lg:col-span-7">
-          <p className="px-5 pb-2 pt-5 text-[13px] font-medium text-muted">Recent activity</p>
+          <p className="px-5 pb-2 pt-5 text-[13px] font-medium text-muted">{tr("fin.recentActivity")}</p>
           {recent.length === 0 ? (
             bank.connected ? (
-              <EmptyState icon={<Coins size={20} />} title="No manual transactions" hint="Your bank data lives in the Bank tab — this list is for extras you track by hand." />
+              <EmptyState icon={<Coins size={20} />} title={tr("fin.noManual")} hint={tr("fin.noManualHint")} />
             ) : (
               <EmptyState
                 icon={<Coins size={20} />}
-                title="Connect your bank account"
-                hint="Real balances, auto-categorized transactions and insights — or add entries by hand above."
+                title={tr("fin.connectBank")}
+                hint={tr("fin.connectBankHint")}
                 action={
                   <Link href="/settings/connections">
-                    <Button variant="primary">Connect bank</Button>
+                    <Button variant="primary">{tr("fin.connectBankBtn")}</Button>
                   </Link>
                 }
               />
@@ -210,15 +213,15 @@ export default function FinancePage() {
                     {t.kind === "income" ? <ArrowDownLeft size={13} /> : <ArrowUpRight size={13} />}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm">{t.note || t.category}</p>
-                    <p className="text-[11px] text-faint">{t.category} · {format(parseISO(t.date), "MMM d")}</p>
+                    <p className="truncate text-sm">{t.note || tr(`fin.cat.${t.category}`, t.category)}</p>
+                    <p className="text-[11px] text-faint">{tr(`fin.cat.${t.category}`, t.category)} · {format(parseISO(t.date), lang === "de" ? "d. MMM" : "MMM d", { locale: dfLocale(lang) })}</p>
                   </div>
                   <span className={`num text-sm font-medium ${t.kind === "income" ? "text-success" : ""} ${privacy ? "money-blur" : ""}`}>
                     {t.kind === "income" ? "+" : "-"}{eur(t.amount)}
                   </span>
                   <button
-                    onClick={() => { deleteTxn(t.id); toast("Transaction removed", "info"); }}
-                    aria-label="Delete transaction"
+                    onClick={() => { deleteTxn(t.id); toast(tr("fin.txnRemoved"), "info"); }}
+                    aria-label={tr("fin.deleteTxn")}
                     className="rounded p-1 text-faint opacity-0 transition-all hover:text-danger group-hover:opacity-100"
                   >
                     <Trash2 size={13} />
@@ -240,6 +243,7 @@ export default function FinancePage() {
 
 function AddTxn({ open, onClose }: { open: boolean; onClose: () => void }) {
   const addTxn = useEmber((s) => s.addTxn);
+  const tr = useT();
   const [kind, setKind] = useState<Txn["kind"]>("expense");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("Groceries");
@@ -250,52 +254,52 @@ function AddTxn({ open, onClose }: { open: boolean; onClose: () => void }) {
     const n = parseFloat(amount.replace(",", "."));
     if (!n || n <= 0) return;
     addTxn({ kind, amount: n, category, note: note.trim(), date });
-    toast(`${kind === "income" ? "Income" : "Expense"} of ${eur(n)} added`);
+    toast((kind === "income" ? tr("fin.incomeAdded") : tr("fin.expenseAdded")).replace("{amount}", eur(n)));
     setAmount(""); setNote("");
     onClose();
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Add transaction">
+    <Modal open={open} onClose={onClose} title={tr("fin.addTxn")}>
       <div className="flex flex-col gap-4">
         <div className="flex rounded-[11px] border border-white/[0.08] bg-white/[0.04] p-0.5">
           {(["expense", "income"] as const).map((k) => (
             <button key={k} onClick={() => setKind(k)} aria-pressed={kind === k}
-              className={`relative h-9 flex-1 rounded-[9px] text-sm font-medium capitalize transition-colors ${kind === k ? "text-ink" : "text-faint"}`}>
+              className={`relative h-9 flex-1 rounded-[9px] text-sm font-medium transition-colors ${kind === k ? "text-ink" : "text-faint"}`}>
               {kind === k && (
                 <motion.span layoutId="txn-kind" className="absolute inset-0 rounded-[9px] bg-white/[0.09]"
                   transition={{ type: "spring", stiffness: 500, damping: 38 }} />
               )}
-              <span className="relative">{k}</span>
+              <span className="relative">{k === "expense" ? tr("fin.kindExpense") : tr("fin.kindIncome")}</span>
             </button>
           ))}
         </div>
         <div className="grid grid-cols-2 gap-3">
           <label>
-            <Label>Amount (â‚¬)</Label>
+            <Label>{tr("fin.amountEuro")}</Label>
             <Input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" autoFocus />
           </label>
           <label>
-            <Label>Date</Label>
+            <Label>{tr("fin.date")}</Label>
             <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </label>
         </div>
         <label>
-          <Label>Category</Label>
+          <Label>{tr("fin.category")}</Label>
           <Select value={category} onChange={(e) => setCategory(e.target.value)}>
             {(kind === "expense"
               ? ["Groceries", "Rent", "Dining", "Transport", "Health", "Shopping", "Travel", "Other"]
               : ["Salary", "Freelance", "Gift", "Other"]
-            ).map((c) => <option key={c}>{c}</option>)}
+            ).map((c) => <option key={c} value={c}>{tr(`fin.cat.${c}`, c)}</option>)}
           </Select>
         </label>
         <label>
-          <Label>Note</Label>
-          <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional" />
+          <Label>{tr("fin.note")}</Label>
+          <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder={tr("fin.optional")} />
         </label>
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button variant="primary" onClick={save} disabled={!parseFloat(amount.replace(",", "."))}>Add</Button>
+          <Button variant="ghost" onClick={onClose}>{tr("action.cancel")}</Button>
+          <Button variant="primary" onClick={save} disabled={!parseFloat(amount.replace(",", "."))}>{tr("fin.add")}</Button>
         </div>
       </div>
     </Modal>
