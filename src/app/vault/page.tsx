@@ -6,6 +6,7 @@ import {
   Copy, CreditCard, Eye, EyeOff, Images, KeyRound, Lock, LockOpen, Plus, ShieldCheck, StickyNote, Trash2,
 } from "lucide-react";
 import { decryptVault, deriveMediaKey, encryptVault, loadVaultBlob, saveVaultBlob } from "@/lib/crypto";
+import { useT } from "@/lib/i18n";
 import type { VaultEntry } from "@/lib/types";
 import { MediaGallery } from "@/components/vault/MediaGallery";
 import { Button } from "@/components/ui/Button";
@@ -21,6 +22,7 @@ const CATS = [
 ] as const;
 
 export default function VaultPage() {
+  const t = useT();
   const [entries, setEntries] = useState<VaultEntry[] | null>(null); // null = locked
   const [passphrase, setPassphrase] = useState<string | null>(null);
   const [mediaKey, setMediaKey] = useState<CryptoKey | null>(null);
@@ -37,20 +39,20 @@ export default function VaultPage() {
     setPassphrase(null);
     setMediaKey(null);
     setCat("all");
-    toast("Vault locked", "info");
+    toast(t("vault.locked"), "info");
   };
 
   return (
     <div>
       <PageHeader
-        title="Vault"
-        sub="AES-256 encrypted · everything stays on this device"
+        title={t("vault.title")}
+        sub={t("vault.sub")}
         actions={
           entries !== null ? (
             <>
-              <Button onClick={lock}><Lock size={15} /> Lock</Button>
+              <Button onClick={lock}><Lock size={15} /> {t("vault.lock")}</Button>
               {cat !== "media" && (
-                <Button variant="primary" onClick={() => setAdding(true)}><Plus size={16} /> Add entry</Button>
+                <Button variant="primary" onClick={() => setAdding(true)}><Plus size={16} /> {t("vault.addEntry")}</Button>
               )}
             </>
           ) : undefined
@@ -62,11 +64,11 @@ export default function VaultPage() {
       ) : (
         <>
           <div className="mb-4 flex flex-wrap gap-2">
-            <CatChip label="All" active={cat === "all"} onClick={() => setCat("all")} />
+            <CatChip label={t("vault.all")} active={cat === "all"} onClick={() => setCat("all")} />
             {CATS.map((c) => (
-              <CatChip key={c.id} label={c.label} active={cat === c.id} onClick={() => setCat(c.id)} />
+              <CatChip key={c.id} label={t(`vault.cat.${c.id}`)} active={cat === c.id} onClick={() => setCat(c.id)} />
             ))}
-            <CatChip label="Photos & videos" active={cat === "media"} onClick={() => setCat("media")} />
+            <CatChip label={t("vault.photosVideos")} active={cat === "media"} onClick={() => setCat("media")} />
           </div>
 
           {cat === "media" ? (
@@ -75,9 +77,9 @@ export default function VaultPage() {
             <div className="panel">
               <EmptyState
                 icon={<ShieldCheck size={20} />}
-                title="Vault is empty"
-                hint="Add your first login, card or secure note — it's encrypted before it touches disk."
-                action={<Button variant="primary" onClick={() => setAdding(true)}>Add first entry</Button>}
+                title={t("vault.empty")}
+                hint={t("vault.emptyHint")}
+                action={<Button variant="primary" onClick={() => setAdding(true)}>{t("vault.addFirst")}</Button>}
               />
             </div>
           ) : (
@@ -121,6 +123,7 @@ function CatChip({ label, active, onClick }: { label: string; active: boolean; o
 /* ---------- gate: create or unlock ---------- */
 
 function Gate({ onUnlock }: { onUnlock: (entries: VaultEntry[], pass: string, mediaKey: CryptoKey) => void }) {
+  const t = useT();
   const [exists] = useState(() => typeof window !== "undefined" && !!loadVaultBlob());
   const [pass, setPass] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -129,26 +132,26 @@ function Gate({ onUnlock }: { onUnlock: (entries: VaultEntry[], pass: string, me
 
   const submit = async () => {
     setError("");
-    if (pass.length < 6) return setError("Use at least 6 characters.");
+    if (pass.length < 6) return setError(t("vault.min6"));
     setBusy(true);
     try {
       if (exists) {
         const blob = loadVaultBlob()!;
         const plain = await decryptVault(pass, blob);
         onUnlock(JSON.parse(plain) as VaultEntry[], pass, await deriveMediaKey(pass));
-        toast("Vault unlocked");
+        toast(t("vault.unlocked"));
       } else {
         if (pass !== confirm) {
-          setError("Passphrases don't match.");
+          setError(t("vault.passNoMatch"));
           setBusy(false);
           return;
         }
         saveVaultBlob(await encryptVault(pass, "[]"));
         onUnlock([], pass, await deriveMediaKey(pass));
-        toast("Vault created — remember that passphrase");
+        toast(t("vault.createdRemember"));
       }
     } catch {
-      setError("Wrong passphrase — the vault stays sealed.");
+      setError(t("vault.wrongPass"));
     }
     setBusy(false);
   };
@@ -168,11 +171,9 @@ function Gate({ onUnlock }: { onUnlock: (entries: VaultEntry[], pass: string, me
         >
           {exists ? <Lock size={22} /> : <LockOpen size={22} />}
         </motion.div>
-        <h2 className="text-lg font-semibold tracking-tight">{exists ? "Vault is locked" : "Create your vault"}</h2>
+        <h2 className="text-lg font-semibold tracking-tight">{exists ? t("vault.lockedTitle") : t("vault.createTitle")}</h2>
         <p className="mx-auto mt-1.5 max-w-[30ch] text-[13px] leading-relaxed text-muted">
-          {exists
-            ? "Enter your master passphrase. It never leaves this device."
-            : "One master passphrase encrypts everything with AES-256. There is no reset — choose wisely."}
+          {exists ? t("vault.enterPass") : t("vault.createDesc")}
         </p>
         <div className="mt-5 flex flex-col gap-3 text-left">
           <Input
@@ -180,8 +181,8 @@ function Gate({ onUnlock }: { onUnlock: (entries: VaultEntry[], pass: string, me
             value={pass}
             onChange={(e) => setPass(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && (exists || confirm) && submit()}
-            placeholder="Master passphrase"
-            aria-label="Master passphrase"
+            placeholder={t("vault.masterPass")}
+            aria-label={t("vault.masterPass")}
             autoFocus
           />
           {!exists && (
@@ -190,13 +191,13 @@ function Gate({ onUnlock }: { onUnlock: (entries: VaultEntry[], pass: string, me
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && submit()}
-              placeholder="Repeat passphrase"
-              aria-label="Repeat passphrase"
+              placeholder={t("vault.repeatPass")}
+              aria-label={t("vault.repeatPass")}
             />
           )}
           {error && <p className="text-[13px] text-danger">{error}</p>}
           <Button variant="primary" onClick={submit} disabled={busy || !pass} className="mt-1 w-full">
-            {busy ? "Deriving key…" : exists ? "Unlock" : "Create vault"}
+            {busy ? t("vault.deriving") : exists ? t("vault.unlock") : t("vault.createVault")}
           </Button>
         </div>
       </motion.div>
@@ -207,12 +208,13 @@ function Gate({ onUnlock }: { onUnlock: (entries: VaultEntry[], pass: string, me
 /* ---------- entry card ---------- */
 
 function EntryCard({ entry, onDelete }: { entry: VaultEntry; onDelete: () => void }) {
+  const t = useT();
   const [revealed, setRevealed] = useState(false);
   const Icon = CATS.find((c) => c.id === entry.category)?.icon ?? KeyRound;
 
   const copy = async () => {
     await navigator.clipboard.writeText(entry.secret);
-    toast("Copied — clipboard clears on next copy", "info");
+    toast(t("vault.copied"), "info");
   };
 
   return (
@@ -233,7 +235,7 @@ function EntryCard({ entry, onDelete }: { entry: VaultEntry; onDelete: () => voi
           {entry.username && <p className="truncate text-[13px] text-muted">{entry.username}</p>}
           {entry.url && <p className="truncate text-xs text-faint">{entry.url}</p>}
         </div>
-        <button onClick={onDelete} aria-label="Delete entry"
+        <button onClick={onDelete} aria-label={t("vault.deleteEntry")}
           className="rounded-lg p-1.5 text-faint opacity-0 transition-all hover:text-danger group-hover:opacity-100">
           <Trash2 size={14} />
         </button>
@@ -242,11 +244,11 @@ function EntryCard({ entry, onDelete }: { entry: VaultEntry; onDelete: () => voi
         <code className="num min-w-0 flex-1 truncate font-mono text-[13px] tracking-wide">
           {revealed ? entry.secret : "••••••••••••"}
         </code>
-        <button onClick={() => setRevealed(!revealed)} aria-label={revealed ? "Hide" : "Reveal"}
+        <button onClick={() => setRevealed(!revealed)} aria-label={revealed ? t("vault.hide") : t("vault.reveal")}
           className="rounded p-1 text-faint transition-colors hover:text-ink">
           {revealed ? <EyeOff size={14} /> : <Eye size={14} />}
         </button>
-        <button onClick={copy} aria-label="Copy secret" className="rounded p-1 text-faint transition-colors hover:text-accent">
+        <button onClick={copy} aria-label={t("vault.copySecret")} className="rounded p-1 text-faint transition-colors hover:text-accent">
           <Copy size={14} />
         </button>
       </div>
@@ -257,6 +259,7 @@ function EntryCard({ entry, onDelete }: { entry: VaultEntry; onDelete: () => voi
 /* ---------- add entry ---------- */
 
 function AddEntry({ open, onClose, onAdd }: { open: boolean; onClose: () => void; onAdd: (e: VaultEntry) => void }) {
+  const t = useT();
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<VaultEntry["category"]>("logins");
   const [username, setUsername] = useState("");
@@ -273,7 +276,7 @@ function AddEntry({ open, onClose, onAdd }: { open: boolean; onClose: () => void
       secret,
       url: url.trim() || undefined,
     });
-    toast("Entry encrypted & saved");
+    toast(t("vault.entrySaved"));
     setTitle(""); setUsername(""); setSecret(""); setUrl("");
     onClose();
   };
@@ -285,38 +288,38 @@ function AddEntry({ open, onClose, onAdd }: { open: boolean; onClose: () => void
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="New vault entry">
+    <Modal open={open} onClose={onClose} title={t("vault.newEntry")}>
       <div className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-3">
           <label>
-            <Label>Title</Label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. GitHub" autoFocus />
+            <Label>{t("vault.entryTitle")}</Label>
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("vault.titlePh")} autoFocus />
           </label>
           <label>
-            <Label>Category</Label>
+            <Label>{t("vault.category")}</Label>
             <Select value={category} onChange={(e) => setCategory(e.target.value as VaultEntry["category"])}>
-              {CATS.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+              {CATS.map((c) => <option key={c.id} value={c.id}>{t(`vault.cat.${c.id}`)}</option>)}
             </Select>
           </label>
         </div>
         <label>
-          <Label>Username / detail</Label>
-          <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Optional" />
+          <Label>{t("vault.usernameDetail")}</Label>
+          <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder={t("vault.optional")} />
         </label>
         <label>
-          <Label>Secret</Label>
+          <Label>{t("vault.secret")}</Label>
           <div className="flex gap-2">
-            <Input value={secret} onChange={(e) => setSecret(e.target.value)} placeholder="Password or note" className="font-mono" />
-            <Button size="sm" onClick={generate} className="h-10 shrink-0">Generate</Button>
+            <Input value={secret} onChange={(e) => setSecret(e.target.value)} placeholder={t("vault.secretPh")} className="font-mono" />
+            <Button size="sm" onClick={generate} className="h-10 shrink-0">{t("vault.generate")}</Button>
           </div>
         </label>
         <label>
-          <Label>URL</Label>
-          <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="Optional" />
+          <Label>{t("vault.url")}</Label>
+          <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder={t("vault.optional")} />
         </label>
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button variant="primary" onClick={save} disabled={!title.trim() || !secret}>Encrypt & save</Button>
+          <Button variant="ghost" onClick={onClose}>{t("action.cancel")}</Button>
+          <Button variant="primary" onClick={save} disabled={!title.trim() || !secret}>{t("vault.encryptSave")}</Button>
         </div>
       </div>
     </Modal>
