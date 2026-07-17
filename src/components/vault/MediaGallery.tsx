@@ -9,7 +9,6 @@ import { decryptBytes, encryptBytes } from "@/lib/crypto";
 import { deleteMedia, getCipher, listMedia, putMedia, type MediaMeta } from "@/lib/vaultMedia";
 import { useLang, useT } from "@/lib/i18n";
 import { dfLocale } from "@/lib/dates";
-import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/misc";
 import { toast } from "@/components/ui/toast";
 

@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { useEmber } from "@/lib/store";
 import { useLang, useT } from "@/lib/i18n";
-import { conditionLabel } from "@/lib/weather";
+import { condition, conditionLabel, type Condition } from "@/lib/weather";
 
 interface Wx {
   temp: number;
@@ -19,18 +19,10 @@ interface Wx {
   days: { code: number; hi: number; lo: number; label: string }[];
 }
 
-function iconFor(code: number): typeof Sun {
-  if (code === 0) return Sun;
-  if (code <= 2) return CloudSun;
-  if (code === 3) return Cloud;
-  if (code <= 48) return CloudFog;
-  if (code <= 57) return CloudDrizzle;
-  if (code <= 67) return CloudRain;
-  if (code <= 77) return CloudSnow;
-  if (code <= 82) return CloudRain;
-  if (code <= 86) return CloudSnow;
-  return CloudLightning;
-}
+const ICONS: Record<Condition, typeof Sun> = {
+  clear: Sun, partly: CloudSun, cloudy: Cloud, fog: CloudFog, drizzle: CloudDrizzle,
+  rain: CloudRain, snow: CloudSnow, showers: CloudRain, thunder: CloudLightning,
+};
 
 export function WeatherWidget() {
   const { latitude, longitude, place } = useEmber((s) => s.settings);
@@ -101,7 +93,7 @@ export function WeatherWidget() {
       </div>
     );
 
-  const Icon = iconFor(wx.code);
+  const Icon = ICONS[condition(wx.code)];
   const dayLabel = (label: string) =>
     label === "__today__" ? t("w.today") : label === "__tomorrow__" ? t("w.tomorrow") : label;
 
@@ -131,7 +123,7 @@ export function WeatherWidget() {
       </div>
       <div className="mt-5 grid grid-cols-4 gap-1 border-t border-white/[0.06] pt-4">
         {wx.days.map((d, i) => {
-          const DIcon = iconFor(d.code);
+          const DIcon = ICONS[condition(d.code)];
           return (
             <div key={i} className="flex flex-col items-center gap-1.5">
               <span className="text-[11px] text-faint">{d.label === "__today__" ? t("w.now") : dayLabel(d.label).slice(0, 3)}</span>

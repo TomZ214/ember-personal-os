@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Copy, CreditCard, Eye, EyeOff, Images, KeyRound, Lock, LockOpen, Plus, ShieldCheck, StickyNote, Trash2,
+  Copy, CreditCard, Eye, EyeOff, KeyRound, Lock, LockOpen, Plus, ShieldCheck, StickyNote, Trash2,
 } from "lucide-react";
 import { decryptVault, deriveMediaKey, encryptVault, loadVaultBlob, saveVaultBlob } from "@/lib/crypto";
 import { useT } from "@/lib/i18n";
