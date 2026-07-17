@@ -204,8 +204,11 @@ fn build_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         .items(&[&quit])
         .build()?;
 
-    let _tray = TrayIconBuilder::with_id("main")
-        .icon(app.default_window_icon().unwrap().clone())
+    let mut tray = TrayIconBuilder::with_id("main");
+    if let Some(icon) = app.default_window_icon() {
+        tray = tray.icon(icon.clone());
+    }
+    let _tray = tray
         .tooltip("EmberOS")
         .menu(&menu)
         .show_menu_on_left_click(false)
