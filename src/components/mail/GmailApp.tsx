@@ -605,11 +605,11 @@ function GmailCompose({
         body: JSON.stringify({ input, draft }),
       });
       if (!res.ok) throw new Error((await res.json()).error ?? "send failed");
-      toast(draft ? tr("mail.savedToProviderDrafts").replace("{provider}", provider.name) : tr("mail.sentViaProvider").replace("{provider}", provider.name));
+      toast(draft ? tr("mail.savedToProviderDrafts").replace("{provider}", provider.name) : tr("mail.sentViaProvider").replace("{provider}", provider.name), "success", draft ? "success" : "send");
       onSent();
       onClose();
     } catch (e) {
-      toast(e instanceof Error ? e.message : tr("mail.sendFailed"), "info");
+      toast(e instanceof Error ? e.message : tr("mail.sendFailed"), "info", "error");
     }
     setSending(false);
   };

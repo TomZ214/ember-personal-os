@@ -15,6 +15,7 @@
 
 export type Cue =
   | "boot"
+  | "tap"
   | "navigate"
   | "open"
   | "close"
@@ -39,7 +40,13 @@ interface Note {
 /* A quiet, mostly-sine palette. Fifths and major thirds for the positive cues,
    a soft low fall for errors. Nothing longer than ~0.4s except the boot swell. */
 const CUES: Record<Cue, Note[]> = {
-  navigate: [{ f: 660, t: 0, d: 0.05, g: 0.35 }],
+  // the workhorse: fires on every button/link press, so it has to be almost
+  // subliminal — a short high tick you feel more than hear
+  tap: [{ f: 1050, t: 0, d: 0.028, g: 0.22 }],
+  navigate: [
+    { f: 587.33, t: 0, d: 0.05, g: 0.3 },
+    { f: 880.0, t: 0.035, d: 0.08, g: 0.22 },
+  ],
   open: [
     { f: 523.25, t: 0, d: 0.09, g: 0.5 },
     { f: 783.99, t: 0.04, d: 0.13, g: 0.4 },

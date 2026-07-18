@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Info } from "lucide-react";
-import { playCue } from "@/lib/sound";
+import { playCue, type Cue } from "@/lib/sound";
 
 interface Toast {
   id: number;
@@ -23,9 +23,11 @@ const useToasts = create<{ toasts: Toast[]; push: (t: Omit<Toast, "id">) => void
   }),
 );
 
-export const toast = (text: string, kind: "success" | "info" = "success") => {
-  // every toast is a piece of feedback, so this is the natural place to sound one
-  playCue(kind === "success" ? "success" : "notify");
+export const toast = (text: string, kind: "success" | "info" = "success", cue?: Cue) => {
+  // every toast is feedback, so this is the natural place to sound one.
+  // `cue` lets a caller be specific (sent / synced / failed) instead of
+  // falling back to the generic success or notify blip.
+  playCue(cue ?? (kind === "success" ? "success" : "notify"));
   useToasts.getState().push({ text, kind });
 };
 

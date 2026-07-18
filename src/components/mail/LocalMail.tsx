@@ -318,7 +318,7 @@ function Compose({ open, onClose }: { open: boolean; onClose: () => void }) {
           </Button>
           <div className="flex gap-2">
             <Button variant="ghost" onClick={onClose}>{t("mail.discard")}</Button>
-            <Button variant="primary" disabled={!to.trim()} onClick={() => { sendMail({ to, subject, body }); toast(t("mail.messageSent")); reset(); onClose(); }}>
+            <Button variant="primary" disabled={!to.trim()} onClick={() => { sendMail({ to, subject, body }); toast(t("mail.messageSent"), "success", "send"); reset(); onClose(); }}>
               <Send size={14} /> {t("mail.send")}
             </Button>
           </div>

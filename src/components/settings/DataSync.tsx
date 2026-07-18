@@ -142,7 +142,7 @@ export function DataSync() {
     localStorage.setItem(LAST_FULL_SYNC, now);
     setLastFull(now);
     setRunning(false);
-    toast(failed === 0 ? t("sync.upToDate") : (failed === 1 ? t("sync.finishedOne") : t("sync.finishedMany")).replace("{n}", String(failed)), failed === 0 ? "success" : "info");
+    toast(failed === 0 ? t("sync.upToDate") : (failed === 1 ? t("sync.finishedOne") : t("sync.finishedMany")).replace("{n}", String(failed)), failed === 0 ? "success" : "info", failed === 0 ? "sync" : "error");
   };
 
   return (

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { useEmber } from "@/lib/store";
 import { configureSound, playCue, primeAudio } from "@/lib/sound";
 
@@ -15,10 +16,39 @@ import { configureSound, playCue, primeAudio } from "@/lib/sound";
 export function SoundEngine() {
   const sound = useEmber((s) => s.settings.sound ?? true);
   const volume = useEmber((s) => s.settings.soundVolume ?? 0.5);
+  const pathname = usePathname();
+  const firstRoute = useRef(true);
 
   useEffect(() => {
     configureSound(sound, volume);
   }, [sound, volume]);
+
+  /**
+   * A tick on every button/link press. This is what makes the app feel
+   * physical — without it the only audible things are toasts, so most of the
+   * interface is silent. Delegated from the document so it covers every
+   * control in the app, including ones added later.
+   */
+  useEffect(() => {
+    const onDown = (e: PointerEvent) => {
+      const el = (e.target as HTMLElement | null)?.closest?.(
+        "button, a[href], [role='button'], summary",
+      );
+      if (!el || (el as HTMLButtonElement).disabled) return;
+      playCue("tap");
+    };
+    document.addEventListener("pointerdown", onDown, true);
+    return () => document.removeEventListener("pointerdown", onDown, true);
+  }, []);
+
+  /** a soft two-note rise whenever the route actually changes */
+  useEffect(() => {
+    if (firstRoute.current) {
+      firstRoute.current = false;
+      return;
+    }
+    playCue("navigate");
+  }, [pathname]);
 
   useEffect(() => {
     let played = false;
