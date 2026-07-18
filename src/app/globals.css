@@ -209,6 +209,64 @@ h1, h2, h3 {
   transition: filter 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* ---- date & time fields -------------------------------------------------
+   Safari (iOS especially) doesn't lay these out like a normal text field: the
+   value lives in its own inner boxes (::-webkit-datetime-edit /
+   ::-webkit-date-and-time-value) which ignore the field's height and centre
+   themselves, so inside our fixed-height inputs the value showed up as an
+   off-centre strip. Making the control a flex box and flattening those inner
+   boxes lets the value sit exactly like text in every other input.          */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: flex;
+  align-items: center;
+  /* iOS shrink-wraps the control instead of filling the field without this */
+  min-width: 0;
+}
+
+input[type="date"]::-webkit-date-and-time-value,
+input[type="time"]::-webkit-date-and-time-value,
+input[type="datetime-local"]::-webkit-date-and-time-value {
+  text-align: left;
+  margin: 0;
+  padding: 0;
+  line-height: normal;
+}
+
+input[type="date"]::-webkit-datetime-edit,
+input[type="time"]::-webkit-datetime-edit,
+input[type="datetime-local"]::-webkit-datetime-edit {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  line-height: normal;
+}
+
+input::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
+}
+
+/* empty date/time fields render their placeholder text at full contrast in
+   Safari — match the muted placeholder colour used everywhere else */
+input[type="date"]::-webkit-datetime-edit-text,
+input[type="time"]::-webkit-datetime-edit-text,
+input[type="date"]:invalid::-webkit-datetime-edit,
+input[type="time"]:invalid::-webkit-datetime-edit {
+  color: var(--faint);
+}
+
+/* the native picker glyph (Chrome / Android) is black-on-dark by default */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.45;
+  cursor: pointer;
+}
+
 /* ---- ambient background ---- */
 .ambient {
   position: fixed;
