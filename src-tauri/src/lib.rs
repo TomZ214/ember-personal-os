@@ -136,6 +136,11 @@ fn setup(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     .min_inner_size(940.0, 600.0)
     .decorations(false)
     .shadow(true)
+    // Tauri captures native drag events for OS file drag-and-drop by default,
+    // which swallows HTML5 drag-and-drop inside the page — the task board
+    // could not be dragged in the desktop app while working fine in a browser.
+    // We don't accept dropped files, so hand dragging back to the web app.
+    .disable_drag_drop_handler()
     .resizable(true)
     .visible(false)
     .center()

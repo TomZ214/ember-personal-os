@@ -77,12 +77,25 @@ const CUES: Record<Cue, Note[]> = {
     { f: 659.25, t: 0.045, d: 0.09, g: 0.35 },
     { f: 880.0, t: 0.09, d: 0.15, g: 0.28 },
   ],
-  // a warm swell that arrives with the logo rather than announcing itself
+  /**
+   * The signature. Deliberately unlike every other cue: those are all short
+   * blips, this is a slow warm swell that blooms upward and leaves a shimmer
+   * hanging. Low drone underneath for body, a rising fifth through the middle,
+   * and a pair of very slightly detuned highs at the top so the tail glitters
+   * instead of sitting on one dead frequency.
+   */
   boot: [
-    { f: 130.81, t: 0, d: 0.85, type: "triangle", g: 0.45 },
-    { f: 261.63, t: 0.1, d: 0.8, g: 0.4 },
-    { f: 392.0, t: 0.28, d: 0.7, g: 0.3 },
-    { f: 523.25, t: 0.46, d: 0.6, g: 0.24 },
+    // body
+    { f: 65.41, t: 0, d: 1.5, type: "triangle", g: 0.4 },
+    { f: 130.81, t: 0.02, d: 1.4, type: "triangle", g: 0.45 },
+    // the rise
+    { f: 196.0, t: 0.16, d: 1.1, g: 0.34 },
+    { f: 293.66, t: 0.34, d: 1.0, g: 0.3 },
+    { f: 392.0, t: 0.52, d: 0.9, g: 0.26 },
+    // shimmer — the detune is what makes the tail feel alive
+    { f: 783.99, t: 0.72, d: 0.85, g: 0.16 },
+    { f: 785.6, t: 0.74, d: 0.85, g: 0.14 },
+    { f: 1174.66, t: 0.9, d: 0.7, g: 0.09 },
   ],
 };
 
