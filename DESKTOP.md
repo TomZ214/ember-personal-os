@@ -86,12 +86,18 @@ VS Code / Discord experience.
 
 ### One-time GitHub setup (required for the updater)
 
-Add two **repository secrets** (Settings → Secrets and variables → Actions):
+Add **one repository secret** at
+`https://github.com/TomZ214/ember-personal-os/settings/secrets/actions`
+(that's the **repo's** Settings tab — *not* your account settings):
 
 | Secret | Value |
 | --- | --- |
 | `TAURI_SIGNING_PRIVATE_KEY` | The full contents of `src-tauri/updater.key` (generated locally; **never committed** — it's gitignored). |
-| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | Empty (the key was generated without a password). |
+
+> **Do not create `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.** GitHub refuses to save
+> a secret with an empty value, and our key has no password. The workflow still
+> references it — an undefined secret resolves to an empty string, which is
+> exactly what the signer needs (and it stops the CLI prompting for a password).
 
 The matching **public** key is already baked into `src-tauri/tauri.conf.json`
 (`plugins.updater.pubkey`), so the app only trusts updates signed by your key.
