@@ -708,6 +708,10 @@ const en: Dict = {
   "vault.downloadMedia": "Download {name}",
   "vault.deleteMedia": "Delete {name}",
   "vault.close": "Close",
+  "vault.mediaCount": "{n} files",
+  "vault.blurredHint": "blurred for privacy",
+  "vault.revealMedia": "Show",
+  "vault.blurMedia": "Blur",
 
   // settings
   "settings.title": "Settings",
@@ -1628,6 +1632,10 @@ const de: Dict = {
   "vault.downloadMedia": "{name} herunterladen",
   "vault.deleteMedia": "{name} löschen",
   "vault.close": "Schließen",
+  "vault.mediaCount": "{n} Dateien",
+  "vault.blurredHint": "verpixelt",
+  "vault.revealMedia": "Anzeigen",
+  "vault.blurMedia": "Verpixeln",
 
   // settings
   "settings.title": "Einstellungen",

@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { formatDistanceToNow, parseISO } from "date-fns";
-import { Download, ImageOff, Loader2, Play, Trash2, UploadCloud, X } from "lucide-react";
+import { Download, Eye, EyeOff, ImageOff, Loader2, Play, Trash2, UploadCloud, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { decryptBytes, encryptBytes } from "@/lib/crypto";
 import { deleteMedia, getCipher, listMedia, putMedia, type MediaMeta } from "@/lib/vaultMedia";
 import { useLang, useT } from "@/lib/i18n";
 import { dfLocale } from "@/lib/dates";
+import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/misc";
 import { toast } from "@/components/ui/toast";
 
@@ -23,6 +24,11 @@ export function MediaGallery({ mediaKey }: { mediaKey: CryptoKey }) {
   const lang = useLang();
   const [items, setItems] = useState<MediaMeta[] | null>(null);
   const [thumbs, setThumbs] = useState<Record<string, string>>({});
+  // Privacy blur. Starts ON every single time and is deliberately NOT
+  // persisted: leaving the gallery, locking the vault or reloading all put the
+  // blur back, the same way the vault itself re-locks. Revealing is always a
+  // conscious act.
+  const [revealed, setRevealed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [viewer, setViewer] = useState<{ meta: MediaMeta; url: string } | null>(null);
@@ -179,6 +185,22 @@ export function MediaGallery({ mediaKey }: { mediaKey: CryptoKey }) {
           <EmptyState icon={<ImageOff size={20} />} title={t("vault.noMedia")} hint={t("vault.noMediaHint")} />
         </div>
       ) : (
+        <>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <p className="text-[13px] text-muted">
+            {t("vault.mediaCount").replace("{n}", String(items.length))}
+            {!revealed && <span className="ml-2 text-xs text-faint">· {t("vault.blurredHint")}</span>}
+          </p>
+          <Button
+            size="sm"
+            onClick={() => setRevealed((v) => !v)}
+            aria-pressed={!revealed}
+            title={revealed ? t("vault.blurMedia") : t("vault.revealMedia")}
+          >
+            {revealed ? <EyeOff size={14} /> : <Eye size={14} />}
+            {revealed ? t("vault.blurMedia") : t("vault.revealMedia")}
+          </Button>
+        </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           <AnimatePresence initial={false}>
             {items.map((m) => {
@@ -197,7 +219,27 @@ export function MediaGallery({ mediaKey }: { mediaKey: CryptoKey }) {
                   <button onClick={() => openViewer(m)} className="relative flex h-28 w-full items-center justify-center overflow-hidden bg-black/30" aria-label={t("vault.openMedia").replace("{name}", m.name)}>
                     {thumb ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={thumb} alt={m.name} className="h-full w-full object-cover" />
+                      <img
+                        src={thumb}
+                        alt={revealed ? m.name : ""}
+                        draggable={false}
+                        // Inline rather than a CSS class: this tile lives inside
+                        // a Framer `layout` motion.div, which drives transforms
+                        // in its subtree and left a class-based filter/transform
+                        // transition stuck at 0. Inline styles win outright.
+                        // both branches set both properties explicitly — handing
+                        // React `undefined` here left the old blur in place
+                        style={
+                          revealed
+                            ? { filter: "none", transform: "none" }
+                            : { filter: "blur(26px) saturate(1.15)", transform: "scale(1.15)" }
+                        }
+                        // No transition on purpose. A CSS transition here never
+                        // progressed inside Framer's `layout` subtree (it froze
+                        // at the old value), and fading a privacy blur would
+                        // show the photo for the length of the fade anyway.
+                        className="h-full w-full object-cover select-none"
+                      />
                     ) : (
                       <Play size={26} className="text-muted" />
                     )}
@@ -228,6 +270,7 @@ export function MediaGallery({ mediaKey }: { mediaKey: CryptoKey }) {
             })}
           </AnimatePresence>
         </div>
+        </>
       )}
 
       {viewer && <Lightbox viewer={viewer} onClose={closeViewer} />}
