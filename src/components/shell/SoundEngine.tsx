@@ -13,6 +13,17 @@ import { configureSound, playCue, primeAudio } from "@/lib/sound";
  * boot swell is played on that first gesture rather than queued — a startup
  * sound arriving five seconds late is worse than none at all.
  */
+/**
+ * Module scope on purpose: the startup swell must fire once per app launch,
+ * and a flag living inside the effect closure resets whenever the component
+ * remounts — which a long-lived desktop window does readily. That replayed the
+ * boot sound at random moments long after startup.
+ */
+let bootHandled = false;
+
+/** Past this point into the session, "startup" is over and the cue is void. */
+const BOOT_WINDOW_MS = 20_000;
+
 export function SoundEngine() {
   const sound = useEmber((s) => s.settings.sound ?? true);
   const volume = useEmber((s) => s.settings.soundVolume ?? 0.5);
@@ -57,15 +68,34 @@ export function SoundEngine() {
    * startup sound arriving ten seconds into the session is worse than silence.
    */
   useEffect(() => {
-    let done = false;
     let giveUp = 0;
-    const attempt = () => {
-      if (done) return;
+    const cleanup = () => {
+      window.removeEventListener("pointerdown", attempt);
+      window.removeEventListener("keydown", attempt);
+    };
+    /** Startup is over — never fire the swell again this session. */
+    const expired = () => performance.now() > BOOT_WINDOW_MS;
+
+    function attempt() {
+      if (bootHandled) return;
+      // A second guard beyond the flag: even if something re-triggers this
+      // much later, the moment has passed and the cue is simply dropped.
+      if (expired()) {
+        bootHandled = true;
+        cleanup();
+        return;
+      }
       primeAudio(); // resume() is async, so check on the next tick
       window.setTimeout(() => {
-        if (!done && playCue("boot")) done = true;
+        if (bootHandled || expired()) return;
+        if (playCue("boot")) {
+          bootHandled = true;
+          cleanup();
+        }
       }, 30);
-    };
+    }
+
+    if (bootHandled) return;
 
     // Desktop and returning visitors usually get it right here.
     attempt();
@@ -77,19 +107,19 @@ export function SoundEngine() {
     // the real "entering the app" moment, and cutting that off after a few
     // seconds meant phones simply never got a startup sound.
     const arm = window.setTimeout(() => {
-      if (done) return;
+      if (bootHandled) return;
       window.addEventListener("pointerdown", attempt);
       window.addEventListener("keydown", attempt);
       giveUp = window.setTimeout(() => {
-        done = true;
-      }, 20000);
+        bootHandled = true;
+        cleanup();
+      }, BOOT_WINDOW_MS);
     }, 150);
 
     return () => {
       window.clearTimeout(arm);
       window.clearTimeout(giveUp);
-      window.removeEventListener("pointerdown", attempt);
-      window.removeEventListener("keydown", attempt);
+      cleanup();
     };
   }, []);
 
