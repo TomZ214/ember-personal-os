@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { todayKey } from "./dates";
+import { dayKey, todayKey } from "./dates";
 import { advanceEnd, nextOccurrence as ruleNext, ruleExhausted, ruleForTask } from "./recurrence";
 import { purgeSeedData } from "./migrations";
 import type {
@@ -10,6 +10,14 @@ import type {
 } from "./types";
 
 const uid = () => crypto.randomUUID();
+
+/**
+ * How long a completed task sticks around before it's cleaned up automatically.
+ * Long enough that "what did I finish yesterday?" still works, short enough that
+ * Done never becomes a graveyard. The daily tally in `completionLog` outlives
+ * the tasks themselves, so the activity chart keeps its history.
+ */
+export const COMPLETED_TASK_TTL_HOURS = 36;
 
 /**
  * Completing a recurring task doesn't consume it — it schedules the next one.
@@ -52,6 +60,9 @@ export interface CloudData {
   contacts: Contact[];
   mails: Mail[];
   settings: Settings;
+  /** yyyy-MM-dd → how many completed tasks were auto-purged that day, so the
+   *  activity chart keeps its history after the tasks themselves are gone */
+  completionLog?: Record<string, number>;
   /** the vault's encrypted blob travels as-is — it is already AES-256 ciphertext */
   vaultBlob?: string | null;
 }
@@ -72,6 +83,8 @@ interface EmberState {
   mails: Mail[];
   files: FileMeta[];
   settings: Settings;
+  /** yyyy-MM-dd → count of completed tasks auto-purged that day */
+  completionLog: Record<string, number>;
 
   /** focus timer — persisted so a session survives reloads */
   focus: { running: boolean; mode: "focus" | "break"; endsAt: number | null; sessionsToday: number; sessionsDate: string };
@@ -91,6 +104,8 @@ interface EmberState {
   addTask: (t: Partial<Task> & { title: string }) => void;
   updateTask: (id: string, patch: Partial<Task>) => void;
   deleteTask: (id: string) => void;
+  /** drop completed tasks older than the retention window; returns how many went */
+  purgeCompletedTasks: () => number;
   moveTask: (id: string, status: Task["status"], beforeId?: string) => void;
 
   addEvent: (e: Omit<EventItem, "id">) => void;
@@ -151,6 +166,7 @@ export const useEmber = create<EmberState>()(
       contacts: [],
       mails: [],
       files: [],
+      completionLog: {},
       settings: {
         userName: "Tom",
         focusMinutes: 25,
@@ -209,6 +225,38 @@ export const useEmber = create<EmberState>()(
           return { tasks: [...spawned, ...tasks] };
         }),
       deleteTask: (id) => set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) })),
+      purgeCompletedTasks: () => {
+        let removed = 0;
+        set((s) => {
+          const cutoff = Date.now() - COMPLETED_TASK_TTL_HOURS * 3_600_000;
+          const log = { ...s.completionLog };
+
+          const kept = s.tasks.filter((t) => {
+            // Deliberately conservative: anything that isn't a done task with a
+            // real, parseable, old-enough timestamp is kept. A task completed
+            // before `completedAt` existed must never silently vanish.
+            if (t.status !== "done" || !t.completedAt) return true;
+            const at = Date.parse(t.completedAt);
+            if (!Number.isFinite(at) || at > cutoff) return true;
+
+            // remember the completion before dropping the task, so the
+            // two-week activity chart keeps its shape
+            const day = t.completedAt.slice(0, 10);
+            log[day] = (log[day] ?? 0) + 1;
+            removed++;
+            return false;
+          });
+
+          if (removed === 0) return s;
+          // keep the log bounded — the chart only ever looks back 14 days
+          const floor = dayKey(new Date(Date.now() - 30 * 86_400_000));
+          const trimmed = Object.fromEntries(
+            Object.entries(log).filter(([day]) => day >= floor),
+          );
+          return { tasks: kept, completionLog: trimmed };
+        });
+        return removed;
+      },
       moveTask: (id, status, beforeId) =>
         set((s) => {
           const moving = s.tasks.find((t) => t.id === id);

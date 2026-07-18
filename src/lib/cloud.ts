@@ -61,6 +61,7 @@ export function collectCloudData(): CloudData {
     contacts: s.contacts,
     mails: s.mails,
     settings: s.settings,
+    completionLog: s.completionLog,
     vaultBlob: localStorage.getItem(VAULT_STORAGE_KEY),
   };
 }

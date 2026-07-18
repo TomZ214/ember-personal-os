@@ -11,6 +11,7 @@ import { ResizeHandles } from "@/components/desktop/ResizeHandles";
 import { CommandPalette } from "./CommandPalette";
 import { Dock } from "./Dock";
 import { MobileTabs } from "./MobileTabs";
+import { TaskCleanup } from "./TaskCleanup";
 import { TopBar } from "./TopBar";
 import { ViewportFix } from "./ViewportFix";
 import { WelcomeAlert } from "./WelcomeAlert";
@@ -45,6 +46,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <Toaster />
       <Celebrations />
       <CloudSyncEngine />
+      <TaskCleanup />
       <ViewportFix />
       <WelcomeAlert />
       {desktop && <ResizeHandles />}

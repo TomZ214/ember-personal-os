@@ -10,13 +10,17 @@ import { useLang, useT } from "@/lib/i18n";
 export function WeekPulseWidget() {
   const tasks = useEmber((s) => s.tasks);
   const habits = useEmber((s) => s.habits);
+  // completed tasks are auto-purged after ~36h, so days older than that read
+  // their count from the tally kept at purge time instead of from the tasks
+  const completionLog = useEmber((s) => s.completionLog);
   const t = useT();
   const lang = useLang();
 
   const days = Array.from({ length: 14 }, (_, i) => {
     const d = subDays(new Date(), 13 - i);
     const key = dayKey(d);
-    const tc = tasks.filter((x) => x.completedAt?.slice(0, 10) === key).length;
+    const live = tasks.filter((x) => x.completedAt?.slice(0, 10) === key).length;
+    const tc = live + (completionLog?.[key] ?? 0);
     const h = habits.filter((x) => x.log[key]).length;
     return { key, label: format(d, "EEEEE", { locale: dfLocale(lang) }), tasks: tc, habits: h, total: tc + h };
   });
