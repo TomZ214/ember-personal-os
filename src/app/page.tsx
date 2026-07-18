@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { motion } from "framer-motion";
+import { riseIn, stagger } from "@/lib/motion";
 import { format } from "date-fns";
 import { Mail } from "lucide-react";
 import { useEmber, useHydrated } from "@/lib/store";
@@ -78,35 +80,40 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-12">
-        <section aria-label="Today's agenda" className="lg:col-span-5 lg:row-span-2">
+      <motion.div
+        className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-12"
+        initial="initial"
+        animate="animate"
+        variants={stagger(0.045, 0.05)}
+      >
+        <motion.section aria-label="Today's agenda" className="lg:col-span-5 lg:row-span-2" variants={riseIn}>
           <AgendaWidget />
-        </section>
-        <section aria-label="Focus timer" className="lg:col-span-3 lg:row-span-2">
+        </motion.section>
+        <motion.section aria-label="Focus timer" className="lg:col-span-3 lg:row-span-2" variants={riseIn}>
           <FocusTimer />
-        </section>
-        <section aria-label="Weather" className="lg:col-span-4">
+        </motion.section>
+        <motion.section aria-label="Weather" className="lg:col-span-4" variants={riseIn}>
           <WeatherWidget />
-        </section>
-        <section aria-label="Habits" className="lg:col-span-4">
+        </motion.section>
+        <motion.section aria-label="Habits" className="lg:col-span-4" variants={riseIn}>
           <HabitsTodayWidget />
-        </section>
-        <section aria-label="Tasks" className="lg:col-span-5">
+        </motion.section>
+        <motion.section aria-label="Tasks" className="lg:col-span-5" variants={riseIn}>
           <TodayTasksWidget />
-        </section>
-        <section aria-label="Activity" className="lg:col-span-7">
+        </motion.section>
+        <motion.section aria-label="Activity" className="lg:col-span-7" variants={riseIn}>
           <WeekPulseWidget />
-        </section>
-        <section aria-label="Goals" className="lg:col-span-7">
+        </motion.section>
+        <motion.section aria-label="Goals" className="lg:col-span-7" variants={riseIn}>
           <GoalsGlanceWidget />
-        </section>
-        <section aria-label="Quick note" className="lg:col-span-5">
+        </motion.section>
+        <motion.section aria-label="Quick note" className="lg:col-span-5" variants={riseIn}>
           <QuickNoteWidget />
-        </section>
-        <section aria-label="Bank" className="sm:col-span-2 lg:col-span-12">
+        </motion.section>
+        <motion.section aria-label="Bank" className="sm:col-span-2 lg:col-span-12" variants={riseIn}>
           <BankGlanceWidget />
-        </section>
-      </div>
+        </motion.section>
+      </motion.div>
     </div>
   );
 }

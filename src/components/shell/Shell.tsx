@@ -8,6 +8,7 @@ import { CloudSyncEngine } from "@/hooks/useCloudSync";
 import { useIsDesktop } from "@/lib/desktop";
 import { DesktopProvider } from "@/components/desktop/DesktopProvider";
 import { ResizeHandles } from "@/components/desktop/ResizeHandles";
+import { BootSequence } from "./BootSequence";
 import { CommandPalette } from "./CommandPalette";
 import { Dock } from "./Dock";
 import { MobileTabs } from "./MobileTabs";
@@ -49,6 +50,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <TaskCleanup />
       <ViewportFix />
       <WelcomeAlert />
+      <BootSequence />
       {desktop && <ResizeHandles />}
     </DesktopProvider>
   );

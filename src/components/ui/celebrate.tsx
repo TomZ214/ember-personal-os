@@ -8,6 +8,7 @@ import { Check, Sparkles } from "lucide-react";
 import { useEmber } from "@/lib/store";
 import { todayKey } from "@/lib/dates";
 import { useT } from "@/lib/i18n";
+import { THEME_PARTICLES } from "@/lib/motion";
 
 /**
  * The task-completion celebration: an ember spark burst at the checkbox, a
@@ -38,7 +39,12 @@ interface CelebrationState {
 const useCelebration = create<CelebrationState>(() => ({ bursts: [], pill: null, milestone: null }));
 const set = useCelebration.setState;
 
-const SPARK_COLORS = ["#FFD59E", "#FF8DB1", "#FF6B9D", "var(--success)"];
+/**
+ * Sparks inherit the active theme. These were hardcoded sunset hexes, which
+ * meant the celebration still burst orange/pink while the app was running the
+ * tide, crimson or orchid theme.
+ */
+const SPARK_COLORS = [...THEME_PARTICLES, "var(--success)"];
 
 /** how the day looks right now: finished vs. still-open (due today or overdue) */
 function dayProgress() {
