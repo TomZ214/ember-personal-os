@@ -136,6 +136,72 @@ export async function fetchWeather(lat: number, lon: number): Promise<WeatherDat
   return data;
 }
 
+/* ---------------- place search (geocoding) ---------------- */
+
+export interface PlaceHit {
+  id: number;
+  /** city / town name in the requested language */
+  name: string;
+  country: string;
+  countryCode: string;
+  /** state / region, when the API knows one */
+  admin1?: string;
+  latitude: number;
+  longitude: number;
+}
+
+interface GeoResult {
+  id: number;
+  name: string;
+  country?: string;
+  country_code?: string;
+  admin1?: string;
+  latitude: number;
+  longitude: number;
+}
+
+/**
+ * Look up a place by name via Open-Meteo's geocoding API (no key, same family
+ * as the forecast endpoint). Results come back localized where possible.
+ */
+export async function searchPlaces(
+  query: string,
+  lang: WxLang = "en",
+  signal?: AbortSignal,
+): Promise<PlaceHit[]> {
+  const q = query.trim();
+  if (q.length < 2) return [];
+
+  const url =
+    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}` +
+    `&count=6&language=${lang}&format=json`;
+
+  const res = await fetch(url, { signal });
+  if (!res.ok) throw new Error("geocoding failed");
+  const data = (await res.json()) as { results?: GeoResult[] };
+
+  return (data.results ?? []).map((r) => ({
+    id: r.id,
+    name: r.name,
+    country: r.country ?? "",
+    countryCode: r.country_code ?? "",
+    admin1: r.admin1,
+    latitude: Math.round(r.latitude * 100) / 100,
+    longitude: Math.round(r.longitude * 100) / 100,
+  }));
+}
+
+/** ISO-3166 alpha-2 → flag emoji, for a bit of colour in the results list. */
+export function flagFor(countryCode: string): string {
+  if (!/^[A-Za-z]{2}$/.test(countryCode)) return "";
+  return String.fromCodePoint(
+    ...countryCode
+      .toUpperCase()
+      .split("")
+      .map((c) => 0x1f1e6 + c.charCodeAt(0) - 65),
+  );
+}
+
 /* ---------------- helpers ---------------- */
 
 export type Condition =

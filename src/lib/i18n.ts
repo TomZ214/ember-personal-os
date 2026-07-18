@@ -923,6 +923,14 @@ const en: Dict = {
   "theme.tide": "Tide",
   "theme.crimson": "Crimson",
   "theme.orchid": "Orchid",
+
+  // weather location search
+  "settings.searchCity": "Search for a city",
+  "settings.searchCityPh": "Search for a city…",
+  "settings.locationSet": "Weather now follows {place}",
+  "settings.noCities": "No places found for “{q}”.",
+  "settings.searchFailed": "Couldn't reach the place search — check your connection.",
+  "settings.manualCoords": "Enter coordinates manually",
 };
 
 const de: Dict = {
@@ -1835,6 +1843,14 @@ const de: Dict = {
   "theme.tide": "Gezeiten",
   "theme.crimson": "Purpur",
   "theme.orchid": "Orchidee",
+
+  // weather location search
+  "settings.searchCity": "Nach einer Stadt suchen",
+  "settings.searchCityPh": "Nach einer Stadt suchen…",
+  "settings.locationSet": "Das Wetter folgt jetzt {place}",
+  "settings.noCities": "Keine Orte gefunden für „{q}“.",
+  "settings.searchFailed": "Ortssuche nicht erreichbar — prüfe deine Verbindung.",
+  "settings.manualCoords": "Koordinaten manuell eingeben",
 };
 
 const DICT: Record<Language, Dict> = { en, de };

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ChevronRight, Flame, Keyboard, Languages, Link2, LocateFixed, Trash2 } from "lucide-react";
+import { LocationSearch } from "@/components/settings/LocationSearch";
 import { useEmber, useHydrated } from "@/lib/store";
 import { useT } from "@/lib/i18n";
 import { useBankStatus, useGoogleStatus } from "@/hooks/useIntegrations";
@@ -81,7 +82,20 @@ export default function SettingsPage() {
         <section className="panel p-5">
           <h2 className="mb-1 text-[15px] font-semibold">{t("settings.weatherLocation")}</h2>
           <p className="mb-4 text-[13px] text-muted">{t("settings.weatherLocationSub")}</p>
-          <div className="flex flex-wrap items-end gap-3">
+
+          {/* primary path: search for a city and get coordinates filled in */}
+          <div className="mb-4 max-w-sm">
+            <LocationSearch />
+          </div>
+
+          <details className="group">
+            <summary className="cursor-pointer list-none text-[13px] text-faint transition-colors hover:text-muted">
+              <span className="inline-flex items-center gap-1.5">
+                <ChevronRight size={13} className="transition-transform group-open:rotate-90" />
+                {t("settings.manualCoords")}
+              </span>
+            </summary>
+            <div className="mt-3 flex flex-wrap items-end gap-3">
             <label>
               <Label>{t("settings.placeLabel")}</Label>
               <Input value={settings.place} onChange={(e) => updateSettings({ place: e.target.value })} className="w-40" />
@@ -103,7 +117,8 @@ export default function SettingsPage() {
             <Button onClick={locate} disabled={locating}>
               <LocateFixed size={15} /> {locating ? t("settings.locating") : t("settings.useMyLocation")}
             </Button>
-          </div>
+            </div>
+          </details>
         </section>
 
         <section className="panel p-5">
