@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import type { Condition } from "@/lib/weather";
 
@@ -32,20 +33,58 @@ function gradientFor(cond: Condition, isDay: boolean): string {
   return GRADIENTS[`${base}-${isDay ? "day" : "night"}`] ?? GRADIENTS[`clear-${isDay ? "day" : "night"}`];
 }
 
-export function WeatherBackground({ cond, isDay }: { cond: Condition; isDay: boolean }) {
+/**
+ * `card` fills the hero panel at full strength. `page` is the same weather,
+ * spread behind the entire page at low opacity so the whole screen takes on
+ * the conditions — rain streaks past the panels, fog softens the room — while
+ * text stays perfectly readable. Both share one implementation so the two can
+ * never drift apart.
+ */
+export function WeatherBackground({
+  cond,
+  isDay,
+  variant = "card",
+}: {
+  cond: Condition;
+  isDay: boolean;
+  variant?: "card" | "page";
+}) {
   const reduced = useReducedMotion();
   const rainy = cond === "rain" || cond === "drizzle" || cond === "showers" || cond === "thunder";
   const snowy = cond === "snow";
   const cloudy = cond === "cloudy" || cond === "partly" || cond === "fog" || rainy || snowy;
   const foggy = cond === "fog";
+  const page = variant === "page";
 
-  return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-[26px]">
+  // The page-transition wrapper in template.tsx animates a transform, and a
+  // transformed ancestor becomes the containing block for position:fixed — so
+  // rendered in place this layer sized itself to the whole scrolling page
+  // instead of the viewport. Portalling to <body> escapes that, same trick the
+  // Modal uses.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(t);
+  }, []);
+  if (page && !mounted) return null;
+
+  const layer = (
+    <div
+      aria-hidden
+      className={
+        page
+          ? // z-index -1 matches .ambient; being later in the DOM puts the
+            // weather just above it, and page content (auto) above both
+            "pointer-events-none fixed inset-0 z-[-1] overflow-hidden"
+          : "pointer-events-none absolute inset-0 overflow-hidden rounded-[26px]"
+      }
+      style={page ? { opacity: 0.42 } : undefined}
+    >
       <motion.div
         key={`${cond}-${isDay}`}
         initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.8 }}
+        animate={{ opacity: page ? 0.55 : 1 }}
+        transition={{ duration: page ? 1.4 : 0.8 }}
         className="absolute inset-0"
         style={{ background: gradientFor(cond, isDay) }}
       />
@@ -68,6 +107,8 @@ export function WeatherBackground({ cond, isDay }: { cond: Condition; isDay: boo
       {(cond === "clear" || cond === "partly") && !reduced && <Wind />}
     </div>
   );
+
+  return page ? createPortal(layer, document.body) : layer;
 }
 
 function Clouds({ dark, dense }: { dark: boolean; dense: boolean }) {

@@ -186,6 +186,41 @@ h1, h2, h3 {
 .panel-hover:hover {
   background: oklch(1 0 0 / 0.055);
   border-color: oklch(1 0 0 / 0.12);
+  /* the card lifts toward you — transform only, so it composites on the GPU */
+  transform: translateY(-2px);
+}
+/* and presses back down when tapped, which is what makes it feel physical */
+.panel-hover:active {
+  transform: translateY(0) scale(0.995);
+  transition-duration: 90ms;
+}
+
+/* ---- global micro-interactions ------------------------------------------
+   Press feedback for the controls that aren't the <Button> component (chips,
+   icon buttons, tabs, links-as-buttons). Transform only, and never applied to
+   disabled controls or to anything inside a drag operation.                */
+button:not(:disabled):active,
+[role="button"]:not([aria-disabled="true"]):active {
+  transform: scale(0.97);
+}
+button,
+[role="button"] {
+  transition: transform 120ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+/* the task board's cards are dragged, not pressed — a scale mid-drag fights
+   the native drag image */
+[draggable="true"]:active {
+  transform: none;
+}
+
+/* Honour the accessibility setting: no movement, just the colour feedback. */
+@media (prefers-reduced-motion: reduce) {
+  .panel-hover:hover,
+  .panel-hover:active,
+  button:not(:disabled):active,
+  [role="button"]:active {
+    transform: none;
+  }
 }
 
 /* top light-catch edge on glass chrome */

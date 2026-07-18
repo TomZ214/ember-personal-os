@@ -67,6 +67,9 @@ export default function WeatherPage() {
 
   return (
     <div>
+      {/* the conditions bleed out behind the whole page, not just the hero */}
+      <WeatherBackground cond={cond} isDay={c.isDay} variant="page" />
+
       <PageHeader title={t("wx.title")} sub={place} />
 
       {/* hero */}
