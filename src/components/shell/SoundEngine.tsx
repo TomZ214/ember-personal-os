@@ -58,6 +58,7 @@ export function SoundEngine() {
    */
   useEffect(() => {
     let done = false;
+    let giveUp = 0;
     const attempt = () => {
       if (done) return;
       primeAudio(); // resume() is async, so check on the next tick
@@ -66,15 +67,26 @@ export function SoundEngine() {
       }, 30);
     };
 
-    attempt(); // desktop app and returning visitors usually get it right here
-    window.addEventListener("pointerdown", attempt);
-    window.addEventListener("keydown", attempt);
-    // past this point the moment has passed — stop trying entirely
-    const giveUp = window.setTimeout(() => {
-      done = true;
-    }, 4000);
+    // Desktop and returning visitors usually get it right here.
+    attempt();
+
+    // iOS — and a home-screen PWA especially — blocks audio outright until the
+    // user touches the screen, so the immediate attempt can never succeed
+    // there. Only once we know we were blocked do we arm the gesture fallback,
+    // and then generously: the first tap after watching the boot animation is
+    // the real "entering the app" moment, and cutting that off after a few
+    // seconds meant phones simply never got a startup sound.
+    const arm = window.setTimeout(() => {
+      if (done) return;
+      window.addEventListener("pointerdown", attempt);
+      window.addEventListener("keydown", attempt);
+      giveUp = window.setTimeout(() => {
+        done = true;
+      }, 20000);
+    }, 150);
 
     return () => {
+      window.clearTimeout(arm);
       window.clearTimeout(giveUp);
       window.removeEventListener("pointerdown", attempt);
       window.removeEventListener("keydown", attempt);
