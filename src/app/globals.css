@@ -52,6 +52,55 @@
   --z-tooltip: 80;
 }
 
+/* ============================================================
+   Themes — each one only re-points the brand ramp + its derived
+   accents, so every component that already uses --grad-sunset /
+   --primary / --accent adapts with zero component changes.
+   `sunset` is :root above (the default); the rest override it.
+   ============================================================ */
+
+/* Tide — deep navy into teal. Calm, nautical, low-key. */
+[data-theme="tide"] {
+  --sunset-from: #2c3e50;
+  --sunset-to: #4ca1af;
+  --on-sunset: #eafcff; /* light text: this ramp is dark */
+
+  --primary: #4ca1af;
+  --primary-bright: #6fc6d4;
+  --primary-glow: rgba(76, 161, 175, 0.5);
+  --accent: oklch(0.80 0.10 205);
+
+  --c-ember: #4ca1af;
+}
+
+/* Crimson — blood red falling into near-black. Dramatic, cinematic. */
+[data-theme="crimson"] {
+  --sunset-from: #95122c;
+  --sunset-to: #100c08;
+  --on-sunset: #ffe9ed; /* light text: this ramp is very dark */
+
+  --primary: #c81e3c;
+  --primary-bright: #e8556d;
+  --primary-glow: rgba(200, 30, 60, 0.5);
+  --accent: oklch(0.78 0.12 45);
+
+  --c-ember: #c81e3c;
+}
+
+/* Orchid — hot magenta into electric cyan. Loud, neon, high-energy. */
+[data-theme="orchid"] {
+  --sunset-from: #ff0080;
+  --sunset-to: #00e5ff;
+  --on-sunset: #0a0a12; /* dark text: this ramp is vivid and bright */
+
+  --primary: #ff2b95;
+  --primary-bright: #ff6fb5;
+  --primary-glow: rgba(255, 0, 128, 0.5);
+  --accent: oklch(0.82 0.14 205);
+
+  --c-ember: #ff2b95;
+}
+
 @theme inline {
   --color-bg: var(--bg);
   --color-bg-deep: var(--bg-deep);
@@ -165,11 +214,27 @@ h1, h2, h3 {
   position: fixed;
   inset: 0;
   z-index: -1;
+  /* per-theme glow pair, defaulting to the sunset rose/amber wash */
+  --glow-a: oklch(0.30 0.09 355 / 0.32);
+  --glow-b: oklch(0.30 0.06 75 / 0.20);
   background:
-    radial-gradient(52rem 36rem at 12% 108%, oklch(0.30 0.09 355 / 0.32), transparent 62%),
-    radial-gradient(44rem 30rem at 92% -8%, oklch(0.30 0.06 75 / 0.20), transparent 60%),
+    radial-gradient(52rem 36rem at 12% 108%, var(--glow-a), transparent 62%),
+    radial-gradient(44rem 30rem at 92% -8%, var(--glow-b), transparent 60%),
     radial-gradient(60rem 44rem at 50% 46%, oklch(0.145 0.004 27), transparent 74%),
     var(--bg-deep);
+}
+
+[data-theme="tide"] .ambient {
+  --glow-a: oklch(0.32 0.07 220 / 0.34);
+  --glow-b: oklch(0.34 0.06 195 / 0.22);
+}
+[data-theme="crimson"] .ambient {
+  --glow-a: oklch(0.30 0.13 20 / 0.36);
+  --glow-b: oklch(0.26 0.08 30 / 0.20);
+}
+[data-theme="orchid"] .ambient {
+  --glow-a: oklch(0.32 0.15 340 / 0.34);
+  --glow-b: oklch(0.34 0.11 215 / 0.24);
 }
 .ambient::after {
   content: "";

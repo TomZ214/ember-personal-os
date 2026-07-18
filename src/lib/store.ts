@@ -159,6 +159,7 @@ export const useEmber = create<EmberState>()(
         longitude: 13.405,
         place: "Berlin",
         language: "en",
+        theme: "sunset",
       },
       focus: { running: false, mode: "focus", endsAt: null, sessionsToday: 0, sessionsDate: todayKey() },
 

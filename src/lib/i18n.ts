@@ -915,6 +915,14 @@ const en: Dict = {
   "desktop.downloading": "Downloading update…",
   "desktop.upToDate": "EmberOS is up to date",
   "desktop.updateFailed": "Update failed — please try again later",
+
+  // appearance / gradient themes
+  "theme.title": "Appearance",
+  "theme.sub": "Pick the gradient EmberOS is built around. It changes buttons, highlights and the ambient glow everywhere.",
+  "theme.sunset": "Sunset",
+  "theme.tide": "Tide",
+  "theme.crimson": "Crimson",
+  "theme.orchid": "Orchid",
 };
 
 const de: Dict = {
@@ -1819,6 +1827,14 @@ const de: Dict = {
   "desktop.downloading": "Update wird geladen…",
   "desktop.upToDate": "EmberOS ist aktuell",
   "desktop.updateFailed": "Update fehlgeschlagen — bitte später erneut versuchen",
+
+  // appearance / gradient themes
+  "theme.title": "Erscheinungsbild",
+  "theme.sub": "Wähle den Farbverlauf, um den EmberOS gebaut ist. Er verändert Buttons, Akzente und das Hintergrundleuchten überall.",
+  "theme.sunset": "Sonnenuntergang",
+  "theme.tide": "Gezeiten",
+  "theme.crimson": "Purpur",
+  "theme.orchid": "Orchidee",
 };
 
 const DICT: Record<Language, Dict> = { en, de };

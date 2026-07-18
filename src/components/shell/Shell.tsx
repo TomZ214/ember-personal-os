@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { Celebrations } from "@/components/ui/celebrate";
+import { ThemeApplier } from "@/components/ui/ThemeApplier";
 import { Toaster } from "@/components/ui/toast";
 import { CloudSyncEngine } from "@/hooks/useCloudSync";
 import { useIsDesktop } from "@/lib/desktop";
@@ -23,6 +24,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   if (pathname.startsWith("/add")) {
     return (
       <>
+        <ThemeApplier />
         <div className="ambient" aria-hidden />
         {children}
       </>
@@ -31,6 +33,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <DesktopProvider>
+      <ThemeApplier />
       <div className="ambient" aria-hidden />
       <TopBar />
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 pb-32 pt-6 sm:px-6 md:pb-28">

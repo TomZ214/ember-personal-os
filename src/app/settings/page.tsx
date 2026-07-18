@@ -7,6 +7,7 @@ import { useEmber, useHydrated } from "@/lib/store";
 import { useT } from "@/lib/i18n";
 import { useBankStatus, useGoogleStatus } from "@/hooks/useIntegrations";
 import { DataSync } from "@/components/settings/DataSync";
+import { ThemePicker } from "@/components/settings/ThemePicker";
 import { DesktopSettings } from "@/components/desktop/DesktopSettings";
 import { Button } from "@/components/ui/Button";
 import { LanguageToggle } from "@/components/ui/LanguageToggle";
@@ -54,6 +55,8 @@ export default function SettingsPage() {
         <ConnectionsLink />
 
         <DataSync />
+
+        <ThemePicker />
 
         <section className="panel flex flex-wrap items-center justify-between gap-3 p-5">
           <div>

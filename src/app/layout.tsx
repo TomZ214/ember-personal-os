@@ -46,6 +46,16 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        {/* Paint the saved theme before first paint so there's no flash of the
+            default sunset ramp. Reads the same persisted zustand blob the app
+            uses; any failure just leaves the CSS default in place. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=JSON.parse(localStorage.getItem("ember-os")||"{}")?.state?.settings?.theme;if(t&&t!=="sunset")document.documentElement.dataset.theme=t;}catch(e){}`,
+          }}
+        />
+      </head>
       <body className="flex min-h-full flex-col">
         <Shell>{children}</Shell>
       </body>

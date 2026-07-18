@@ -213,6 +213,16 @@ export interface NotificationSettings {
 
 export type Language = "en" | "de";
 
+/** Brand gradient themes. `sunset` is the original ember look and the default. */
+export type Theme = "sunset" | "tide" | "crimson" | "orchid";
+
+export const THEMES: { id: Theme; from: string; to: string }[] = [
+  { id: "sunset", from: "#ffd59e", to: "#ff6b9d" },
+  { id: "tide", from: "#2c3e50", to: "#4ca1af" },
+  { id: "crimson", from: "#95122c", to: "#100c08" },
+  { id: "orchid", from: "#ff0080", to: "#00e5ff" },
+];
+
 export interface Settings {
   userName: string;
   focusMinutes: number;
@@ -224,6 +234,8 @@ export interface Settings {
   notifications?: NotificationSettings;
   /** UI language — English or German */
   language?: Language;
+  /** Brand gradient / colour theme */
+  theme?: Theme;
 }
 
 export const DEFAULT_NOTIFICATIONS: NotificationSettings = {
