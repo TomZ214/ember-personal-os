@@ -36,7 +36,7 @@ export function BankGlanceWidget() {
         <p className="flex items-center gap-2 text-[13px] font-medium text-muted">
           <Landmark size={14} /> {bank.status?.account}
         </p>
-        <Link href="/finance" className="text-xs text-faint transition-colors hover:text-accent">
+        <Link href="/finance" className="-mx-1 -my-2 px-1 py-2 text-xs text-faint transition-colors hover:text-accent">
           {t("w.finance")} ↗
         </Link>
       </div>

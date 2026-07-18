@@ -37,7 +37,7 @@ export function TodayTasksWidget() {
         <p className="text-[13px] font-medium text-muted">
           {tr("w.tasks")} <span className="text-faint">· {tr("w.doneToday").replace("{n}", String(doneToday))}</span>
         </p>
-        <Link href="/tasks" className="flex items-center gap-1 text-xs text-faint transition-colors hover:text-accent">
+        <Link href="/tasks" className="-mx-1 -my-2 flex items-center gap-1 px-1 py-2 text-xs text-faint transition-colors hover:text-accent">
           {tr("w.taskBoard")} <ArrowUpRight size={13} />
         </Link>
       </div>
@@ -71,7 +71,10 @@ export function TodayTasksWidget() {
                         celebrate(t.title, { x: r.left + r.width / 2, y: r.top + r.height / 2 });
                       }}
                       aria-label={`Complete "${t.title}"`}
-                      className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-md border border-white/25 text-transparent transition-all hover:border-success hover:bg-success/15 hover:text-success"
+                      // 18px is far below a comfortable tap target, but growing
+                      // the box would change the design — so the hit area is
+                      // extended invisibly to ~34px via a pseudo-element.
+                      className="relative flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-md border border-white/25 text-transparent transition-all before:absolute before:-inset-2 before:content-[''] hover:border-success hover:bg-success/15 hover:text-success"
                     >
                       <Check size={12} strokeWidth={3} />
                     </button>
@@ -102,7 +105,9 @@ export function TodayTasksWidget() {
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && submit()}
           placeholder={tr("w.quickAddPh")}
-          className="w-full bg-transparent text-sm placeholder:text-faint focus:outline-none"
+          // py-2 gives the bare input a ~36px tap target; the field is
+          // transparent so nothing changes visually
+          className="w-full bg-transparent py-2 text-sm placeholder:text-faint focus:outline-none"
           aria-label={tr("w.quickAddPh")}
         />
       </div>

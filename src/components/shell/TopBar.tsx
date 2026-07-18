@@ -36,7 +36,7 @@ export function TopBar() {
         className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6"
         {...(desktop ? { "data-tauri-drag-region": true } : {})}
       >
-        <Link href="/" className="flex items-center gap-2.5">
+        <Link href="/" className="-my-2 flex items-center gap-2.5 py-2">
           <span className="flex h-7 w-7 items-center justify-center rounded-[9px] bg-primary/15 text-primary-bright shadow-[0_0_18px_-2px_var(--primary-glow)]">
             <Flame size={15} strokeWidth={2.2} />
           </span>

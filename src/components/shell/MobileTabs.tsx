@@ -26,7 +26,11 @@ export function MobileTabs() {
     <>
       <nav
         aria-label="Main"
-        className="glass-strong glass-edge fixed inset-x-3 bottom-3 z-(--z-sticky) flex items-stretch justify-around rounded-3xl pb-[env(safe-area-inset-bottom)] md:hidden"
+        // The bar FLOATS (inset-x-3 / bottom), so the home indicator has to be
+        // cleared by offsetting the bar — not by padding its inside. Padding it
+        // left a tall dead strip inside the pill on iPhone and pushed the icons
+        // up. `max()` keeps the 12px gap on devices without an inset.
+        className="glass-strong glass-edge fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-(--z-sticky) flex items-stretch justify-around rounded-3xl md:hidden"
       >
         {PRIMARY.map((item) => {
           const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
@@ -75,7 +79,8 @@ export function MobileTabs() {
 
       <AnimatePresence>
         {appsOpen && (
-          <div className="fixed inset-0 z-(--z-modal) md:hidden">
+          // keyed motion child so AnimatePresence can track presence properly
+          <motion.div key="apps-sheet-root" className="fixed inset-0 z-(--z-modal) md:hidden">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -123,7 +128,7 @@ export function MobileTabs() {
                 })}
               </div>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </>

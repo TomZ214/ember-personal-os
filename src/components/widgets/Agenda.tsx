@@ -39,7 +39,7 @@ export function AgendaWidget() {
           {t("w.agenda")}
           {cal.connected && <span className="ml-2 text-[11px] text-faint">· {t("w.googleSynced")}</span>}
         </p>
-        <Link href="/calendar" className="flex items-center gap-1 text-xs text-faint transition-colors hover:text-accent">
+        <Link href="/calendar" className="-mx-1 -my-2 flex items-center gap-1 px-1 py-2 text-xs text-faint transition-colors hover:text-accent">
           {t("w.calendar")} <ArrowUpRight size={13} />
         </Link>
       </div>

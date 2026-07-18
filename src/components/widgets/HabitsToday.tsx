@@ -35,7 +35,7 @@ export function HabitsTodayWidget() {
         <p className="text-[13px] font-medium text-muted">
           {t("w.habits")} <span className="text-faint">· {done}/{habits.length}</span>
         </p>
-        <Link href="/habits" className="flex items-center gap-1 text-xs text-faint transition-colors hover:text-accent">
+        <Link href="/habits" className="-mx-1 -my-2 flex items-center gap-1 px-1 py-2 text-xs text-faint transition-colors hover:text-accent">
           {t("w.streaks")} <ArrowUpRight size={13} />
         </Link>
       </div>

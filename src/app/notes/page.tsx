@@ -213,7 +213,7 @@ function FolderChip({ label, active, onClick }: { label: string; active: boolean
     <button
       onClick={onClick}
       aria-pressed={active}
-      className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+      className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
         active ? "bg-accent/15 text-accent" : "bg-white/[0.05] text-muted hover:bg-white/[0.08] hover:text-ink"
       }`}
     >

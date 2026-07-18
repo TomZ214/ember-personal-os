@@ -184,7 +184,12 @@ export function CommandPalette() {
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-(--z-palette) flex items-start justify-center px-4 pt-[14dvh]">
+        // keyed motion child: AnimatePresence requires its direct children to
+        // be keyed to track presence and run exit animations reliably
+        <motion.div
+          key="palette-root"
+          className="fixed inset-0 z-(--z-palette) flex items-start justify-center px-4 pt-[14dvh]"
+        >
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -252,7 +257,7 @@ export function CommandPalette() {
               })}
             </div>
           </motion.div>
-        </div>
+        </motion.div>
       )}
     </AnimatePresence>
   );

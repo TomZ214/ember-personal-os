@@ -16,7 +16,7 @@ export function GoalsGlanceWidget() {
     <div className="panel flex h-full flex-col p-5">
       <div className="mb-4 flex items-center justify-between">
         <p className="text-[13px] font-medium text-muted">{t("w.goals")}</p>
-        <Link href="/goals" className="flex items-center gap-1 text-xs text-faint transition-colors hover:text-accent">
+        <Link href="/goals" className="-mx-1 -my-2 flex items-center gap-1 px-1 py-2 text-xs text-faint transition-colors hover:text-accent">
           {t("w.allGoals")} <ArrowUpRight size={13} />
         </Link>
       </div>

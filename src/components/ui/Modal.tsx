@@ -43,7 +43,10 @@ export function Modal({ open, onClose, title, children, wide }: Props) {
   return createPortal(
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-(--z-modal) flex items-end justify-center sm:items-center">
+        <motion.div
+          key="modal-root"
+          className="fixed inset-0 z-(--z-modal) flex items-end justify-center sm:items-center"
+        >
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -77,7 +80,7 @@ export function Modal({ open, onClose, title, children, wide }: Props) {
               {children}
             </div>
           </motion.div>
-        </div>
+        </motion.div>
       )}
     </AnimatePresence>,
     document.body,
