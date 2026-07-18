@@ -21,7 +21,8 @@ import { THEME_PARTICLES } from "@/lib/motion";
  * re-tints the whole drift with no work here.
  */
 
-const COUNT = 18;
+/** Tuned for a desktop canvas; CSS drops the tail on phones. */
+const COUNT = 30;
 
 /** cheap deterministic pseudo-random in [0,1) — stable across SSR/CSR */
 function rand(seed: number) {
@@ -33,16 +34,19 @@ const PARTICLES = Array.from({ length: COUNT }, (_, i) => {
   const a = rand(i + 1);
   const b = rand(i + 7.3);
   const c = rand(i + 19.1);
+  const size = 2.5 + b * 4;
   return {
     id: i,
     left: a * 100,
-    size: 2 + b * 3.2,
+    size,
     duration: 20 + c * 22,
     // negative delay: the drift is already mid-flight on first paint instead
     // of every particle launching from the floor at once
     delay: -(a * 40),
     drift: `${(b - 0.5) * 90}px`,
-    opacity: 0.1 + c * 0.16,
+    opacity: 0.28 + c * 0.34,
+    // the halo scales with the ember, which is what sells the colour
+    glow: `${size * 2.4}px`,
     color: THEME_PARTICLES[i % THEME_PARTICLES.length],
   };
 });
@@ -75,11 +79,14 @@ export function AmbientParticles() {
               left: `${p.left}%`,
               width: p.size,
               height: p.size,
-              background: p.color,
+              // `color` drives both the dot and its glow, so one theme
+              // variable tints the whole ember
+              color: p.color,
               animationDuration: `${p.duration}s`,
               animationDelay: `${p.delay}s`,
               "--p-drift": p.drift,
               "--p-opacity": p.opacity,
+              "--p-glow": p.glow,
             } as React.CSSProperties
           }
         />

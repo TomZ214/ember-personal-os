@@ -220,10 +220,23 @@ h1, h2, h3 {
   position: absolute;
   bottom: -12px;
   border-radius: 9999px;
+  /* `color` carries the theme variable, so the dot and its glow are always the
+     same hue. The glow is what actually makes the colour readable — a 3px dot
+     on a dark background reads as grey no matter what colour it is. */
+  background: currentColor;
+  box-shadow: 0 0 var(--p-glow) currentColor;
   will-change: transform, opacity;
   animation-name: ember-drift;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
+}
+
+/* The count is tuned for a desktop canvas; on a phone that many embers in a
+   fraction of the area reads as busy, so the tail of them drops out. */
+@media (max-width: 767px) {
+  .ambient-particle:nth-child(n + 19) {
+    display: none;
+  }
 }
 
 /* decorative only — no movement for anyone who asked for less of it */
