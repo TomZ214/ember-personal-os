@@ -195,6 +195,44 @@ h1, h2, h3 {
   transition-duration: 90ms;
 }
 
+/* ---- ambient particles --------------------------------------------------
+   Deliberately CSS keyframes rather than Framer Motion: these loop forever,
+   so running them on the compositor costs no main-thread rAF and survives
+   React re-renders untouched. Transform/opacity only.                      */
+@keyframes ember-drift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.7);
+    opacity: 0;
+  }
+  12% {
+    opacity: var(--p-opacity);
+  }
+  82% {
+    opacity: var(--p-opacity);
+  }
+  100% {
+    transform: translate3d(var(--p-drift), -108vh, 0) scale(1.05);
+    opacity: 0;
+  }
+}
+
+.ambient-particle {
+  position: absolute;
+  bottom: -12px;
+  border-radius: 9999px;
+  will-change: transform, opacity;
+  animation-name: ember-drift;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+/* decorative only — no movement for anyone who asked for less of it */
+@media (prefers-reduced-motion: reduce) {
+  .ambient-particle {
+    display: none;
+  }
+}
+
 /* ---- global micro-interactions ------------------------------------------
    Press feedback for the controls that aren't the <Button> component (chips,
    icon buttons, tabs, links-as-buttons). Transform only, and never applied to

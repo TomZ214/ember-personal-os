@@ -8,6 +8,7 @@ import { CloudSyncEngine } from "@/hooks/useCloudSync";
 import { useIsDesktop } from "@/lib/desktop";
 import { DesktopProvider } from "@/components/desktop/DesktopProvider";
 import { ResizeHandles } from "@/components/desktop/ResizeHandles";
+import { AmbientParticles } from "./AmbientParticles";
 import { BootSequence } from "./BootSequence";
 import { CommandPalette } from "./CommandPalette";
 import { SoundEngine } from "./SoundEngine";
@@ -38,6 +39,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
     <DesktopProvider>
       <ThemeApplier />
       <div className="ambient" aria-hidden />
+      <AmbientParticles />
       <TopBar />
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 pb-32 pt-6 sm:px-6 md:pb-28">
         {children}
