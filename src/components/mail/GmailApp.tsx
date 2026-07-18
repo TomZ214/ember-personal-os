@@ -292,16 +292,22 @@ export function GmailApp({ provider = GMAIL_PROVIDER }: { provider?: MailProvide
             {list.data?.messages.length === 0 && (
               <EmptyState icon={<MailIcon size={20} />} title={tr("mail.nothingHere")} hint={debounced ? tr("mail.noMatch") : tr("mail.folderEmpty")} />
             )}
+            <AnimatePresence initial={false}>
             {list.data?.messages.map((m) => (
-              <button
+              <motion.button
                 key={m.id}
+                layout
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, x: 56, height: 0, paddingTop: 0, paddingBottom: 0 }}
+                transition={{ type: "spring", stiffness: 420, damping: 36 }}
                 onClick={() => openMail(m)}
-                className={`block w-full px-4 py-3 text-left transition-colors ${
+                className={`block w-full overflow-hidden px-4 py-3 text-left transition-colors ${
                   activeId === m.id ? "bg-white/[0.06]" : "hover:bg-white/[0.03]"
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  {m.unread && <span className="h-2 w-2 shrink-0 rounded-full bg-primary-bright shadow-[0_0_6px_var(--primary)]" />}
+                  {m.unread && <span className="unread-dot h-2 w-2 shrink-0 rounded-full bg-primary-bright" />}
                   <p className={`min-w-0 flex-1 truncate text-sm ${m.unread ? "font-semibold" : "text-muted"}`}>{m.from}</p>
                   <span className="num shrink-0 text-[11px] text-faint">
                     {isToday(parseISO(m.date)) ? format(parseISO(m.date), "HH:mm") : format(parseISO(m.date), lang === "de" ? "d. MMM" : "MMM d", { locale: dfLocale(lang) })}
@@ -312,8 +318,9 @@ export function GmailApp({ provider = GMAIL_PROVIDER }: { provider?: MailProvide
                   <p className="truncate text-xs text-faint">{m.snippet}</p>
                   {m.starred && <Star size={11} className="shrink-0 fill-accent text-accent" />}
                 </div>
-              </button>
+              </motion.button>
             ))}
+            </AnimatePresence>
           </div>
         </div>
 
@@ -333,10 +340,10 @@ export function GmailApp({ provider = GMAIL_PROVIDER }: { provider?: MailProvide
             <AnimatePresence mode="wait">
               <motion.article
                 key={active.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.18 }}
+                initial={{ opacity: 0, scale: 0.97, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.985 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 className="panel flex flex-1 flex-col overflow-hidden"
               >
                 <div className="flex items-center gap-1 border-b border-white/[0.06] px-3 py-2.5">

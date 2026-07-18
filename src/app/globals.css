@@ -246,6 +246,41 @@ h1, h2, h3 {
   }
 }
 
+/* ---- unread mail marker -------------------------------------------------
+   A soft halo breathing around the unread dot. CSS keyframes on transform and
+   opacity only: a mailbox can hold hundreds of rows, and animating box-shadow
+   per row would repaint constantly.                                        */
+@keyframes unread-breathe {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.5);
+  }
+}
+
+.unread-dot {
+  position: relative;
+}
+.unread-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: var(--primary-bright);
+  animation: unread-breathe 2.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .unread-dot::after {
+    animation: none;
+    opacity: 0.5;
+  }
+}
+
 /* ---- global micro-interactions ------------------------------------------
    Press feedback for the controls that aren't the <Button> component (chips,
    icon buttons, tabs, links-as-buttons). Transform only, and never applied to
