@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Info } from "lucide-react";
+import { playCue } from "@/lib/sound";
 
 interface Toast {
   id: number;
@@ -22,8 +23,11 @@ const useToasts = create<{ toasts: Toast[]; push: (t: Omit<Toast, "id">) => void
   }),
 );
 
-export const toast = (text: string, kind: "success" | "info" = "success") =>
+export const toast = (text: string, kind: "success" | "info" = "success") => {
+  // every toast is a piece of feedback, so this is the natural place to sound one
+  playCue(kind === "success" ? "success" : "notify");
   useToasts.getState().push({ text, kind });
+};
 
 export function Toaster() {
   const { toasts, remove } = useToasts();

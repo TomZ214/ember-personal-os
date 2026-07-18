@@ -236,6 +236,10 @@ export interface Settings {
   language?: Language;
   /** Brand gradient / colour theme */
   theme?: Theme;
+  /** UI sound effects */
+  sound?: boolean;
+  /** 0..1 master volume for UI sounds */
+  soundVolume?: number;
 }
 
 export const DEFAULT_NOTIFICATIONS: NotificationSettings = {

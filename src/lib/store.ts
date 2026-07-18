@@ -176,6 +176,8 @@ export const useEmber = create<EmberState>()(
         place: "Berlin",
         language: "en",
         theme: "sunset",
+        sound: true,
+        soundVolume: 0.5,
       },
       focus: { running: false, mode: "focus", endsAt: null, sessionsToday: 0, sessionsDate: todayKey() },
 

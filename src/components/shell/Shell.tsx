@@ -10,6 +10,7 @@ import { DesktopProvider } from "@/components/desktop/DesktopProvider";
 import { ResizeHandles } from "@/components/desktop/ResizeHandles";
 import { BootSequence } from "./BootSequence";
 import { CommandPalette } from "./CommandPalette";
+import { SoundEngine } from "./SoundEngine";
 import { Dock } from "./Dock";
 import { MobileTabs } from "./MobileTabs";
 import { TaskCleanup } from "./TaskCleanup";
@@ -51,6 +52,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <ViewportFix />
       <WelcomeAlert />
       <BootSequence />
+      <SoundEngine />
       {desktop && <ResizeHandles />}
     </DesktopProvider>
   );

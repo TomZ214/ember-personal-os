@@ -9,6 +9,7 @@ import { useEmber } from "@/lib/store";
 import { todayKey } from "@/lib/dates";
 import { useT } from "@/lib/i18n";
 import { THEME_PARTICLES } from "@/lib/motion";
+import { playCue } from "@/lib/sound";
 
 /**
  * The task-completion celebration: an ember spark burst at the checkbox, a
@@ -64,6 +65,7 @@ function dayProgress() {
  * (usually the checkbox that was just ticked); omit it for a centred moment.
  */
 export function celebrate(title: string, origin?: { x: number; y: number }) {
+  playCue("success");
   const id = Date.now() + Math.random();
   const { doneToday, clearedDue, openDue, total } = dayProgress();
 

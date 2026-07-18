@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
+import { playCue } from "@/lib/sound";
 
 interface Props {
   open: boolean;
@@ -29,12 +30,14 @@ export function Modal({ open, onClose, title, children, wide }: Props) {
 
   useEffect(() => {
     if (!open) return;
+    playCue("open");
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
+      playCue("close");
     };
   }, [open, onClose]);
 

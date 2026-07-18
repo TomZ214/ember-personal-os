@@ -20,8 +20,8 @@ import { DURATION, EASE, THEME_PARTICLES } from "@/lib/motion";
  *  • guaranteed to unmount, so it can never eat clicks
  */
 
-const REVEAL_AT = 1150; // when the curtain starts lifting
-const UNMOUNT_AT = 1750; // hard guarantee it is gone
+const REVEAL_AT = 1750; // when the curtain starts lifting
+const UNMOUNT_AT = 2500; // hard guarantee it is gone
 
 export function BootSequence() {
   const reduced = useReducedMotion();
@@ -67,7 +67,7 @@ export function BootSequence() {
         }}
         initial={{ opacity: 0, scale: 0.5 }}
         animate={{ opacity: [0, 0.85, 0.5], scale: [0.5, 1.15, 1] }}
-        transition={{ duration: 1.3, ease: EASE.entrance, times: [0, 0.55, 1] }}
+        transition={{ duration: 1.9, ease: EASE.entrance, times: [0, 0.55, 1] }}
       />
 
       {/* theme-coloured embers drifting up past the mark */}
@@ -90,8 +90,8 @@ export function BootSequence() {
               scale: [0.4, 1, 0.3],
             }}
             transition={{
-              duration: 1.25,
-              delay: 0.18 + (i % 7) * 0.045,
+              duration: 1.8,
+              delay: 0.2 + (i % 7) * 0.06,
               ease: EASE.entrance,
             }}
           />

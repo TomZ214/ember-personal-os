@@ -928,6 +928,13 @@ const en: Dict = {
   "theme.crimson": "Crimson",
   "theme.orchid": "Orchid",
 
+  // sound
+  "sound.title": "Sound effects",
+  "sound.sub": "Short, quiet cues for actions, alerts and completed tasks.",
+  "sound.on": "On",
+  "sound.off": "Off",
+  "sound.volume": "Volume",
+
   // weather location search
   "settings.searchCity": "Search for a city",
   "settings.searchCityPh": "Search for a city…",
@@ -1851,6 +1858,13 @@ const de: Dict = {
   "theme.tide": "Gezeiten",
   "theme.crimson": "Purpur",
   "theme.orchid": "Orchidee",
+
+  // sound
+  "sound.title": "Soundeffekte",
+  "sound.sub": "Kurze, leise Signale für Aktionen, Hinweise und erledigte Aufgaben.",
+  "sound.on": "An",
+  "sound.off": "Aus",
+  "sound.volume": "Lautstärke",
 
   // weather location search
   "settings.searchCity": "Nach einer Stadt suchen",
