@@ -50,22 +50,34 @@ export function SoundEngine() {
     playCue("navigate");
   }, [pathname]);
 
+  /**
+   * The boot swell should land WITH the logo, not whenever the user happens to
+   * click. So: try immediately, and only fall back to the first gesture if the
+   * browser's autoplay policy blocked us — and even then only briefly. A
+   * startup sound arriving ten seconds into the session is worse than silence.
+   */
   useEffect(() => {
-    let played = false;
-    const unlock = () => {
-      primeAudio();
-      if (!played) {
-        played = true;
-        // a beat after the gesture so the swell doesn't collide with the
-        // click sound of whatever the user actually pressed
-        window.setTimeout(() => playCue("boot"), 90);
-      }
+    let done = false;
+    const attempt = () => {
+      if (done) return;
+      primeAudio(); // resume() is async, so check on the next tick
+      window.setTimeout(() => {
+        if (!done && playCue("boot")) done = true;
+      }, 30);
     };
-    window.addEventListener("pointerdown", unlock, { once: true });
-    window.addEventListener("keydown", unlock, { once: true });
+
+    attempt(); // desktop app and returning visitors usually get it right here
+    window.addEventListener("pointerdown", attempt);
+    window.addEventListener("keydown", attempt);
+    // past this point the moment has passed — stop trying entirely
+    const giveUp = window.setTimeout(() => {
+      done = true;
+    }, 4000);
+
     return () => {
-      window.removeEventListener("pointerdown", unlock);
-      window.removeEventListener("keydown", unlock);
+      window.clearTimeout(giveUp);
+      window.removeEventListener("pointerdown", attempt);
+      window.removeEventListener("keydown", attempt);
     };
   }, []);
 

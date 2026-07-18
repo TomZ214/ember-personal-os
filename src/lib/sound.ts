@@ -137,10 +137,11 @@ export function primeAudio() {
   audio();
 }
 
-export function playCue(cue: Cue) {
-  if (!enabled || volume <= 0) return;
+/** Returns true only if the cue actually reached the speakers. */
+export function playCue(cue: Cue): boolean {
+  if (!enabled || volume <= 0) return false;
   const c = audio();
-  if (!c || c.state !== "running") return;
+  if (!c || c.state !== "running") return false;
 
   const now = c.currentTime;
   // one shared bus so the master volume can't be exceeded by stacked cues
@@ -169,4 +170,5 @@ export function playCue(cue: Cue) {
   // release the bus once the longest note has decayed
   const tail = Math.max(...CUES[cue].map((n) => n.t + n.d)) + 0.1;
   window.setTimeout(() => bus.disconnect(), tail * 1000 + 60);
+  return true;
 }
