@@ -260,8 +260,8 @@ function Milestone() {
           >
             <Sparkles size={22} />
           </motion.span>
-          <p className="text-[17px] font-semibold tracking-tight">{t("celebrate.allDoneTitle")}</p>
-          <p className="max-w-[26ch] text-[13px] text-muted">{t("celebrate.allDoneSub")}</p>
+          <p className="text-[17px] font-semibold tracking-tight">{t("celebrate.taskDoneTitle")}</p>
+          <p className="max-w-[26ch] text-[13px] text-muted">{t("celebrate.taskDoneSub")}</p>
         </motion.div>
       </div>
     </div>

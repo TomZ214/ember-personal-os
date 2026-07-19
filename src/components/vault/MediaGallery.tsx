@@ -38,9 +38,19 @@ export function MediaGallery({ mediaKey }: { mediaKey: CryptoKey }) {
     setItems(await listMedia());
   }, []);
 
+  // initial load reads IndexedDB directly rather than going through refresh(),
+  // so the state update is guarded by `alive` — the gallery can be unmounted
+  // (vault re-locked, tab switched) while the read is still in flight.
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    let alive = true;
+    void (async () => {
+      const media = await listMedia();
+      if (alive) setItems(media);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   // decrypt image thumbnails into object URLs (videos get a poster tile instead)
   useEffect(() => {

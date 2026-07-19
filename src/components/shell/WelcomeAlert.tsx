@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { addDays } from "date-fns";
@@ -199,18 +199,18 @@ function AlertCard({
   if (routes.length === 0) routes.push({ label: t("wel.openMail"), href: "/mail" });
   const actions = routes.slice(0, 2);
 
-  const particles = useMemo(
-    () =>
-      Array.from({ length: 14 }, (_, i) => ({
-        id: i,
-        x: Math.random() * 100,
-        y: 40 + Math.random() * 60,
-        size: 2 + Math.random() * 3,
-        delay: Math.random() * 3,
-        duration: 5 + Math.random() * 4,
-        drift: (Math.random() - 0.5) * 30,
-      })),
-    [],
+  // a lazy initializer, not useMemo: these are rolled once for the lifetime of
+  // the alert. useMemo may re-run, which would reshuffle the embers mid-flight.
+  const [particles] = useState(() =>
+    Array.from({ length: 14 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: 40 + Math.random() * 60,
+      size: 2 + Math.random() * 3,
+      delay: Math.random() * 3,
+      duration: 5 + Math.random() * 4,
+      drift: (Math.random() - 0.5) * 30,
+    })),
   );
 
   return (
