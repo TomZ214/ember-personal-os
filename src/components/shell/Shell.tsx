@@ -14,6 +14,7 @@ import { CommandPalette } from "./CommandPalette";
 import { SoundEngine } from "./SoundEngine";
 import { Dock } from "./Dock";
 import { MobileTabs } from "./MobileTabs";
+import { NavOriginTracker } from "./NavOriginTracker";
 import { TaskCleanup } from "./TaskCleanup";
 import { TopBar } from "./TopBar";
 import { ViewportFix } from "./ViewportFix";
@@ -55,6 +56,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <WelcomeAlert />
       <BootSequence />
       <SoundEngine />
+      <NavOriginTracker />
       {desktop && <ResizeHandles />}
     </DesktopProvider>
   );
