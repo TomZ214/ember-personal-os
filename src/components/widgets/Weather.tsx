@@ -99,11 +99,17 @@ export function WeatherWidget() {
 
   return (
     <Link href="/weather" className="panel panel-hover relative block h-full overflow-hidden p-5">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-10 -top-12 h-44 w-44 rounded-full opacity-25 blur-3xl"
-        style={{ background: "var(--c-sky)" }}
-      />
+      {/* The blob needs its own rounded clipper. WebKit does not reliably clip
+          a blurred child to the parent's border-radius once that parent also
+          carries a backdrop-filter — the blur escapes and squares off whichever
+          corner it sits in, which on iOS was the top right of this card. An
+          inner element with no filter of its own clips correctly. */}
+      <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]">
+        <span
+          className="absolute -right-10 -top-12 block h-44 w-44 rounded-full opacity-25 blur-3xl"
+          style={{ background: "var(--c-sky)" }}
+        />
+      </span>
       <div className="flex items-start justify-between">
         <div>
           <p className="text-[13px] font-medium text-muted">{place}</p>
