@@ -201,6 +201,13 @@ export interface NotificationSettings {
   taskReminders: boolean;
 }
 
+export interface Briefing {
+  /** yyyy-MM-dd it was written for — one per day, regenerated on demand */
+  date: string;
+  text: string;
+  createdAt: string;
+}
+
 export interface Alarm {
   id: string;
   /** HH:mm, 24-hour */

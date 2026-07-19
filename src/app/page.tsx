@@ -13,6 +13,7 @@ import { ProgressRing } from "@/components/ui/misc";
 import { AgendaWidget } from "@/components/widgets/Agenda";
 import { AlarmsWidget } from "@/components/widgets/AlarmsWidget";
 import { BankGlanceWidget } from "@/components/widgets/BankGlance";
+import { BriefingWidget } from "@/components/widgets/Briefing";
 import { FocusTimer } from "@/components/widgets/FocusTimer";
 import { GoalsGlanceWidget } from "@/components/widgets/GoalsGlance";
 import { HabitsTodayWidget } from "@/components/widgets/HabitsToday";
@@ -87,6 +88,9 @@ export default function Dashboard() {
         animate="animate"
         variants={stagger(0.045, 0.05)}
       >
+        <motion.section aria-label="Daily briefing" className="sm:col-span-2 lg:col-span-12" variants={riseIn}>
+          <BriefingWidget />
+        </motion.section>
         <motion.section aria-label="Today's agenda" className="lg:col-span-5 lg:row-span-2" variants={riseIn}>
           <AgendaWidget />
         </motion.section>

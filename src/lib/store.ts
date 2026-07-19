@@ -6,7 +6,7 @@ import { dayKey, todayKey } from "./dates";
 import { advanceEnd, nextOccurrence as ruleNext, ruleExhausted, ruleForTask } from "./recurrence";
 import { purgeSeedData } from "./migrations";
 import type {
-  Alarm, EventItem, FileMeta, Folder, Goal, Habit, Mail, Note, Settings, Subscription, Task, Txn,
+  Alarm, Briefing, EventItem, FileMeta, Folder, Goal, Habit, Mail, Note, Settings, Subscription, Task, Txn,
 } from "./types";
 
 const uid = () => crypto.randomUUID();
@@ -82,6 +82,8 @@ interface EmberState {
   mails: Mail[];
   files: FileMeta[];
   alarms: Alarm[];
+
+  briefing: Briefing | null;
   settings: Settings;
   /** yyyy-MM-dd → count of completed tasks auto-purged that day */
   completionLog: Record<string, number>;
@@ -143,6 +145,8 @@ interface EmberState {
   updateAlarm: (id: string, patch: Partial<Alarm>) => void;
   deleteAlarm: (id: string) => void;
 
+  setBriefing: (b: Briefing | null) => void;
+
   updateSettings: (patch: Partial<Settings>) => void;
 
   startFocus: (mode: "focus" | "break") => void;
@@ -166,6 +170,8 @@ export const useEmber = create<EmberState>()(
       mails: [],
       files: [],
       alarms: [],
+
+      briefing: null,
       completionLog: {},
       settings: {
         userName: "Tom",
@@ -371,6 +377,8 @@ export const useEmber = create<EmberState>()(
             .sort((x, y) => x.time.localeCompare(y.time)),
         })),
       deleteAlarm: (id) => set((s) => ({ alarms: s.alarms.filter((a) => a.id !== id) })),
+
+      setBriefing: (b) => set({ briefing: b }),
 
       updateSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
 

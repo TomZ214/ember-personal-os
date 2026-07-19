@@ -896,6 +896,17 @@ const en: Dict = {
   "sound.on": "On",
   "sound.off": "Off",
   "sound.volume": "Volume",
+
+  // daily briefing
+  "brief.title": "Daily briefing",
+  "brief.generate": "Write it",
+  "brief.regenerate": "Rewrite",
+  "brief.writing": "Writing…",
+  "brief.writingLong": "Reading your day…",
+  "brief.hint": "A few sentences on what today looks like — your tasks, calendar, mail and habits, read together.",
+  "brief.needsKey": "Needs an AI key. Add one under",
+  "brief.failed": "Could not write the briefing",
+
   // alarms
   "alarm.title": "Alarms",
   "alarm.new": "New alarm",
@@ -1809,6 +1820,17 @@ const de: Dict = {
   "sound.on": "An",
   "sound.off": "Aus",
   "sound.volume": "Lautstärke",
+
+  // daily briefing
+  "brief.title": "Tagesbriefing",
+  "brief.generate": "Schreiben",
+  "brief.regenerate": "Neu schreiben",
+  "brief.writing": "Schreibt…",
+  "brief.writingLong": "Liest deinen Tag…",
+  "brief.hint": "Ein paar Sätze dazu, wie dein Tag aussieht — Aufgaben, Termine, Mails und Gewohnheiten zusammen gelesen.",
+  "brief.needsKey": "Braucht einen KI-Schlüssel. Einer lässt sich hinterlegen unter",
+  "brief.failed": "Briefing konnte nicht geschrieben werden",
+
   // alarms
   "alarm.title": "Wecker",
   "alarm.new": "Neuer Wecker",
