@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Flame } from "lucide-react";
+import { useEmber } from "@/lib/store";
 import { DURATION, EASE, THEME_PARTICLES } from "@/lib/motion";
 
 /**
@@ -20,11 +21,26 @@ import { DURATION, EASE, THEME_PARTICLES } from "@/lib/motion";
  *  • guaranteed to unmount, so it can never eat clicks
  */
 
-const REVEAL_AT = 1750; // when the curtain starts lifting
-const UNMOUNT_AT = 2500; // hard guarantee it is gone
+const REVEAL_AT = 2150; // when the curtain starts lifting
+const UNMOUNT_AT = 2950; // hard guarantee it is gone
+
+/**
+ * The panes that assemble around the mark, in the loose shape of a dashboard.
+ * Percentages are relative to the viewport, so the arrangement holds from
+ * phone to ultrawide. `d` staggers each one into place.
+ */
+const PANES = [
+  { x: -30, y: -16, w: 22, h: 15, d: 0.5 },
+  { x: 30, y: -18, w: 18, h: 12, d: 0.62 },
+  { x: -34, y: 12, w: 17, h: 13, d: 0.74 },
+  { x: 28, y: 14, w: 24, h: 16, d: 0.86 },
+  { x: 0, y: 27, w: 30, h: 9, d: 0.98 },
+] as const;
 
 export function BootSequence() {
   const reduced = useReducedMotion();
+  const glass = useEmber((s) => s.settings.liquidGlass ?? true);
+  const lite = useEmber((s) => s.settings.reducedEffects ?? false);
   const [gone, setGone] = useState(false);
   const [skipped, setSkipped] = useState(false);
 
@@ -69,6 +85,51 @@ export function BootSequence() {
         animate={{ opacity: [0, 0.85, 0.5], scale: [0.5, 1.15, 1] }}
         transition={{ duration: 1.9, ease: EASE.entrance, times: [0, 0.55, 1] }}
       />
+
+      {/* The interface assembling: glass panes materialise around the mark,
+          each one arriving frosted and resolving. This is the whole point of
+          the sequence — you are watching the OS build itself out of the dark. */}
+      {PANES.map((p, i) => (
+        <motion.span
+          key={`pane-${i}`}
+          className={glass ? "glass absolute rounded-2xl" : "panel absolute"}
+          style={{
+            width: `${p.w}%`,
+            height: `${p.h}%`,
+            // resolved in JS rather than calc(): `calc(50% + -30%)` is a parse
+            // error in some engines, and there is nothing to gain from it here
+            left: `${50 + p.x}%`,
+            top: `${50 + p.y}%`,
+            // `translate` centres the pane; Framer owns `transform` for the
+            // scale, so the two compose instead of fighting
+            translate: "-50% -50%",
+          }}
+          initial={{ opacity: 0, scale: 0.86, filter: "blur(12px)" }}
+          animate={{ opacity: [0, 0.9, 0.55], scale: 1, filter: "blur(0px)" }}
+          transition={{
+            duration: 0.95,
+            delay: p.d,
+            ease: EASE.entrance,
+            times: [0, 0.6, 1],
+          }}
+        />
+      ))}
+
+      {/* the light that travels through the interface once it exists */}
+      {glass && !lite && (
+        <motion.span
+          aria-hidden
+          className="absolute inset-y-0 w-1/4"
+          style={{
+            background:
+              "linear-gradient(100deg, transparent, color-mix(in oklch, var(--primary-bright) 40%, transparent), transparent)",
+            filter: "blur(26px)",
+          }}
+          initial={{ x: "-160%", opacity: 0 }}
+          animate={{ x: "520%", opacity: [0, 1, 0] }}
+          transition={{ duration: 1.15, delay: 1.05, ease: EASE.out }}
+        />
+      )}
 
       {/* theme-coloured embers drifting up past the mark */}
       {Array.from({ length: 14 }, (_, i) => {
