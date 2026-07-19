@@ -8,7 +8,6 @@ import { formatDistanceToNow, parseISO } from "date-fns";
 import {
   ArrowLeft, Bell, BellOff, CalendarDays, ChevronRight, Cloud, Copy, HeartHandshake, Landmark,
   Loader2, LogOut, Mail, MailCheck, Plus, RefreshCw, Search, ShieldCheck, Sparkles, Trash2, Unplug,
-  Users,
 } from "lucide-react";
 import {
   lastSynced, markSynced, useBank, useGoogleStatus,
@@ -348,10 +347,6 @@ function GoogleCard() {
           <ServiceRow icon={Mail} label="Gmail" sync="gmail" pull={async () => {
             await fetch("/api/google/gmail?box=inbox");
             invalidateApi("/api/google/gmail");
-          }} />
-          <ServiceRow icon={Users} label={t("conn.svcContacts")} sync="contacts" pull={async () => {
-            await fetch("/api/google/contacts");
-            invalidateApi("/api/google/contacts");
           }} />
         </div>
       )}

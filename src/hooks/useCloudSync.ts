@@ -161,7 +161,7 @@ async function drainInbox(uid: string): Promise<void> {
 export function cloudItemCount(): number {
   const d = collectCloudData();
   return d.tasks.length + d.events.length + d.notes.length + d.habits.length +
-    d.goals.length + d.txns.length + d.contacts.length + d.mails.length;
+    d.goals.length + d.txns.length + d.mails.length;
 }
 
 /* ---------------- engine ---------------- */

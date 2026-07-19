@@ -6,7 +6,7 @@ import { dayKey, todayKey } from "./dates";
 import { advanceEnd, nextOccurrence as ruleNext, ruleExhausted, ruleForTask } from "./recurrence";
 import { purgeSeedData } from "./migrations";
 import type {
-  Alarm, Contact, EventItem, FileMeta, Folder, Goal, Habit, Mail, Note, Settings, Subscription, Task, Txn,
+  Alarm, EventItem, FileMeta, Folder, Goal, Habit, Mail, Note, Settings, Subscription, Task, Txn,
 } from "./types";
 
 const uid = () => crypto.randomUUID();
@@ -57,7 +57,6 @@ export interface CloudData {
   goals: Goal[];
   txns: Txn[];
   subs: Subscription[];
-  contacts: Contact[];
   mails: Mail[];
   alarms?: Alarm[];
   settings: Settings;
@@ -80,7 +79,6 @@ interface EmberState {
   goals: Goal[];
   txns: Txn[];
   subs: Subscription[];
-  contacts: Contact[];
   mails: Mail[];
   files: FileMeta[];
   alarms: Alarm[];
@@ -133,10 +131,6 @@ interface EmberState {
   addSub: (s: Omit<Subscription, "id">) => void;
   deleteSub: (id: string) => void;
 
-  addContact: (c: Omit<Contact, "id">) => void;
-  updateContact: (id: string, patch: Partial<Contact>) => void;
-  deleteContact: (id: string) => void;
-
   updateMail: (id: string, patch: Partial<Mail>) => void;
   markAllMailsRead: () => void;
   sendMail: (m: { to: string; subject: string; body: string; draft?: boolean }) => void;
@@ -169,7 +163,6 @@ export const useEmber = create<EmberState>()(
       goals: [],
       txns: [],
       subs: [],
-      contacts: [],
       mails: [],
       files: [],
       alarms: [],
@@ -349,11 +342,6 @@ export const useEmber = create<EmberState>()(
       addSub: (sub) => set((s) => ({ subs: [...s.subs, { ...sub, id: uid() }] })),
       deleteSub: (id) => set((s) => ({ subs: s.subs.filter((x) => x.id !== id) })),
 
-      addContact: (c) => set((s) => ({ contacts: [...s.contacts, { ...c, id: uid() }] })),
-      updateContact: (id, patch) =>
-        set((s) => ({ contacts: s.contacts.map((c) => (c.id === id ? { ...c, ...patch } : c)) })),
-      deleteContact: (id) => set((s) => ({ contacts: s.contacts.filter((c) => c.id !== id) })),
-
       updateMail: (id, patch) =>
         set((s) => ({ mails: s.mails.map((m) => (m.id === id ? { ...m, ...patch } : m)) })),
       markAllMailsRead: () =>
@@ -404,10 +392,19 @@ export const useEmber = create<EmberState>()(
     }),
     {
       name: "ember-os",
-      version: 2,
-      // v2: demo data is gone for good — scrub anything the old seed created
-      migrate: (persisted, version) =>
-        version < 2 ? (purgeSeedData(persisted as EmberState) as EmberState) : (persisted as EmberState),
+      version: 3,
+      migrate: (persisted, version) => {
+        // v2: demo data is gone for good — scrub anything the old seed created
+        let s = version < 2 ? (purgeSeedData(persisted as EmberState) as EmberState) : (persisted as EmberState);
+        // v3: the contacts page was removed; drop its leftovers rather than
+        // carrying an orphaned array around forever
+        if (version < 3 && s && "contacts" in s) {
+          const rest = { ...(s as EmberState & { contacts?: unknown }) };
+          delete rest.contacts;
+          s = rest as EmberState;
+        }
+        return s;
+      },
       partialize: (s) =>
         Object.fromEntries(
           Object.entries(s).filter(([k]) => k !== "paletteOpen" && k !== "hydrated"),

@@ -58,7 +58,6 @@ export function collectCloudData(): CloudData {
     goals: s.goals,
     txns: s.txns,
     subs: s.subs,
-    contacts: s.contacts,
     mails: s.mails,
     alarms: s.alarms,
     settings: s.settings,

@@ -1,7 +1,6 @@
 import {
   CalendarDays, CheckSquare, CloudSun, Coins, FileBox, Flag, Flame, LayoutGrid, Mail, NotebookPen,
-  Repeat, Settings, ShieldCheck, Users,
-} from "lucide-react";
+  Repeat, Settings, ShieldCheck, } from "lucide-react";
 
 export interface NavItem {
   href: string;
@@ -24,6 +23,5 @@ export const NAV: NavItem[] = [
   { href: "/finance", label: "Finance", key: "finance", icon: Coins },
   { href: "/vault", label: "Vault", key: "vault", icon: ShieldCheck },
   { href: "/files", label: "Files", key: "files", icon: FileBox },
-  { href: "/contacts", label: "Contacts", key: "contacts", icon: Users },
   { href: "/settings", label: "Settings", key: "settings", icon: Settings },
 ];

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  ArrowRight, CalendarPlus, CheckSquare, ListPlus, Mail, NotebookPen, Search, Sparkles, User,
+  ArrowRight, CalendarPlus, CheckSquare, ListPlus, Mail, NotebookPen, Search, Sparkles,
   CalendarDays,
 } from "lucide-react";
 import { useEmber } from "@/lib/store";
@@ -28,7 +28,7 @@ export function CommandPalette() {
   const router = useRouter();
   const open = useEmber((s) => s.paletteOpen);
   const setOpen = useEmber((s) => s.setPaletteOpen);
-  const { tasks, notes, events, contacts, mails, addEvent, addTask } = useEmber();
+  const { tasks, notes, events, mails, addEvent, addTask } = useEmber();
   const tr = useT();
   const lang = useLang();
   const [q, setQ] = useState("");
@@ -136,11 +136,6 @@ export function CommandPalette() {
           hint: `${friendlyDay(e.date, lang)} · ${minutesToLabel(e.start)}`,
           icon: <CalendarDays size={16} />, run: go("/calendar"),
         });
-      for (const c of contacts.filter((c) => match(c.name)).slice(0, 3))
-        out.push({
-          id: `contact-${c.id}`, group: tr("cmd.gContacts"), title: c.name,
-          hint: c.group, icon: <User size={16} />, run: go("/contacts"),
-        });
       for (const m of mails.filter((m) => match(m.subject) || match(m.from)).slice(0, 3))
         out.push({
           id: `mail-${m.id}`, group: tr("cmd.gMail"), title: m.subject,
@@ -148,7 +143,7 @@ export function CommandPalette() {
         });
     }
     return out.slice(0, 14);
-  }, [q, tasks, notes, events, contacts, mails, addEvent, addTask, router, setOpen, tr, lang]);
+  }, [q, tasks, notes, events, mails, addEvent, addTask, router, setOpen, tr, lang]);
 
   // new query -> selection back to the top (render-time adjustment)
   const [prevQ, setPrevQ] = useState(q);

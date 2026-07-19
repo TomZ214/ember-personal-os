@@ -102,18 +102,6 @@ export interface GmailSendInput {
   attachments?: { filename: string; mimeType: string; base64: string }[];
 }
 
-/* ---------- google contacts ---------- */
-
-export interface GContact {
-  id: string;
-  name: string;
-  email?: string;
-  phone?: string;
-  birthday?: string; // yyyy-MM-dd (year may be 0000)
-  photo?: string;
-  organization?: string;
-}
-
 /* ---------- banking ---------- */
 
 export interface BankInstitution {

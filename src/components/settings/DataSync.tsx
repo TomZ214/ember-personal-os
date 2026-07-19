@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import {
-  AlertCircle, CalendarDays, Check, Cloud, HardDrive, Landmark, Loader2, Mail, RefreshCw, Users,
+  AlertCircle, CalendarDays, Check, Cloud, HardDrive, Landmark, Loader2, Mail, RefreshCw,
 } from "lucide-react";
 import { invalidateApi, useApi } from "@/hooks/useApi";
 import { markSynced, useBank, useGoogleStatus } from "@/hooks/useIntegrations";
@@ -74,15 +74,6 @@ export function DataSync() {
         invalidateApi("/api/google/gmail");
         markSynced("gmail");
         return t("sync.unread").replace("{n}", String(d.unreadInbox ?? 0));
-      },
-    },
-    {
-      id: "contacts", label: t("sync.stepContacts"), icon: Users, enabled: googleOn,
-      run: async () => {
-        const d = await pullJson("/api/google/contacts", "Contacts");
-        invalidateApi("/api/google/contacts");
-        markSynced("contacts");
-        return t("sync.contacts").replace("{n}", String(d.contacts?.length ?? 0));
       },
     },
     {

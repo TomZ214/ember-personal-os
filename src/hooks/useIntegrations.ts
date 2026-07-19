@@ -6,7 +6,7 @@ import { useApi } from "./useApi";
 import { useEmber } from "@/lib/store";
 import { CATEGORY_VAR } from "@/lib/types";
 import type {
-  BankAccount, BankSubscription, BankTxn, ConnectionStatus, GCalendar, GContact, GEvent, GEventInput,
+  BankAccount, BankSubscription, BankTxn, ConnectionStatus, GCalendar, GEvent, GEventInput,
 } from "@/lib/integrations/types";
 
 /* ---------------- status ---------------- */
@@ -239,19 +239,6 @@ export function useGmailUnread() {
     /** unread mail from the Sparkasse — surfaced in the welcome alert */
     important: unread.data?.important ?? 0,
   };
-}
-
-/* ---------------- google contacts ---------------- */
-
-export function useGoogleContacts() {
-  const google = useGoogleStatus();
-  const res = useApi<{ contacts: GContact[] }>(
-    google.data?.connected ? "/api/google/contacts" : null,
-  );
-  useEffect(() => {
-    if (res.data) markSynced("contacts");
-  }, [res.data]);
-  return { connected: !!google.data?.connected, contacts: res.data?.contacts ?? [], loading: res.loading };
 }
 
 /* ---------------- bank ---------------- */

@@ -5,7 +5,7 @@
  */
 
 import type {
-  Contact, EventItem, Folder, Goal, Habit, Mail, Note, Subscription, Task, Txn,
+  EventItem, Folder, Goal, Habit, Mail, Note, Subscription, Task, Txn,
 } from "./types";
 
 const SEED_TASKS = new Set([
@@ -40,11 +40,6 @@ const SEED_TXN_NOTES = new Set([
 
 const SEED_SUBS = new Set(["Spotify", "Netflix", "iCloud+", "Gym", "Domain + hosting"]);
 
-const SEED_CONTACTS = new Set([
-  "Lena Hoffmann", "Max Berger", "Mum", "Jonas Petersen", "Sofia Ricci",
-  "Dr. Weber (Dentist)", "Papa", "Kristijan Novak",
-]);
-
 const SEED_MAIL_SUBJECTS = new Set([
   "Atlas kickoff — notes & next steps", "Climbing Saturday?",
   "Reminder: submission deadline approaching", "Ciao! Thursday exchange — new place?",
@@ -63,7 +58,6 @@ interface PurgeableState {
   goals?: Goal[];
   txns?: Txn[];
   subs?: Subscription[];
-  contacts?: Contact[];
   mails?: Mail[];
 }
 
@@ -85,7 +79,6 @@ export function purgeSeedData<T extends PurgeableState>(state: T): T {
     goals: (state.goals ?? []).filter((g) => !SEED_GOALS.has(g.title)),
     txns: (state.txns ?? []).filter((t) => !SEED_TXN_NOTES.has(t.note)),
     subs: (state.subs ?? []).filter((s) => !SEED_SUBS.has(s.name)),
-    contacts: (state.contacts ?? []).filter((c) => !SEED_CONTACTS.has(c.name)),
     mails: (state.mails ?? []).filter((m) => !SEED_MAIL_SUBJECTS.has(m.subject)),
   };
 }

@@ -154,16 +154,6 @@ export interface Subscription {
   color: CategoryColor;
 }
 
-export interface Contact {
-  id: string;
-  name: string;
-  group: "friends" | "family" | "work";
-  email?: string;
-  phone?: string;
-  birthday?: string; // yyyy-MM-dd
-  notes?: string;
-}
-
 export type MailFolder = "inbox" | "sent" | "drafts" | "archive";
 export type MailLabel = "personal" | "work" | "updates" | "finance";
 
