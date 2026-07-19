@@ -47,12 +47,13 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
-        {/* Paint the saved theme before first paint so there's no flash of the
-            default sunset ramp. Reads the same persisted zustand blob the app
-            uses; any failure just leaves the CSS default in place. */}
+        {/* Paint the saved appearance before first paint so there's no flash of
+            the default sunset ramp — or, worse, of glass surfaces that are
+            about to be switched off. Reads the same persisted zustand blob the
+            app uses; any failure just leaves the CSS defaults in place. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var t=JSON.parse(localStorage.getItem("ember-os")||"{}")?.state?.settings?.theme;if(t&&t!=="sunset")document.documentElement.dataset.theme=t;}catch(e){}`,
+            __html: `try{var s=JSON.parse(localStorage.getItem("ember-os")||"{}")?.state?.settings||{},d=document.documentElement.dataset;if(s.theme&&s.theme!=="sunset")d.theme=s.theme;d.glass=s.liquidGlass===false?"off":"on";d.fx=s.reducedEffects?"reduced":"full";}catch(e){}`,
           }}
         />
       </head>

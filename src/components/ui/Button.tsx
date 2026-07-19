@@ -35,6 +35,11 @@ export const Button = forwardRef<HTMLButtonElement, Props>(function Button(
       whileTap={disabled ? undefined : { scale: 0.96 }}
       transition={{ type: "spring", stiffness: 500, damping: 30 }}
       disabled={disabled}
+      /* Magnetism is opt-in per element via this attribute — LightingProvider
+         picks it up globally, so there is no MagneticButton wrapper to keep in
+         sync with this one. Primary actions only: if everything leans toward
+         the cursor, nothing reads as important. */
+      data-magnetic={variant === "primary" && !disabled ? "" : undefined}
       className={`inline-flex select-none items-center justify-center font-medium transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 ${styles[variant]} ${sizes[size]} ${className}`}
       {...rest}
     >

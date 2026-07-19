@@ -42,6 +42,28 @@
   --glass-border: oklch(1 0 0 / 0.09);
   --glass-border-strong: oklch(1 0 0 / 0.14);
 
+  /* ---- Liquid Glass ----
+     Every surface derives its material from these four. Themes re-point the
+     tint and the specular colour; nothing else has to change. */
+  --glass-blur: 18px;
+  /* the lens ring: what the edge of a thick pane does to light passing through */
+  --glass-lens: oklch(1 0 0 / 0.16);
+  /* the specular bloom that tracks the cursor — theme-coloured, never white */
+  --glass-spec: var(--primary-bright);
+  --glass-spec-strength: 0.16;
+
+  /* Virtual light source, in viewport px. LightingProvider writes these on
+     <html> every frame the pointer moves; the fallback puts the light above
+     the screen so surfaces are lit sensibly on touch devices and before the
+     first pointer event ever arrives. */
+  --cursor-x: 50vw;
+  --cursor-y: -20vh;
+  /* per-surface cursor position, in % of that surface */
+  --mx: 50%;
+  --my: 0%;
+  /* 0..1 — how close the pointer is to this surface */
+  --lit: 0;
+
   /* z-scale */
   --z-sticky: 20;
   --z-dropdown: 30;
@@ -71,6 +93,11 @@
   --accent: oklch(0.80 0.10 205);
 
   --c-ember: #4ca1af;
+
+  /* cool, deep water-glass: a touch more blur, a cooler lens */
+  --glass-blur: 20px;
+  --glass-lens: oklch(0.95 0.03 205 / 0.16);
+  --glass-spec-strength: 0.15;
 }
 
 /* Crimson — blood red falling into near-black. Dramatic, cinematic. */
@@ -85,6 +112,11 @@
   --accent: oklch(0.78 0.12 45);
 
   --c-ember: #c81e3c;
+
+  /* smoked glass over embers — dark, dense, warm reflections */
+  --glass-blur: 22px;
+  --glass-lens: oklch(0.85 0.10 30 / 0.15);
+  --glass-spec-strength: 0.2;
 }
 
 /* Orchid — hot magenta into electric cyan. Loud, neon, high-energy. */
@@ -99,6 +131,11 @@
   --accent: oklch(0.82 0.14 205);
 
   --c-ember: #ff2b95;
+
+  /* neon acrylic — thinner, brighter, the loudest specular of the four */
+  --glass-blur: 16px;
+  --glass-lens: oklch(0.90 0.14 320 / 0.2);
+  --glass-spec-strength: 0.26;
 }
 
 @theme inline {
@@ -161,21 +198,198 @@ h1, h2, h3 {
 .glass {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
-  backdrop-filter: blur(16px) saturate(1.3);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.3);
 }
 
 .glass-strong {
   background: var(--glass-bg-strong);
   border: 1px solid var(--glass-border-strong);
-  backdrop-filter: blur(28px) saturate(1.5);
+  backdrop-filter: blur(calc(var(--glass-blur) * 1.55)) saturate(1.5);
 }
 
-/* panel: the standard content surface — subtle, not glassy */
+/* Glass off: opaque surfaces, no compositing work at all. The layout, the
+   radii and the borders are untouched — it reads as a solid premium UI
+   rather than a degraded one. */
+[data-glass="off"] .glass,
+[data-glass="off"] .glass-strong {
+  backdrop-filter: none;
+}
+[data-glass="off"] .glass {
+  background: oklch(0.17 0.004 27 / 0.96);
+}
+[data-glass="off"] .glass-strong {
+  background: oklch(0.145 0.004 27 / 0.99);
+}
+
+/* ============================================================
+   Liquid Glass material system
+
+   Five layers, bottom to top:
+     1. whatever sits behind the surface (page, ambient particles)
+     2. the blur layer       — backdrop-filter on the element itself
+     3. the refraction layer — ::before, an inset lens ring reproducing the
+                               way a thick pane bends light at its edges
+     4. the reflection layer — ::after, a specular bloom tracking the cursor
+                               (LightingProvider writes --mx / --my / --lit)
+     5. the content          — the element's own children
+
+   Layers 3 and 4 live at z-index -1 inside an isolated stacking context, so
+   they paint above the surface but beneath every child. That is what lets the
+   whole system land on ~40 existing components without a single wrapper div
+   or component change: everything already uses .panel or .glass.
+
+   Every rule here is gated on [data-glass="on"]. With glass off the surfaces
+   below stay exactly as they were — opaque, cheap, and still styled.
+   ============================================================ */
+
+/* panel: the standard content surface */
 .panel {
   background: oklch(1 0 0 / 0.035);
   border: 1px solid oklch(1 0 0 / 0.07);
   border-radius: var(--radius-card);
   position: relative;
+}
+
+[data-glass="on"] .panel,
+[data-glass="on"] .glass,
+[data-glass="on"] .glass-strong {
+  isolation: isolate;
+}
+
+/* layer 3 — refraction. An inset ring, brightest where the light is, that
+   reads as the lensed edge of a pane rather than a drawn border.
+   `.glass-edge` is excluded on purpose: it already owns ::before for its top
+   hairline, and those elements (dock, palette, sheets) are floating overlays
+   whose heavy blur and drop shadow already read as thick glass. Without the
+   exclusion this rule silently wins on specificity and deletes the hairline
+   from all ten of them. */
+[data-glass="on"] .panel:not(.glass-edge)::before,
+[data-glass="on"] .glass:not(.glass-edge)::before,
+[data-glass="on"] .glass-strong:not(.glass-edge)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  padding: 1px;
+  background: linear-gradient(
+    var(--lens-angle, 150deg),
+    var(--glass-lens),
+    transparent 42%,
+    transparent 58%,
+    color-mix(in oklch, var(--glass-lens) 55%, transparent)
+  );
+  /* mask to the ring only: fill minus content-box leaves the 1px border */
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: calc(0.5 + var(--lit) * 0.5);
+  transition: opacity 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* layer 4 — reflection. The specular bloom that follows the pointer. */
+[data-glass="on"] .panel::after,
+[data-glass="on"] .glass::after,
+[data-glass="on"] .glass-strong::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at var(--mx) var(--my),
+    color-mix(in oklch, var(--glass-spec) 70%, transparent),
+    transparent 60%
+  );
+  opacity: calc(var(--lit) * var(--glass-spec-strength));
+  /* opacity only — the gradient position is a paint, not a layout change */
+  transition: opacity 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* layer 2 — the blur, plus a translucent tint so the page shows through */
+[data-glass="on"] .panel {
+  background: oklch(1 0 0 / 0.028);
+  border-color: transparent;
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.35);
+  box-shadow:
+    0 1px 0 0 oklch(1 0 0 / 0.05) inset,
+    0 18px 40px -24px oklch(0 0 0 / 0.9);
+}
+
+/* Reduced effects: keep the material, drop the per-frame half of it. The
+   reflection layer and most of the blur are what cost; the lens ring is a
+   static paint and stays. */
+[data-fx="reduced"] {
+  --glass-blur: 8px;
+}
+[data-fx="reduced"] .panel::after,
+[data-fx="reduced"] .glass::after,
+[data-fx="reduced"] .glass-strong::after {
+  display: none;
+}
+
+/* ---- ambient cursor light ----
+   One composited pane, positioned entirely by --cursor-x / --cursor-y. This
+   is what lights surfaces *near* the pointer rather than only the one under
+   it, at the cost of a single layer instead of per-card work. */
+.cursor-light {
+  background: radial-gradient(
+    420px circle at var(--cursor-x) var(--cursor-y),
+    color-mix(in oklch, var(--primary-bright) 12%, transparent),
+    transparent 70%
+  );
+  will-change: background;
+}
+
+/* ---- magnetic controls ----
+   `translate` and `scale`, never `transform` — Framer Motion owns `transform`
+   on many of these elements and the two must not fight. Both properties
+   composite on the GPU exactly like transform does. */
+[data-magnetic] {
+  translate: var(--mag-x, 0px) var(--mag-y, 0px);
+  transition:
+    translate 380ms cubic-bezier(0.22, 1, 0.36, 1),
+    scale 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+[data-glass="on"] [data-magnetic]:hover {
+  scale: 1.02;
+}
+[data-magnetic]:active {
+  scale: 0.985;
+  transition-duration: 90ms;
+}
+
+/* ---- spatial parallax ----
+   Layers drift by different amounts against the cursor, so the interface
+   reads as stacked in space rather than painted flat. The multipliers are
+   deliberately tiny; this should register as depth, not as movement. */
+[data-glass="on"] .parallax-bg {
+  translate: calc((var(--cursor-x) - 50vw) * 0.006) calc((var(--cursor-y) - 50vh) * 0.006);
+  transition: translate 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+[data-glass="on"] .parallax-mid {
+  translate: calc((var(--cursor-x) - 50vw) * 0.012) calc((var(--cursor-y) - 50vh) * 0.012);
+  transition: translate 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Glass off, reduced effects, or reduced motion: no magnetism, no parallax.
+   These are the three ways a user can say "stop moving things". */
+[data-glass="off"] [data-magnetic],
+[data-fx="reduced"] [data-magnetic] {
+  translate: none;
+}
+[data-glass="off"] .parallax-bg,
+[data-glass="off"] .parallax-mid,
+[data-fx="reduced"] .parallax-bg,
+[data-fx="reduced"] .parallax-mid {
+  translate: none;
 }
 
 .panel-hover {
@@ -188,6 +402,24 @@ h1, h2, h3 {
   border-color: oklch(1 0 0 / 0.12);
   /* the card lifts toward you — transform only, so it composites on the GPU */
   transform: translateY(-2px);
+}
+
+/* With glass on, the lift gains depth: the card rises further, the shadow
+   under it deepens, and the lens ring brightens because --lit has gone up. */
+[data-glass="on"] .panel-hover {
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+[data-glass="on"] .panel-hover:hover {
+  transform: translate3d(0, -3px, 0) scale(1.004);
+  box-shadow:
+    0 1px 0 0 oklch(1 0 0 / 0.08) inset,
+    0 28px 60px -28px oklch(0 0 0 / 0.95);
+}
+[data-glass="on"] .panel-hover:active {
+  transform: translate3d(0, 0, 0) scale(0.995);
 }
 /* and presses back down when tapped, which is what makes it feel physical */
 .panel-hover:active {

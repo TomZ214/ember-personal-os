@@ -10,6 +10,7 @@ import { DesktopProvider } from "@/components/desktop/DesktopProvider";
 import { ResizeHandles } from "@/components/desktop/ResizeHandles";
 import { AlarmEngine } from "@/components/alarm/AlarmEngine";
 import { AmbientParticles } from "./AmbientParticles";
+import { LightingProvider } from "./LightingProvider";
 import { BootSequence } from "./BootSequence";
 import { CommandPalette } from "./CommandPalette";
 import { SoundEngine } from "./SoundEngine";
@@ -40,7 +41,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
   return (
     <DesktopProvider>
       <ThemeApplier />
-      <div className="ambient" aria-hidden />
+      {/* the slowest parallax layer — the wash the whole interface sits on */}
+      <div className="ambient parallax-bg" aria-hidden />
+      <LightingProvider />
       <AmbientParticles />
       <TopBar />
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 pb-32 pt-6 sm:px-6 md:pb-28">

@@ -249,6 +249,18 @@ export interface Settings {
   sound?: boolean;
   /** 0..1 master volume for UI sounds */
   soundVolume?: number;
+  /**
+   * Liquid Glass: translucent layered surfaces, cursor lighting, refraction,
+   * magnetic controls. Off falls back to opaque surfaces — same layout, same
+   * features, none of the per-frame work.
+   */
+  liquidGlass?: boolean;
+  /**
+   * Trims the expensive half of the effects (blur radius, reflections,
+   * particle count, cursor lighting) without going fully solid. For weaker
+   * hardware and battery.
+   */
+  reducedEffects?: boolean;
 }
 
 export const DEFAULT_NOTIFICATIONS: NotificationSettings = {

@@ -897,6 +897,18 @@ const en: Dict = {
   "sound.off": "Off",
   "sound.volume": "Volume",
 
+  // visual effects
+  "fx.glassTitle": "Liquid Glass",
+  "fx.glassSub":
+    "Translucent layered surfaces, light that follows your cursor, refracted edges and controls that lean toward the pointer.",
+  "fx.reduceTitle": "Reduce visual effects",
+  "fx.reduceSub":
+    "Lighter blur, no reflections, fewer particles. Easier on the battery and on weaker hardware.",
+  "fx.on": "On",
+  "fx.off": "Off",
+  "fx.note":
+    "With Liquid Glass off, EmberOS switches to solid surfaces — same layout, same features, none of the per-frame work. If your system asks for reduced motion, the moving parts stay off regardless of these settings.",
+
   // daily briefing
   "brief.title": "Daily briefing",
   "brief.generate": "Write it",
@@ -1820,6 +1832,18 @@ const de: Dict = {
   "sound.on": "An",
   "sound.off": "Aus",
   "sound.volume": "Lautstärke",
+
+  // visual effects
+  "fx.glassTitle": "Liquid Glass",
+  "fx.glassSub":
+    "Durchscheinende Oberflächen in Schichten, Licht das deinem Zeiger folgt, gebrochene Kanten und Bedienelemente, die sich zum Zeiger neigen.",
+  "fx.reduceTitle": "Effekte reduzieren",
+  "fx.reduceSub":
+    "Weniger Unschärfe, keine Reflexionen, weniger Partikel. Schont Akku und schwächere Hardware.",
+  "fx.on": "An",
+  "fx.off": "Aus",
+  "fx.note":
+    "Ohne Liquid Glass zeigt EmberOS feste Oberflächen — gleiches Layout, gleiche Funktionen, ohne die Arbeit pro Bild. Wenn dein System reduzierte Bewegung verlangt, bleiben die beweglichen Teile unabhängig von diesen Schaltern aus.",
 
   // daily briefing
   "brief.title": "Tagesbriefing",

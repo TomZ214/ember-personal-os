@@ -73,6 +73,8 @@ function DockIcon({ item, mouseX, active }: { item: NavItem; mouseX: MotionValue
         aria-current={active ? "page" : undefined}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
+        /* app icons lean toward the cursor as it travels the dock */
+        data-magnetic=""
         className="outline-offset-4"
       >
         <motion.span
