@@ -24,19 +24,6 @@ import { DURATION, EASE, THEME_PARTICLES } from "@/lib/motion";
 const REVEAL_AT = 2150; // when the curtain starts lifting
 const UNMOUNT_AT = 2950; // hard guarantee it is gone
 
-/**
- * The panes that assemble around the mark, in the loose shape of a dashboard.
- * Percentages are relative to the viewport, so the arrangement holds from
- * phone to ultrawide. `d` staggers each one into place.
- */
-const PANES = [
-  { x: -30, y: -16, w: 22, h: 15, d: 0.5 },
-  { x: 30, y: -18, w: 18, h: 12, d: 0.62 },
-  { x: -34, y: 12, w: 17, h: 13, d: 0.74 },
-  { x: 28, y: 14, w: 24, h: 16, d: 0.86 },
-  { x: 0, y: 27, w: 30, h: 9, d: 0.98 },
-] as const;
-
 export function BootSequence() {
   const reduced = useReducedMotion();
   const glass = useEmber((s) => s.settings.liquidGlass ?? true);
@@ -86,46 +73,12 @@ export function BootSequence() {
         transition={{ duration: 1.9, ease: EASE.entrance, times: [0, 0.55, 1] }}
       />
 
-      {/* The interface assembling.
-          NOT the .glass class: this curtain is opaque, so backdrop-filter has
-          nothing behind it to refract and a glass surface collapses into a
-          flat grey box with a 1px border — four odd rectangles rather than an
-          interface forming. These are light instead: soft-edged panes that
-          brighten, hint at an edge along the top, and fade back out before
-          the reveal. Nothing lingers. */}
-      {PANES.map((p, i) => (
-        <motion.span
-          key={`pane-${i}`}
-          className="absolute rounded-[22px]"
-          style={{
-            width: `${p.w}%`,
-            height: `${p.h}%`,
-            // resolved in JS rather than calc(): `calc(50% + -30%)` is a parse
-            // error in some engines, and there is nothing to gain from it here
-            left: `${50 + p.x}%`,
-            top: `${50 + p.y}%`,
-            // `translate` centres the pane; Framer owns `transform` for the
-            // scale, so the two compose instead of fighting
-            translate: "-50% -50%",
-            background:
-              "linear-gradient(155deg, color-mix(in oklch, var(--primary-bright) 12%, transparent), transparent 70%)",
-            // the top edge catches the light, which is what suggests a pane
-            boxShadow: "inset 0 1px 0 0 color-mix(in oklch, var(--primary-bright) 26%, transparent)",
-            // soft edges: the shape reads as forming light, never as a box
-            filter: "blur(5px)",
-          }}
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: [0, 0.5, 0], scale: [0.9, 1, 1.02] }}
-          transition={{
-            duration: 1.5,
-            delay: p.d,
-            ease: EASE.entrance,
-            times: [0, 0.45, 1],
-          }}
-        />
-      ))}
+      {/* No panes here. Two attempts at "the interface assembling" both read as
+          rectangles rather than as an interface: glass has nothing to refract
+          against an opaque curtain, and softening them only made softer
+          rectangles. The ember and the beam carry the sequence on their own. */}
 
-      {/* the light that travels through the interface once it exists */}
+      {/* the light that travels across the dark */}
       {glass && !lite && (
         <motion.span
           aria-hidden
