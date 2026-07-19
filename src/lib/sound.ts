@@ -15,6 +15,7 @@
 
 export type Cue =
   | "boot"
+  | "alarm"
   | "tap"
   | "navigate"
   | "open"
@@ -40,6 +41,17 @@ interface Note {
 /* A quiet, mostly-sine palette. Fifths and major thirds for the positive cues,
    a soft low fall for errors. Nothing longer than ~0.4s except the boot swell. */
 const CUES: Record<Cue, Note[]> = {
+  /**
+   * An alarm has one job: be noticed. Louder than everything else here, and an
+   * insistent alternating pair rather than a phrase that resolves — the
+   * ringing screen repeats it for as long as it goes unanswered.
+   */
+  alarm: [
+    { f: 880.0, t: 0, d: 0.17, g: 0.95 },
+    { f: 1174.66, t: 0.21, d: 0.17, g: 0.95 },
+    { f: 880.0, t: 0.42, d: 0.17, g: 0.9 },
+    { f: 1174.66, t: 0.63, d: 0.24, g: 0.9 },
+  ],
   // the workhorse: fires on every button/link press, so it has to be almost
   // subliminal — a short high tick you feel more than hear
   tap: [{ f: 1050, t: 0, d: 0.028, g: 0.22 }],
@@ -138,15 +150,17 @@ export function primeAudio() {
 }
 
 /** Returns true only if the cue actually reached the speakers. */
-export function playCue(cue: Cue): boolean {
-  if (!enabled || volume <= 0) return false;
+export function playCue(cue: Cue, opts?: { force?: boolean }): boolean {
+  // `force` exists for the alarm: switching UI blips off must not mute a
+  // wake-up call, and it also lifts the floor on the master volume.
+  if (!opts?.force && (!enabled || volume <= 0)) return false;
   const c = audio();
   if (!c || c.state !== "running") return false;
 
   const now = c.currentTime;
   // one shared bus so the master volume can't be exceeded by stacked cues
   const bus = c.createGain();
-  bus.gain.value = volume * 0.16;
+  bus.gain.value = (opts?.force ? Math.max(volume, 0.55) : volume) * 0.16;
   bus.connect(c.destination);
 
   for (const n of CUES[cue]) {

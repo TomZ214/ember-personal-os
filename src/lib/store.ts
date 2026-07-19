@@ -6,7 +6,7 @@ import { dayKey, todayKey } from "./dates";
 import { advanceEnd, nextOccurrence as ruleNext, ruleExhausted, ruleForTask } from "./recurrence";
 import { purgeSeedData } from "./migrations";
 import type {
-  Contact, EventItem, FileMeta, Folder, Goal, Habit, Mail, Note, Settings, Subscription, Task, Txn,
+  Alarm, Contact, EventItem, FileMeta, Folder, Goal, Habit, Mail, Note, Settings, Subscription, Task, Txn,
 } from "./types";
 
 const uid = () => crypto.randomUUID();
@@ -59,6 +59,7 @@ export interface CloudData {
   subs: Subscription[];
   contacts: Contact[];
   mails: Mail[];
+  alarms?: Alarm[];
   settings: Settings;
   /** yyyy-MM-dd → how many completed tasks were auto-purged that day, so the
    *  activity chart keeps its history after the tasks themselves are gone */
@@ -82,6 +83,7 @@ interface EmberState {
   contacts: Contact[];
   mails: Mail[];
   files: FileMeta[];
+  alarms: Alarm[];
   settings: Settings;
   /** yyyy-MM-dd → count of completed tasks auto-purged that day */
   completionLog: Record<string, number>;
@@ -143,6 +145,10 @@ interface EmberState {
   addFile: (f: FileMeta) => void;
   deleteFile: (id: string) => void;
 
+  addAlarm: (a: Omit<Alarm, "id">) => void;
+  updateAlarm: (id: string, patch: Partial<Alarm>) => void;
+  deleteAlarm: (id: string) => void;
+
   updateSettings: (patch: Partial<Settings>) => void;
 
   startFocus: (mode: "focus" | "break") => void;
@@ -166,6 +172,7 @@ export const useEmber = create<EmberState>()(
       contacts: [],
       mails: [],
       files: [],
+      alarms: [],
       completionLog: {},
       settings: {
         userName: "Tom",
@@ -366,6 +373,16 @@ export const useEmber = create<EmberState>()(
 
       addFile: (f) => set((s) => ({ files: [f, ...s.files] })),
       deleteFile: (id) => set((s) => ({ files: s.files.filter((f) => f.id !== id) })),
+
+      addAlarm: (a) =>
+        set((s) => ({ alarms: [...s.alarms, { ...a, id: uid() }].sort((x, y) => x.time.localeCompare(y.time)) })),
+      updateAlarm: (id, patch) =>
+        set((s) => ({
+          alarms: s.alarms
+            .map((a) => (a.id === id ? { ...a, ...patch } : a))
+            .sort((x, y) => x.time.localeCompare(y.time)),
+        })),
+      deleteAlarm: (id) => set((s) => ({ alarms: s.alarms.filter((a) => a.id !== id) })),
 
       updateSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
 

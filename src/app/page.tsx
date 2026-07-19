@@ -11,6 +11,7 @@ import { greetingFor, useLang, useT } from "@/lib/i18n";
 import { todayKey, dfLocale } from "@/lib/dates";
 import { ProgressRing } from "@/components/ui/misc";
 import { AgendaWidget } from "@/components/widgets/Agenda";
+import { AlarmsWidget } from "@/components/widgets/AlarmsWidget";
 import { BankGlanceWidget } from "@/components/widgets/BankGlance";
 import { FocusTimer } from "@/components/widgets/FocusTimer";
 import { GoalsGlanceWidget } from "@/components/widgets/GoalsGlance";
@@ -106,6 +107,9 @@ export default function Dashboard() {
         </motion.section>
         <motion.section aria-label="Goals" className="lg:col-span-7" variants={riseIn}>
           <GoalsGlanceWidget />
+        </motion.section>
+        <motion.section aria-label="Alarms" className="lg:col-span-5" variants={riseIn}>
+          <AlarmsWidget />
         </motion.section>
         <motion.section aria-label="Quick note" className="lg:col-span-5" variants={riseIn}>
           <QuickNoteWidget />

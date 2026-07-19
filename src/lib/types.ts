@@ -211,6 +211,18 @@ export interface NotificationSettings {
   taskReminders: boolean;
 }
 
+export interface Alarm {
+  id: string;
+  /** HH:mm, 24-hour */
+  time: string;
+  label: string;
+  enabled: boolean;
+  /** weekdays it repeats on, 0=Sun..6=Sat. Empty = one-shot. */
+  days: number[];
+  /** yyyy-MM-dd it last rang, so a given day can only fire it once */
+  lastFired?: string;
+}
+
 export type Language = "en" | "de";
 
 /** Brand gradient themes. `sunset` is the original ember look and the default. */

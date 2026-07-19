@@ -8,6 +8,7 @@ import { CloudSyncEngine } from "@/hooks/useCloudSync";
 import { useIsDesktop } from "@/lib/desktop";
 import { DesktopProvider } from "@/components/desktop/DesktopProvider";
 import { ResizeHandles } from "@/components/desktop/ResizeHandles";
+import { AlarmEngine } from "@/components/alarm/AlarmEngine";
 import { AmbientParticles } from "./AmbientParticles";
 import { BootSequence } from "./BootSequence";
 import { CommandPalette } from "./CommandPalette";
@@ -57,6 +58,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <BootSequence />
       <SoundEngine />
       <NavOriginTracker />
+      <AlarmEngine />
       {desktop && <ResizeHandles />}
     </DesktopProvider>
   );
