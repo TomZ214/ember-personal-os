@@ -179,7 +179,14 @@ function ProgressPill({ pill }: { pill: Pill }) {
       >
         <Check size={13} strokeWidth={3.5} />
       </motion.span>
-      <span className="min-w-0 truncate text-sm text-muted line-through decoration-white/30">{pill.title}</span>
+      {/* the message itself, with the task that earned it underneath — every
+          completion says so, not just the one that clears the day */}
+      <span className="flex min-w-0 flex-col">
+        <span className="text-sm font-medium leading-tight">{t("celebrate.taskDone")}</span>
+        <span className="truncate text-xs leading-tight text-faint line-through decoration-white/30">
+          {pill.title}
+        </span>
+      </span>
       <span className="flex shrink-0 items-center gap-2">
         <span className="h-1 w-14 overflow-hidden rounded-full bg-white/[0.12]">
           <motion.span
@@ -260,8 +267,8 @@ function Milestone() {
           >
             <Sparkles size={22} />
           </motion.span>
-          <p className="text-[17px] font-semibold tracking-tight">{t("celebrate.taskDoneTitle")}</p>
-          <p className="max-w-[26ch] text-[13px] text-muted">{t("celebrate.taskDoneSub")}</p>
+          <p className="text-[17px] font-semibold tracking-tight">{t("celebrate.allDoneTitle")}</p>
+          <p className="max-w-[26ch] text-[13px] text-muted">{t("celebrate.allDoneSub")}</p>
         </motion.div>
       </div>
     </div>

@@ -154,8 +154,9 @@ const en: Dict = {
 
   // completion celebration
   "celebrate.today": "today",
-  "celebrate.taskDoneTitle": "Task done",
-  "celebrate.taskDoneSub": "That is one off the list.",
+  "celebrate.allDoneTitle": "All done for today",
+  "celebrate.allDoneSub": "Nothing left on your list. Enjoy it.",
+  "celebrate.taskDone": "Task done",
 
   // notes
   "notes.title": "Notes",
@@ -1066,8 +1067,9 @@ const de: Dict = {
 
   // completion celebration
   "celebrate.today": "heute",
-  "celebrate.taskDoneTitle": "Aufgabe erledigt",
-  "celebrate.taskDoneSub": "Eine weniger auf der Liste.",
+  "celebrate.allDoneTitle": "Alles erledigt für heute",
+  "celebrate.allDoneSub": "Nichts mehr offen auf deiner Liste. Genieß es.",
+  "celebrate.taskDone": "Aufgabe erledigt",
 
   // notes
   "notes.title": "Notizen",
