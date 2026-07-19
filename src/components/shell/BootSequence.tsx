@@ -86,13 +86,17 @@ export function BootSequence() {
         transition={{ duration: 1.9, ease: EASE.entrance, times: [0, 0.55, 1] }}
       />
 
-      {/* The interface assembling: glass panes materialise around the mark,
-          each one arriving frosted and resolving. This is the whole point of
-          the sequence — you are watching the OS build itself out of the dark. */}
+      {/* The interface assembling.
+          NOT the .glass class: this curtain is opaque, so backdrop-filter has
+          nothing behind it to refract and a glass surface collapses into a
+          flat grey box with a 1px border — four odd rectangles rather than an
+          interface forming. These are light instead: soft-edged panes that
+          brighten, hint at an edge along the top, and fade back out before
+          the reveal. Nothing lingers. */}
       {PANES.map((p, i) => (
         <motion.span
           key={`pane-${i}`}
-          className={glass ? "glass absolute rounded-2xl" : "panel absolute"}
+          className="absolute rounded-[22px]"
           style={{
             width: `${p.w}%`,
             height: `${p.h}%`,
@@ -103,14 +107,20 @@ export function BootSequence() {
             // `translate` centres the pane; Framer owns `transform` for the
             // scale, so the two compose instead of fighting
             translate: "-50% -50%",
+            background:
+              "linear-gradient(155deg, color-mix(in oklch, var(--primary-bright) 12%, transparent), transparent 70%)",
+            // the top edge catches the light, which is what suggests a pane
+            boxShadow: "inset 0 1px 0 0 color-mix(in oklch, var(--primary-bright) 26%, transparent)",
+            // soft edges: the shape reads as forming light, never as a box
+            filter: "blur(5px)",
           }}
-          initial={{ opacity: 0, scale: 0.86, filter: "blur(12px)" }}
-          animate={{ opacity: [0, 0.9, 0.55], scale: 1, filter: "blur(0px)" }}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: [0, 0.5, 0], scale: [0.9, 1, 1.02] }}
           transition={{
-            duration: 0.95,
+            duration: 1.5,
             delay: p.d,
             ease: EASE.entrance,
-            times: [0, 0.6, 1],
+            times: [0, 0.45, 1],
           }}
         />
       ))}
