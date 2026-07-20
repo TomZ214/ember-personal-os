@@ -33,8 +33,14 @@ export function MonthBars({ months }: { months: { label: string; income: number;
                   initial={{ height: 0 }}
                   animate={{ height: `${(bar.v / max) * 100}%` }}
                   transition={{ delay: i * 0.07, type: "spring", stiffness: 120, damping: 20 }}
-                  className="w-full rounded-t-md"
-                  style={{ background: `color-mix(in oklch, ${bar.c} 75%, transparent)` }}
+                  className="lit w-full rounded-t-md"
+                  style={
+                    {
+                      color: `color-mix(in oklch, ${bar.c} 75%, transparent)`,
+                      background: "currentColor",
+                      "--lit-glow": "4px",
+                    } as React.CSSProperties
+                  }
                 />
                 <span className="num pointer-events-none absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-black/85 px-1.5 py-0.5 text-[10px] opacity-0 transition-opacity group-hover:opacity-100">
                   {eur(Math.round(bar.v))}
@@ -77,7 +83,9 @@ export function Donut({ categories, total, blur }: { categories: { name: string;
             <motion.circle
               key={c.name}
               cx={size / 2} cy={size / 2} r={r} fill="none"
-              stroke={c.color} strokeWidth={stroke} strokeLinecap="butt"
+              stroke="currentColor" className="lit"
+              style={{ color: c.color, "--lit-glow": "4px" } as React.CSSProperties}
+              strokeWidth={stroke} strokeLinecap="butt"
               strokeDasharray={`${Math.max(0, c.frac * circ - 2)} ${circ}`}
               initial={{ strokeDashoffset: -starts[i] * circ + circ * 0.25, opacity: 0 }}
               animate={{ strokeDashoffset: -starts[i] * circ, opacity: 1 }}

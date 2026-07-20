@@ -335,6 +335,27 @@ h1, h2, h3 {
   display: none;
 }
 
+/* ---- lit graphics ----
+   Progress rings, bars, donuts and charts carry a soft bloom in whatever
+   colour they are already drawn in. The trick is `currentColor`: set `color`
+   on the element, draw with `currentColor`, and the glow follows the value —
+   theme ramp, category colour, income vs expense — with no per-component
+   wiring and no second colour to keep in sync.
+
+   drop-shadow costs paint, so the radius drops under reduced effects and the
+   glow goes entirely when the glass system is off. --lit-glow lets each caller
+   dial the radius to the weight of the shape it sits on. The glow is static,
+   so prefers-reduced-motion has no quarrel with it. */
+.lit {
+  filter: drop-shadow(0 0 var(--lit-glow, 5px) currentColor);
+}
+[data-fx="reduced"] .lit {
+  filter: drop-shadow(0 0 calc(var(--lit-glow, 5px) * 0.4) currentColor);
+}
+[data-glass="off"] .lit {
+  filter: none;
+}
+
 /* ---- ambient cursor light ----
    One composited pane, positioned entirely by --cursor-x / --cursor-y. This
    is what lights surfaces *near* the pointer rather than only the one under

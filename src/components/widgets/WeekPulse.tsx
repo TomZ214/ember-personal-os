@@ -52,15 +52,20 @@ export function WeekPulseWidget() {
                 initial={{ height: 0 }}
                 animate={{ height: `${Math.max(4, (d.total / max) * 100)}%` }}
                 transition={{ delay: i * 0.03, type: "spring", stiffness: 160, damping: 22 }}
-                className="w-full rounded-[5px]"
-                style={{
-                  background: isToday
-                    ? "var(--primary-bright)"
-                    : i >= 7
-                      ? "color-mix(in oklch, var(--primary) 55%, transparent)"
-                      : "oklch(1 0 0 / 0.10)",
-                  boxShadow: isToday ? "0 0 12px -2px var(--primary)" : undefined,
-                }}
+                // only the coloured bars glow — a grey bar blooming grey just
+                // reads as a smudge
+                className={`w-full rounded-[5px] ${isToday || i >= 7 ? "lit" : ""}`}
+                style={
+                  {
+                    color: isToday
+                      ? "var(--primary-bright)"
+                      : i >= 7
+                        ? "color-mix(in oklch, var(--primary) 55%, transparent)"
+                        : "oklch(1 0 0 / 0.10)",
+                    background: "currentColor",
+                    "--lit-glow": isToday ? "7px" : "3px",
+                  } as React.CSSProperties
+                }
               />
               <span className={`text-[9px] ${isToday ? "text-ink" : "text-faint"}`}>{d.label}</span>
             </div>

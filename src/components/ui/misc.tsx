@@ -70,7 +70,12 @@ export function ProgressRing({
           cy={size / 2}
           r={r}
           fill="none"
-          stroke={color}
+          // currentColor + .lit: the arc glows in whatever colour it is drawn
+          // in, and the radius tracks the stroke weight so a hairline ring
+          // does not get the same bloom as a heavy one
+          stroke="currentColor"
+          className="lit"
+          style={{ color, "--lit-glow": `${Math.max(3, stroke * 1.1)}px` } as React.CSSProperties}
           strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={circ}
@@ -88,8 +93,8 @@ export function ProgressBar({ value, color = "var(--accent)" }: { value: number;
   return (
     <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.07]">
       <motion.div
-        className="h-full rounded-full"
-        style={{ background: color }}
+        className="lit h-full rounded-full"
+        style={{ color, background: "currentColor", "--lit-glow": "4px" } as React.CSSProperties}
         initial={{ width: 0 }}
         animate={{ width: `${Math.min(100, Math.max(0, value * 100))}%` }}
         transition={{ type: "spring", stiffness: 60, damping: 20 }}
