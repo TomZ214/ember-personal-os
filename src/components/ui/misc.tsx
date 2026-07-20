@@ -63,7 +63,11 @@ export function ProgressRing({
   const circ = 2 * Math.PI * r;
   return (
     <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
+      {/* overflow-visible: the arc's glow extends past the ring, and an SVG
+          clips to its own box by default — without this the soft halo is
+          sliced into a hard square and you see the corners. The parent div
+          does not clip, so the glow can spill into it cleanly. */}
+      <svg width={size} height={size} className="-rotate-90 overflow-visible">
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="oklch(1 0 0 / 0.08)" strokeWidth={stroke} />
         <motion.circle
           cx={size / 2}

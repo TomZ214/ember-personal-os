@@ -77,7 +77,8 @@ export function Donut({ categories, total, blur }: { categories: { name: string;
   return (
     <div className="flex flex-wrap items-center gap-6">
       <div className="relative" style={{ width: size, height: size }}>
-        <svg width={size} height={size} className="-rotate-90">
+        {/* overflow-visible so the segment glow isn't clipped square — see ProgressRing */}
+        <svg width={size} height={size} className="-rotate-90 overflow-visible">
           <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="oklch(1 0 0 / 0.06)" strokeWidth={stroke} />
           {segments.map((c, i) => (
             <motion.circle
