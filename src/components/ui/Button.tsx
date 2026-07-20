@@ -13,7 +13,7 @@ interface Props extends HTMLMotionProps<"button"> {
 
 const styles: Record<Variant, string> = {
   primary:
-    "bg-[image:var(--grad-sunset)] font-semibold text-(--on-sunset) transition-[filter] hover:brightness-110 shadow-[0_2px_16px_-2px_var(--primary-glow)] disabled:shadow-none",
+    "glow-brand glow-hover bg-[image:var(--grad-sunset)] font-semibold text-(--on-sunset) transition-[filter] hover:brightness-110 disabled:shadow-none",
   subtle:
     "bg-white/[0.06] text-ink border border-white/[0.08] hover:bg-white/[0.10] hover:border-white/[0.14]",
   ghost: "text-muted hover:text-ink hover:bg-white/[0.06]",

@@ -82,7 +82,7 @@ function DockIcon({ item, mouseX, active }: { item: NavItem; mouseX: MotionValue
           whileTap={{ scale: 0.9 }}
           className={`flex items-center justify-center rounded-[13px] border transition-colors duration-150 ${
             active
-              ? "border-white/[0.14] bg-white/[0.10] text-ink"
+              ? "glow-brand border-white/[0.14] bg-white/[0.10] text-ink"
               : "border-transparent text-muted hover:text-ink"
           }`}
         >

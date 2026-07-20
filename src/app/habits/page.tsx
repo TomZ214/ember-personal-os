@@ -147,7 +147,7 @@ function HabitRow({ habit }: { habit: Habit }) {
         </div>
 
         <div className="flex items-center gap-5 text-center">
-          <Stat label={t("habits.streak")} value={<span className="flex items-center justify-center gap-1" style={{ color: c }}><Flame size={14} />{s}</span>} />
+          <Stat label={t("habits.streak")} value={<span className="flex items-center justify-center gap-1" style={{ color: c }}><Flame size={14} className="lit" style={{ "--lit-glow": "5px" } as React.CSSProperties} />{s}</span>} />
           <Stat label={t("habits.best")} value={best} />
           <Stat label={t("habits.total")} value={total} />
           <button

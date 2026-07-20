@@ -356,6 +356,27 @@ h1, h2, h3 {
   filter: none;
 }
 
+/* .glow-brand — a soft halo for solid, rounded surfaces that .lit can't serve
+   (drop-shadow traces the alpha, so on a filled pill it just outlines the
+   text). This is a box-shadow bloom in the theme colour instead. Reserved for
+   things that are meant to feel active or important — primary actions, the
+   selected nav item — not sprinkled everywhere. Same gating as .lit. */
+.glow-brand {
+  box-shadow: 0 2px 20px -4px var(--primary-glow);
+}
+.glow-brand.glow-hover {
+  transition: box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+[data-glass="on"] .glow-brand.glow-hover:hover {
+  box-shadow: 0 3px 30px -3px var(--primary-glow);
+}
+[data-fx="reduced"] .glow-brand {
+  box-shadow: 0 2px 12px -6px var(--primary-glow);
+}
+[data-glass="off"] .glow-brand {
+  box-shadow: none;
+}
+
 /* ---- ambient cursor light ----
    One composited pane, positioned entirely by --cursor-x / --cursor-y. This
    is what lights surfaces *near* the pointer rather than only the one under

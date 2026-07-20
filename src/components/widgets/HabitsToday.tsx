@@ -90,7 +90,7 @@ export function HabitsTodayWidget() {
                 </span>
                 {s > 1 && (
                   <span className="num flex items-center gap-1 text-xs" style={{ color: c }}>
-                    <Flame size={12} /> {s}
+                    <Flame size={12} className="lit" style={{ "--lit-glow": "5px" } as React.CSSProperties} /> {s}
                   </span>
                 )}
                 <motion.span

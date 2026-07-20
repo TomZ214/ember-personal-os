@@ -37,7 +37,7 @@ export function TopBar() {
         {...(desktop ? { "data-tauri-drag-region": true } : {})}
       >
         <Link href="/" className="-my-2 flex items-center gap-2.5 py-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-[9px] bg-primary/15 text-primary-bright shadow-[0_0_18px_-2px_var(--primary-glow)]">
+          <span className="glow-brand flex h-7 w-7 items-center justify-center rounded-[9px] bg-primary/15 text-primary-bright">
             <Flame size={15} strokeWidth={2.2} />
           </span>
           <span className="text-[15px] font-semibold tracking-tight">Ember</span>
