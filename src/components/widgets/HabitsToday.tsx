@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowUpRight, Flame } from "lucide-react";
+import { sparkle } from "@/components/ui/celebrate";
+import { playCue } from "@/lib/sound";
 import { useEmber } from "@/lib/store";
 import { dayKey, todayKey } from "@/lib/dates";
 import { useT } from "@/lib/i18n";
@@ -25,6 +27,7 @@ export function streak(h: Habit): number {
 export function HabitsTodayWidget() {
   const habits = useEmber((s) => s.habits);
   const toggleHabit = useEmber((s) => s.toggleHabit);
+  const reduced = useReducedMotion();
   const t = useT();
   const today = todayKey();
   const done = habits.filter((h) => h.log[today]).length;
@@ -55,7 +58,18 @@ export function HabitsTodayWidget() {
             <li key={h.id}>
               <motion.button
                 whileTap={{ scale: 0.98 }}
-                onClick={() => toggleHabit(h.id, today)}
+                onClick={(e) => {
+                  toggleHabit(h.id, today);
+                  // fireworks on the way in only — un-ticking is a correction,
+                  // not an achievement, and celebrating it would read as mockery
+                  if (checked) return;
+                  playCue("success");
+                  const dot = e.currentTarget.querySelector("[data-check]");
+                  if (dot) {
+                    const r = dot.getBoundingClientRect();
+                    sparkle({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+                  }
+                }}
                 aria-pressed={checked}
                 className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left transition-all duration-200 ${
                   checked
@@ -79,18 +93,47 @@ export function HabitsTodayWidget() {
                     <Flame size={12} /> {s}
                   </span>
                 )}
-                <span
-                  className={`flex h-[18px] w-[18px] items-center justify-center rounded-full border transition-all ${
+                <motion.span
+                  data-check
+                  // the ring fills and gives one small pulse as it takes
+                  animate={checked && !reduced ? { scale: [1, 1.32, 1] } : { scale: 1 }}
+                  transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1], times: [0, 0.4, 1] }}
+                  className={`relative flex h-[18px] w-[18px] items-center justify-center rounded-full border transition-colors duration-200 ${
                     checked ? "border-transparent" : "border-white/25"
                   }`}
-                  style={checked ? { background: c } : undefined}
+                  style={checked ? { background: c, boxShadow: `0 0 14px -2px ${c}` } : undefined}
                 >
-                  {checked && (
-                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden>
-                      <path d="M2 5.5L4 7.5L8 3" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  )}
-                </span>
+                  <AnimatePresence>
+                    {checked && (
+                      <motion.svg
+                        key="tick"
+                        width="10"
+                        height="10"
+                        viewBox="0 0 10 10"
+                        fill="none"
+                        aria-hidden
+                        exit={{ opacity: 0, transition: { duration: 0.12 } }}
+                      >
+                        {/* pathLength draws the tick on rather than popping it
+                            in — the stroke travels the way a hand would */}
+                        <motion.path
+                          d="M2 5.5L4 7.5L8 3"
+                          stroke="white"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          initial={{ pathLength: 0 }}
+                          animate={{ pathLength: 1 }}
+                          transition={{
+                            duration: reduced ? 0 : 0.3,
+                            delay: reduced ? 0 : 0.06,
+                            ease: [0.65, 0, 0.35, 1],
+                          }}
+                        />
+                      </motion.svg>
+                    )}
+                  </AnimatePresence>
+                </motion.span>
               </motion.button>
             </li>
           );

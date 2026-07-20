@@ -9,6 +9,8 @@ import { dayKey, todayKey } from "@/lib/dates";
 import { CATEGORY_VAR, type CategoryColor, type Habit } from "@/lib/types";
 import { useT } from "@/lib/i18n";
 import { streak } from "@/components/widgets/HabitsToday";
+import { sparkle } from "@/components/ui/celebrate";
+import { playCue } from "@/lib/sound";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input, Label, Select } from "@/components/ui/inputs";
@@ -122,7 +124,14 @@ function HabitRow({ habit }: { habit: Habit }) {
               <button
                 key={key}
                 disabled={future}
-                onClick={() => toggleHabit(habit.id, key)}
+                onClick={(e) => {
+                  toggleHabit(habit.id, key);
+                  // same flourish as the dashboard widget, ticking-on only
+                  if (done) return;
+                  playCue("success");
+                  const r = e.currentTarget.getBoundingClientRect();
+                  sparkle({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+                }}
                 aria-label={`${habit.name} on ${format(d, "EEEE")}`}
                 aria-pressed={done}
                 className={`flex h-9 w-9 flex-col items-center justify-center rounded-xl border text-[10px] transition-all ${

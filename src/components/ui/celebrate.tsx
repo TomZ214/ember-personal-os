@@ -61,6 +61,21 @@ function dayProgress() {
 }
 
 /**
+ * Just the spark burst, no pill and no milestone — for moments that deserve a
+ * flourish but are not a task being completed. Habits use this: ticking one
+ * should feel good without claiming anything about the day's task list.
+ *
+ * Shares SparkBurst with `celebrate`, so the sparks are the same theme colours
+ * and there is only one firework in the codebase.
+ */
+export function sparkle(origin: { x: number; y: number }) {
+  const id = Date.now() + Math.random();
+  set((s) => ({ bursts: [...s.bursts.slice(-3), { id, x: origin.x, y: origin.y }] }));
+  setTimeout(() => set((s) => ({ bursts: s.bursts.filter((b) => b.id !== id) })), 900);
+  navigator.vibrate?.(10);
+}
+
+/**
  * Fire the celebration. `origin` is the screen point the burst radiates from
  * (usually the checkbox that was just ticked); omit it for a centred moment.
  */
