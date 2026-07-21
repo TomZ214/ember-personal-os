@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
-import { ArrowUpRight, Check, CheckSquare, Plus } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { ArrowUpRight, CheckSquare, Plus } from "lucide-react";
 import { useEmber } from "@/lib/store";
 import { todayKey } from "@/lib/dates";
 import { useT } from "@/lib/i18n";
@@ -16,7 +16,22 @@ export function TodayTasksWidget() {
   const updateTask = useEmber((s) => s.updateTask);
   const addTask = useEmber((s) => s.addTask);
   const [draft, setDraft] = useState("");
+  /**
+   * A ticked task leaves this list immediately — it is filtered to open tasks —
+   * so without holding it for a beat there is nothing for the tick to animate
+   * on. These are the rows being held: each stays in place just long enough to
+   * draw its checkmark, then is marked done and allowed to exit.
+   *
+   * A Set rather than a single id, so ticking a second task while the first is
+   * still drawing works — with one slot the second click would either be
+   * swallowed or would yank the tick off the first row.
+   */
+  const [checking, setChecking] = useState<ReadonlySet<string>>(() => new Set());
+  const timers = useRef<number[]>([]);
+  const reduced = useReducedMotion();
   const tr = useT();
+
+  useEffect(() => () => { timers.current.forEach(clearTimeout); }, []);
 
   const today = todayKey();
   const open = tasks
@@ -64,20 +79,80 @@ export function TodayTasksWidget() {
                   className="group overflow-hidden"
                 >
                   <div className="flex items-center gap-3 py-1.5">
-                    <button
+                    <motion.button
                       onClick={(e) => {
-                        updateTask(t.id, { status: "done" });
+                        // double-clicking the same row would fire the
+                        // celebration twice and race its own exit
+                        if (checking.has(t.id)) return;
+                        setChecking((prev) => new Set(prev).add(t.id));
                         const r = e.currentTarget.getBoundingClientRect();
                         celebrate(t.title, { x: r.left + r.width / 2, y: r.top + r.height / 2 });
+                        timers.current.push(
+                          window.setTimeout(
+                            () => {
+                              updateTask(t.id, { status: "done" });
+                              // release the row, or this id would block its own
+                              // checkbox forever if the task ever came back
+                              setChecking((prev) => {
+                                const next = new Set(prev);
+                                next.delete(t.id);
+                                return next;
+                              });
+                            },
+                            reduced ? 0 : 380,
+                          ),
+                        );
                       }}
                       aria-label={`Complete "${t.title}"`}
+                      // the box fills and gives one small pulse as it takes
+                      animate={
+                        checking.has(t.id) && !reduced ? { scale: [1, 1.32, 1] } : { scale: 1 }
+                      }
+                      transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1], times: [0, 0.4, 1] }}
                       // 18px is far below a comfortable tap target, but growing
                       // the box would change the design — so the hit area is
                       // extended invisibly to ~34px via a pseudo-element.
-                      className="relative flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-md border border-white/25 text-transparent transition-all before:absolute before:-inset-2 before:content-[''] hover:border-success hover:bg-success/15 hover:text-success"
+                      className={`relative flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-md border transition-colors duration-200 before:absolute before:-inset-2 before:content-[''] ${
+                        checking.has(t.id)
+                          ? "border-transparent"
+                          : "border-white/25 text-transparent hover:border-success hover:bg-success/15 hover:text-success"
+                      }`}
+                      style={
+                        checking.has(t.id)
+                          ? { background: "var(--success)", boxShadow: "0 0 14px -2px var(--success)" }
+                          : undefined
+                      }
                     >
-                      <Check size={12} strokeWidth={3} />
-                    </button>
+                      <AnimatePresence>
+                        {checking.has(t.id) && (
+                          <motion.svg
+                            key="tick"
+                            width="11"
+                            height="11"
+                            viewBox="0 0 10 10"
+                            fill="none"
+                            aria-hidden
+                          >
+                            {/* pathLength draws the tick on rather than popping
+                                it in — the stroke travels the way a hand would */}
+                            <motion.path
+                              d="M2 5.5L4 7.5L8 3"
+                              stroke="white"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              initial={{ pathLength: 0 }}
+                              animate={{ pathLength: 1 }}
+                              transition={{
+                                duration: reduced ? 0 : 0.3,
+                                delay: reduced ? 0 : 0.04,
+                                ease: [0.65, 0, 0.35, 1],
+                              }}
+                            />
+                          </motion.svg>
+                        )}
+                      </AnimatePresence>
+                    </motion.button>
                     <span className="min-w-0 flex-1 truncate text-sm">{t.title}</span>
                     {t.due && (
                       <span className={`num shrink-0 text-[11px] ${overdue ? "font-medium text-danger" : "text-faint"}`}>
