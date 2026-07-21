@@ -20,7 +20,6 @@ import { HabitsTodayWidget } from "@/components/widgets/HabitsToday";
 import { QuickNoteWidget } from "@/components/widgets/QuickNote";
 import { TodayTasksWidget } from "@/components/widgets/TodayTasks";
 import { WeatherWidget } from "@/components/widgets/Weather";
-import { XFeedWidget } from "@/components/widgets/XFeed";
 import { WeekPulseWidget } from "@/components/widgets/WeekPulse";
 
 function useScore() {
@@ -115,9 +114,6 @@ export default function Dashboard() {
         </motion.section>
         <motion.section aria-label="Alarms" className="lg:col-span-5" variants={riseIn}>
           <AlarmsWidget />
-        </motion.section>
-        <motion.section aria-label="X feed" className="lg:col-span-7" variants={riseIn}>
-          <XFeedWidget />
         </motion.section>
         <motion.section aria-label="Quick note" className="lg:col-span-5" variants={riseIn}>
           <QuickNoteWidget />

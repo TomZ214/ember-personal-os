@@ -904,15 +904,6 @@ const en: Dict = {
   "fx.reduceTitle": "Reduce visual effects",
   "fx.reduceSub":
     "Lighter blur, no reflections, fewer particles. Easier on the battery and on weaker hardware.",
-
-  // X feed
-  "x.title": "Latest posts",
-  "x.refresh": "Refresh",
-  "x.reply": "Reply",
-  "x.quote": "Quote",
-  "x.empty": "Nothing posted yet.",
-  "x.needsKey":
-    "Needs an X API key (X_BEARER_TOKEN). Reading someone else's timeline is not part of X's free tier — it needs their Basic plan or above.",
   "fx.on": "On",
   "fx.off": "Off",
   "fx.note":
@@ -1849,15 +1840,6 @@ const de: Dict = {
   "fx.reduceTitle": "Effekte reduzieren",
   "fx.reduceSub":
     "Weniger Unschärfe, keine Reflexionen, weniger Partikel. Schont Akku und schwächere Hardware.",
-
-  // X feed
-  "x.title": "Neueste Beiträge",
-  "x.refresh": "Aktualisieren",
-  "x.reply": "Antwort",
-  "x.quote": "Zitat",
-  "x.empty": "Noch nichts gepostet.",
-  "x.needsKey":
-    "Braucht einen X-API-Schlüssel (X_BEARER_TOKEN). Die Timeline einer anderen Person zu lesen gehört nicht zum kostenlosen Tarif von X — dafür braucht es deren Basic-Plan oder höher.",
   "fx.on": "An",
   "fx.off": "Aus",
   "fx.note":
