@@ -41,7 +41,7 @@ export default function TasksPage() {
   const sync = async () => {
     await cloudSyncNow();
     const { error } = useCloudStatus.getState();
-    toast(error ? `${t("tasks.syncFailed")}: ${error}` : t("tasks.synced"), error ? "info" : undefined);
+    toast(error ? `${t("tasks.syncFailed")}: ${error}` : t("tasks.synced"), error ? "error" : undefined);
   };
 
   if (!hydrated)

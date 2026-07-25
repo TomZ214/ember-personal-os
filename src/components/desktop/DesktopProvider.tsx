@@ -115,7 +115,7 @@ function UpdateBanner({ update, onDismiss }: { update: UpdateInfo; onDismiss: ()
       // relaunch happens inside install(); if we're still here, it failed softly
     } catch {
       setInstalling(false);
-      toast(t("desktop.updateFailed"), "info", "error");
+      toast(t("desktop.updateFailed"), "error", "error");
     }
   };
 

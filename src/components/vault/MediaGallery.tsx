@@ -123,7 +123,7 @@ export function MediaGallery({ mediaKey }: { mediaKey: CryptoKey }) {
       const plain = await decryptBytes(mediaKey, m.iv, cipher);
       setViewer({ meta: m, url: URL.createObjectURL(new Blob([plain], { type: m.type })) });
     } catch {
-      toast(t("vault.decryptFailed"), "info");
+      toast(t("vault.decryptFailed"), "error");
     }
   };
 
@@ -144,7 +144,7 @@ export function MediaGallery({ mediaKey }: { mediaKey: CryptoKey }) {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      toast(t("vault.decryptFailed"), "info");
+      toast(t("vault.decryptFailed"), "error");
     }
   };
 

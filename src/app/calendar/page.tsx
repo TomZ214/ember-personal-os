@@ -55,7 +55,7 @@ export default function CalendarPage() {
       toast(`"${nlParsed.title}" — ${friendlyDay(nlParsed.date, lang)} ${minutesToLabel(nlParsed.start)}${cal.connected ? " · synced to Google" : ""}`);
       setNl("");
     } catch (e) {
-      toast(e instanceof Error ? e.message : t("cal.createFailed"), "info");
+      toast(e instanceof Error ? e.message : t("cal.createFailed"), "error");
     }
   };
 
@@ -219,7 +219,7 @@ function MonthView({
       await cal.update(ev, { date: key, start: ev.start, end: ev.end });
       toast(`${t("cal.movedTo")} ${friendlyDay(key, lang)}${ev.source === "google" ? " · synced" : ""}`);
     } catch (e) {
-      toast(e instanceof Error ? e.message : t("cal.moveFailed"), "info");
+      toast(e instanceof Error ? e.message : t("cal.moveFailed"), "error");
     }
   };
 
@@ -580,7 +580,7 @@ function EventEditor({
       }
       onClose();
     } catch (e) {
-      toast(e instanceof Error ? e.message : t("cal.saveFailed"), "info");
+      toast(e instanceof Error ? e.message : t("cal.saveFailed"), "error");
     }
     setSaving(false);
   };
@@ -593,7 +593,7 @@ function EventEditor({
       toast(t("cal.deleted"), "info");
       onClose();
     } catch (e) {
-      toast(e instanceof Error ? e.message : t("cal.deleteFailed"), "info");
+      toast(e instanceof Error ? e.message : t("cal.deleteFailed"), "error");
     }
     setSaving(false);
   };

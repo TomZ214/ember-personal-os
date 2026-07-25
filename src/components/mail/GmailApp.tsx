@@ -101,7 +101,7 @@ export function GmailApp({ provider = GMAIL_PROVIDER }: { provider?: MailProvide
       body: JSON.stringify({ id, action, box }),
     });
     if (!res.ok) {
-      toast((await res.json()).error ?? tr("mail.actionFailed"), "info");
+      toast((await res.json()).error ?? tr("mail.actionFailed"), "error");
       return false;
     }
     if (note) toast(note, "info");
@@ -147,7 +147,7 @@ export function GmailApp({ provider = GMAIL_PROVIDER }: { provider?: MailProvide
       } catch (e) {
         failures++;
         if (failures >= 3) {
-          toast(e instanceof Error ? e.message : tr("mail.readAllFailed"), "info");
+          toast(e instanceof Error ? e.message : tr("mail.readAllFailed"), "error");
           break;
         }
         await new Promise((r) => setTimeout(r, 1000 * failures));
@@ -496,7 +496,7 @@ function AiSummary({ mail, enabled }: { mail: GmailDetail; enabled: boolean }) {
       if (!res.ok) throw new Error(body.error ?? tr("mail.aiFailed"));
       setSummary(body.summary);
     } catch (e) {
-      toast(e instanceof Error ? e.message : tr("mail.summaryFailed"), "info");
+      toast(e instanceof Error ? e.message : tr("mail.summaryFailed"), "error");
     }
     setBusy(false);
   };
@@ -577,7 +577,7 @@ function GmailCompose({
       if (!res.ok) throw new Error(data.error ?? tr("mail.aiFailed"));
       setReplies(data.replies);
     } catch (e) {
-      toast(e instanceof Error ? e.message : tr("mail.smartRepliesFailed"), "info");
+      toast(e instanceof Error ? e.message : tr("mail.smartRepliesFailed"), "error");
     }
     setLoadingReplies(false);
   };
@@ -616,7 +616,7 @@ function GmailCompose({
       onSent();
       onClose();
     } catch (e) {
-      toast(e instanceof Error ? e.message : tr("mail.sendFailed"), "info", "error");
+      toast(e instanceof Error ? e.message : tr("mail.sendFailed"), "error", "error");
     }
     setSending(false);
   };

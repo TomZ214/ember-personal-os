@@ -905,6 +905,15 @@ const en: Dict = {
   "fx.reduceSub":
     "Lighter blur, no reflections, fewer particles. Easier on the battery and on weaker hardware.",
 
+  // error + not found
+  "err.title": "That didn't load",
+  "err.body":
+    "Something went wrong rendering this page. Your data is untouched — it lives on this device.",
+  "err.retry": "Try again",
+  "nf.title": "Nothing here",
+  "nf.body": "This page doesn't exist, or it moved.",
+  "nf.home": "Back to the dashboard",
+
   // keyboard
   "keys.title": "Keyboard shortcuts",
   "keys.palette": "Search and commands",
@@ -1847,6 +1856,15 @@ const de: Dict = {
   "fx.reduceTitle": "Effekte reduzieren",
   "fx.reduceSub":
     "Weniger Unschärfe, keine Reflexionen, weniger Partikel. Schont Akku und schwächere Hardware.",
+
+  // error + not found
+  "err.title": "Das hat nicht geladen",
+  "err.body":
+    "Beim Aufbauen dieser Seite ist etwas schiefgegangen. Deine Daten sind unberührt — sie liegen auf diesem Gerät.",
+  "err.retry": "Nochmal versuchen",
+  "nf.title": "Hier ist nichts",
+  "nf.body": "Diese Seite gibt es nicht, oder sie ist umgezogen.",
+  "nf.home": "Zurück zum Dashboard",
 
   // keyboard
   "keys.title": "Tastenkürzel",

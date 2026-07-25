@@ -74,7 +74,7 @@ export function BriefingWidget() {
       if (!res.ok) throw new Error(body.error ?? t("brief.failed"));
       setBriefing({ date: today, text: body.briefing, createdAt: new Date().toISOString() });
     } catch (e) {
-      toast(e instanceof Error ? e.message : t("brief.failed"), "info");
+      toast(e instanceof Error ? e.message : t("brief.failed"), "error");
     }
     setBusy(false);
   };

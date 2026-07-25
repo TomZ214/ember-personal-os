@@ -43,7 +43,7 @@ export default function SettingsPage() {
       },
       () => {
         setLocating(false);
-        toast(t("settings.locationFailed"), "info");
+        toast(t("settings.locationFailed"), "error");
       },
     );
   };

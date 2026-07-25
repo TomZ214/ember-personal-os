@@ -52,7 +52,7 @@ function Connections() {
       announced.current = true;
       if (connected === "google") toast(t("conn.googleConnected"));
       if (connected === "bank") toast(t("conn.bankConnected"));
-      if (error) toast(t(`conn.err.${error}`, t("conn.connectionFailed").replace("{error}", error)), "info");
+      if (error) toast(t(`conn.err.${error}`, t("conn.connectionFailed").replace("{error}", error)), "error");
       router.replace("/settings/connections");
     }
   }, [params, router, t]);
@@ -252,7 +252,7 @@ function ServiceRow({
       markSynced(sync);
       toast(t("conn.syncedToast").replace("{label}", label));
     } catch {
-      toast(t("conn.syncFailedToast").replace("{label}", label), "info");
+      toast(t("conn.syncFailedToast").replace("{label}", label), "error");
     }
     setBusy(false);
     bump((n) => n + 1);
@@ -458,7 +458,7 @@ function InstitutionPicker({ open, onClose }: { open: boolean; onClose: () => vo
       // off to the bank's own SCA flow
       window.location.assign(body.link);
     } catch (e) {
-      toast(e instanceof Error ? e.message : t("conn.connectFailedToast"), "info");
+      toast(e instanceof Error ? e.message : t("conn.connectFailedToast"), "error");
       setConnecting(null);
     }
   };
@@ -847,7 +847,7 @@ function FamilyCard() {
       setLinks((links ?? []).filter((l) => l.token !== token));
       toast(t("conn.linkDeleted"), "info");
     } catch (e) {
-      toast(e instanceof Error ? e.message : String(e), "info");
+      toast(e instanceof Error ? e.message : String(e), "error");
     }
   };
 

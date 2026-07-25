@@ -773,3 +773,54 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
     scroll-behavior: auto !important;
   }
 }
+
+/* ---- transparency safety ----
+   Someone who has asked their OS to reduce transparency has asked for exactly
+   what the Liquid Glass system does: layered translucency, blur, moving
+   highlights. Honouring the in-app switch but ignoring the system one would be
+   backwards — the OS preference is the stronger statement, so it wins over
+   [data-glass="on"] regardless of the setting.
+
+   Surfaces stay styled; they just become opaque. */
+@media (prefers-reduced-transparency: reduce) {
+  [data-glass="on"] .panel,
+  [data-glass="on"] .glass,
+  [data-glass="on"] .glass-strong {
+    backdrop-filter: none;
+  }
+  [data-glass="on"] .panel {
+    background: oklch(0.175 0.004 27);
+    border-color: oklch(1 0 0 / 0.09);
+  }
+  [data-glass="on"] .glass {
+    background: oklch(0.17 0.004 27 / 0.97);
+  }
+  [data-glass="on"] .glass-strong {
+    background: oklch(0.145 0.004 27);
+  }
+  /* the specular and the cursor bloom are the transparency effect itself */
+  [data-glass="on"] .panel::after,
+  [data-glass="on"] .glass::after,
+  [data-glass="on"] .glass-strong::after,
+  .cursor-light {
+    display: none;
+  }
+}
+
+/* ---- contrast safety ----
+   At high contrast the hairline borders and the faint text tier are the first
+   things to disappear. Nothing structural changes; the edges just come back. */
+@media (prefers-contrast: more) {
+  :root {
+    --faint: oklch(0.72 0.006 27);
+    --muted: oklch(0.82 0.008 27);
+    --glass-border: oklch(1 0 0 / 0.28);
+    --glass-border-strong: oklch(1 0 0 / 0.36);
+  }
+  .panel {
+    border-color: oklch(1 0 0 / 0.22);
+  }
+  :focus-visible {
+    outline-width: 3px;
+  }
+}
