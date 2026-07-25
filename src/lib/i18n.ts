@@ -904,6 +904,13 @@ const en: Dict = {
   "fx.reduceTitle": "Reduce visual effects",
   "fx.reduceSub":
     "Lighter blur, no reflections, fewer particles. Easier on the battery and on weaker hardware.",
+
+  // keyboard
+  "keys.title": "Keyboard shortcuts",
+  "keys.palette": "Search and commands",
+  "keys.new": "Quick add",
+  "keys.help": "This list",
+  "keys.goHint": "Go to… press a letter",
   "fx.on": "On",
   "fx.off": "Off",
   "fx.note":
@@ -1840,6 +1847,13 @@ const de: Dict = {
   "fx.reduceTitle": "Effekte reduzieren",
   "fx.reduceSub":
     "Weniger Unschärfe, keine Reflexionen, weniger Partikel. Schont Akku und schwächere Hardware.",
+
+  // keyboard
+  "keys.title": "Tastenkürzel",
+  "keys.palette": "Suche und Befehle",
+  "keys.new": "Schnell hinzufügen",
+  "keys.help": "Diese Liste",
+  "keys.goHint": "Gehe zu… Buchstabe drücken",
   "fx.on": "An",
   "fx.off": "Aus",
   "fx.note":

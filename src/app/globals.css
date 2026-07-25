@@ -182,11 +182,25 @@ h1, h2, h3 {
   scrollbar-color: oklch(1 0 0 / 0.14) transparent;
 }
 
-/* ---- focus ---- */
+/* ---- focus ----
+   No border-radius here. Browsers already draw the outline following the
+   element's own radius; setting one in this rule *overrides* that radius while
+   focused, so a pill button or a round avatar visibly snaps to a 6px rectangle
+   the moment it is tabbed to, then snaps back. The ring should trace the shape
+   that is already there.
+
+   Two layers rather than one: a dark halo underneath keeps the accent ring
+   legible on a light card and on a bright photo alike, without either one
+   needing to know about focus. */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-  border-radius: 6px;
+  box-shadow: 0 0 0 4px oklch(0 0 0 / 0.55);
+}
+/* the ring appears instantly but eases out, so tabbing through a row of
+   controls reads as one moving highlight rather than a strobe */
+:focus-visible {
+  transition: box-shadow 140ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* ---- glass utilities ---- */

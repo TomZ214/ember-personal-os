@@ -11,6 +11,7 @@ import { ResizeHandles } from "@/components/desktop/ResizeHandles";
 import { AlarmEngine } from "@/components/alarm/AlarmEngine";
 import { AmbientParticles } from "./AmbientParticles";
 import { LightingProvider } from "./LightingProvider";
+import { Shortcuts } from "./Shortcuts";
 import { BootSequence } from "./BootSequence";
 import { CommandPalette } from "./CommandPalette";
 import { SoundEngine } from "./SoundEngine";
@@ -52,6 +53,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <Dock />
       <MobileTabs />
       <CommandPalette />
+      <Shortcuts />
       <Toaster />
       <Celebrations />
       <CloudSyncEngine />

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { playCue } from "@/lib/sound";
 
 interface Props {
@@ -22,6 +23,7 @@ interface Props {
  */
 export function Modal({ open, onClose, title, children, wide }: Props) {
   const [mounted, setMounted] = useState(false);
+  const trap = useFocusTrap(open);
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 0);
@@ -59,6 +61,7 @@ export function Modal({ open, onClose, title, children, wide }: Props) {
             className="absolute inset-0 bg-black/55 backdrop-blur-[6px]"
           />
           <motion.div
+            ref={trap}
             role="dialog"
             aria-modal="true"
             aria-label={title}
