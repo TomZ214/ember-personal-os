@@ -13,12 +13,30 @@ const WEEKDAYS: Record<string, number> = {
   sonntag: 0, montag: 1, dienstag: 2, mittwoch: 3, donnerstag: 4, freitag: 5, samstag: 6,
 };
 
+export interface ParsedTask {
+  title: string;
+  /** yyyy-MM-dd, absent when the phrase carried no date */
+  due?: string;
+  /** HH:mm, absent when the phrase carried no time */
+  time?: string;
+}
+
+interface When {
+  title: string;
+  date: Date;
+  start: number;
+  duration: number;
+  matchedDate: boolean;
+  matchedTime: boolean;
+}
+
 /**
- * Parses quick-entry phrases like:
- *   "Dentist tomorrow 14:30"  ·  "Lunch with Max friday 12pm"
- *   "Zahnarzt morgen 14:30"   ·  "Gym monday 7am 90min"
+ * Pulls a date, a time and a duration out of a phrase and hands back what is
+ * left as the title. Shared by the event and task parsers so "friday" means
+ * the same thing in both — a task quick-add that understood fewer date words
+ * than the event one would be its own kind of bug.
  */
-export function parseQuickEvent(input: string): ParsedEvent | null {
+function parseWhen(input: string): When | null {
   let text = ` ${input.trim()} `;
   if (text.trim().length < 2) return null;
 
@@ -88,15 +106,57 @@ export function parseQuickEvent(input: string): ParsedEvent | null {
     matchedTime = consume(/\s(?:at|um)\s(\d{1,2})\s/i, (m) => { start = parseInt(m[1]) * 60; }) || matchedTime;
   }
 
-  if (!matchedDate && !matchedTime) return null;
-
   const title = text.replace(/\s+/g, " ").trim().replace(/^(at|um)\s/i, "");
   if (!title) return null;
 
   return {
     title: title.charAt(0).toUpperCase() + title.slice(1),
-    date: dayKey(date),
+    date,
     start,
-    end: Math.min(start + duration, 24 * 60),
+    duration,
+    matchedDate,
+    matchedTime,
+  };
+}
+
+/**
+ * Parses quick-entry phrases like:
+ *   "Dentist tomorrow 14:30"  ·  "Lunch with Max friday 12pm"
+ *   "Zahnarzt morgen 14:30"   ·  "Gym monday 7am 90min"
+ *
+ * Returns null without a date or a time, because an event with neither is
+ * just a task.
+ */
+export function parseQuickEvent(input: string): ParsedEvent | null {
+  const w = parseWhen(input);
+  if (!w) return null;
+  if (!w.matchedDate && !w.matchedTime) return null;
+
+  return {
+    title: w.title,
+    date: dayKey(w.date),
+    start: w.start,
+    end: Math.min(w.start + w.duration, 24 * 60),
+  };
+}
+
+/**
+ * The same phrase understanding, for tasks. "Pay rent friday" becomes a task
+ * called "Pay rent" that is due on Friday, rather than a task literally named
+ * "Pay rent friday" with no due date — which is what typing it used to do.
+ *
+ * Unlike an event, a task is perfectly valid with no date at all, so this
+ * never returns null for a dateless phrase; it just hands back the title.
+ * A bare time with no day means today, the way a person means it.
+ */
+export function parseQuickTask(input: string): ParsedTask | null {
+  const w = parseWhen(input);
+  if (!w) return null;
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return {
+    title: w.title,
+    due: w.matchedDate || w.matchedTime ? dayKey(w.date) : undefined,
+    time: w.matchedTime ? `${pad(Math.floor(w.start / 60))}:${pad(w.start % 60)}` : undefined,
   };
 }

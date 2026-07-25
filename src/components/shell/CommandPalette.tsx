@@ -8,7 +8,7 @@ import {
   CalendarDays,
 } from "lucide-react";
 import { useEmber } from "@/lib/store";
-import { parseQuickEvent } from "@/lib/nlp";
+import { parseQuickEvent, parseQuickTask } from "@/lib/nlp";
 import { bestScore } from "@/lib/fuzzy";
 import { friendlyDay, minutesToLabel } from "@/lib/dates";
 import { useLang, useT } from "@/lib/i18n";
@@ -97,14 +97,22 @@ export function CommandPalette() {
           },
         });
       }
-      const taskTitle = q.trim().replace(/^todo:?\s*/i, "");
+      const raw = q.trim().replace(/^todo:?\s*/i, "");
+      // the same phrase understanding events get: "pay rent friday" becomes a
+      // task called "Pay rent", due Friday — not a task named after the whole
+      // sentence with no due date
+      const parsedTask = parseQuickTask(raw);
+      const taskTitle = parsedTask?.title ?? raw;
       out.push({
         id: "nl-task",
         group: tr("cmd.gCreate"),
         title: tr("cmd.newTask").replace("{title}", taskTitle),
+        hint: parsedTask?.due
+          ? `${friendlyDay(parsedTask.due, lang)}${parsedTask.time ? ` · ${parsedTask.time}` : ""}`
+          : undefined,
         icon: <ListPlus size={16} />,
         run: () => {
-          addTask({ title: taskTitle });
+          addTask({ title: taskTitle, due: parsedTask?.due, time: parsedTask?.time });
           toast(tr("cmd.taskAdded"));
           setOpen(false);
         },
