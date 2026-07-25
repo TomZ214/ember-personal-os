@@ -22,14 +22,21 @@ interface Result {
   title: string;
   hint?: string;
   icon: React.ReactNode;
+  /** Enter — usually "go there" */
   run: () => void;
+  /**
+   * ⌘⏎ — act on the result without leaving the page. This is the difference
+   * between a search box and a command palette: finding a task and finishing
+   * it should be one uninterrupted gesture, not a trip to another screen.
+   */
+  alt?: { label: string; run: () => void };
 }
 
 export function CommandPalette() {
   const router = useRouter();
   const open = useEmber((s) => s.paletteOpen);
   const setOpen = useEmber((s) => s.setPaletteOpen);
-  const { tasks, notes, events, mails, addEvent, addTask } = useEmber();
+  const { tasks, notes, events, mails, addEvent, addTask, updateTask } = useEmber();
   const tr = useT();
   const lang = useLang();
   const [q, setQ] = useState("");
@@ -136,6 +143,19 @@ export function CommandPalette() {
         add(bestScore(query, t.title, t.tags.join(" ")), {
           id: `task-${t.id}`, group: tr("cmd.gTasks"), title: t.title,
           hint: t.status, icon: <CheckSquare size={16} />, run: go("/tasks"),
+          // already-done tasks get no complete action — offering it would be
+          // a no-op the user can't tell apart from a broken shortcut
+          alt:
+            t.status === "done"
+              ? undefined
+              : {
+                  label: tr("cmd.complete"),
+                  run: () => {
+                    updateTask(t.id, { status: "done" });
+                    toast(tr("cmd.completed").replace("{title}", t.title));
+                    setOpen(false);
+                  },
+                },
         });
       for (const n of notes)
         add(bestScore(query, n.title, n.body), {
@@ -159,7 +179,7 @@ export function CommandPalette() {
     // so ties keep the order the categories were collected in
     scored.sort((a, b) => b.s - a.s);
     return [...out, ...scored.map((x) => x.r)].slice(0, 14);
-  }, [q, tasks, notes, events, mails, addEvent, addTask, router, setOpen, tr, lang]);
+  }, [q, tasks, notes, events, mails, addEvent, addTask, updateTask, router, setOpen, tr, lang]);
 
   // new query -> selection back to the top (render-time adjustment)
   const [prevQ, setPrevQ] = useState(q);
@@ -178,7 +198,12 @@ export function CommandPalette() {
       setSel(Math.max(selIdx - 1, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      results[selIdx]?.run();
+      const r = results[selIdx];
+      // ⌘⏎ / Ctrl+⏎ takes the secondary action where there is one, and falls
+      // through to the primary where there isn't, so the modifier is never a
+      // dead key
+      if ((e.metaKey || e.ctrlKey) && r?.alt) r.alt.run();
+      else r?.run();
     } else if (e.key === "Escape") {
       setOpen(false);
     }
@@ -267,6 +292,23 @@ export function CommandPalette() {
                 );
               })}
             </div>
+
+            {/* Footer: what the selected result can actually do. Shortcuts you
+                cannot see are shortcuts nobody uses — this is where ⌘⏎ stops
+                being a secret. */}
+            {results.length > 0 && (
+              <div className="flex items-center justify-end gap-4 border-t border-white/[0.07] px-4 py-2 text-[11px] text-faint">
+                <span className="flex items-center gap-1.5">
+                  <Kbd>⏎</Kbd> {tr("cmd.open")}
+                </span>
+                {results[selIdx]?.alt && (
+                  <span className="flex items-center gap-1.5">
+                    <Kbd>⌘</Kbd>
+                    <Kbd>⏎</Kbd> {results[selIdx].alt.label}
+                  </span>
+                )}
+              </div>
+            )}
           </motion.div>
         </motion.div>
       )}

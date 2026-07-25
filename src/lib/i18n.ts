@@ -350,6 +350,9 @@ const en: Dict = {
   // command palette
   "cmd.gCreate": "Create",
   "cmd.gGoTo": "Go to",
+  "cmd.open": "Open",
+  "cmd.complete": "Complete",
+  "cmd.completed": "Completed “{title}”",
   "cmd.gTasks": "Tasks",
   "cmd.gNotes": "Notes",
   "cmd.gCalendar": "Calendar",
@@ -1302,6 +1305,9 @@ const de: Dict = {
   // command palette
   "cmd.gCreate": "Erstellen",
   "cmd.gGoTo": "Gehe zu",
+  "cmd.open": "Öffnen",
+  "cmd.complete": "Erledigen",
+  "cmd.completed": "„{title}“ erledigt",
   "cmd.gTasks": "Aufgaben",
   "cmd.gNotes": "Notizen",
   "cmd.gCalendar": "Kalender",
