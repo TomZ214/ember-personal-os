@@ -44,9 +44,12 @@ export function WallpaperPicker() {
                 // to add and would only put a loader in front of a thumbnail
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={w.file}
+                  // the 480px copy, not the wallpaper: five tiles pulling the
+                  // full-size files would cost megabytes to draw thumbnails
+                  src={w.thumb ?? w.file}
                   alt=""
                   loading="lazy"
+                  decoding="async"
                   className="absolute inset-0 h-full w-full object-cover"
                 />
               ) : (
