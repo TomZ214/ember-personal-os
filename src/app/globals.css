@@ -221,6 +221,16 @@ h1, h2, h3 {
   backdrop-filter: blur(calc(var(--glass-blur) * 1.55)) saturate(1.5);
 }
 
+/* No thickness rule for the floating surfaces, deliberately.
+   Eleven of them (dock, command palette, modals, sheets, dropdowns) carry
+   their own drop shadow as a Tailwind `shadow-[…]` utility, and box-shadow
+   does not compose — a rule here wins on specificity and silently deletes
+   those shadows, leaving the dock flat against the page. Measured, not
+   assumed.
+   They already get the cue anyway: `.glass-edge` draws their lit top hairline,
+   and a real drop shadow does the depth work that an inset line only
+   suggests. */
+
 /* Glass off: opaque surfaces, no compositing work at all. The layout, the
    radii and the borders are untouched — it reads as a solid premium UI
    rather than a degraded one. */
@@ -287,12 +297,19 @@ h1, h2, h3 {
   border-radius: inherit;
   pointer-events: none;
   padding: 1px;
+  /* Chromatic dispersion: a real edge splits light, warm on one side and cool
+     on the other. Two tinted stops flanking the neutral lens colour is enough
+     to read as glass rather than as a drawn stroke — any more and it looks
+     like a rendering fault. The hues are derived from the theme, so tide's
+     edge disperses cool and crimson's warm. */
   background: linear-gradient(
     var(--lens-angle, 150deg),
-    var(--glass-lens),
+    color-mix(in oklch, var(--glass-lens) 88%, var(--sunset-from)),
+    var(--glass-lens) 14%,
     transparent 42%,
     transparent 58%,
-    color-mix(in oklch, var(--glass-lens) 55%, transparent)
+    color-mix(in oklch, var(--glass-lens) 55%, transparent) 88%,
+    color-mix(in oklch, var(--glass-lens) 45%, var(--sunset-to))
   );
   /* mask to the ring only: fill minus content-box leaves the 1px border */
   -webkit-mask:
@@ -317,11 +334,22 @@ h1, h2, h3 {
   z-index: -1;
   border-radius: inherit;
   pointer-events: none;
-  background: radial-gradient(
-    circle at var(--mx) var(--my),
-    color-mix(in oklch, var(--glass-spec) 70%, transparent),
-    transparent 60%
-  );
+  /* Two highlights, not one. A tight hot core is what makes a surface read as
+     glass — a single soft 60% blob reads as haze, because nothing physical
+     falls off that slowly. The wide, faint pool underneath is the light the
+     material actually scatters, and it is what keeps the core from looking
+     like a sticker. */
+  background:
+    radial-gradient(
+      circle at var(--mx) var(--my),
+      color-mix(in oklch, var(--glass-spec) 92%, transparent),
+      transparent 22%
+    ),
+    radial-gradient(
+      circle at var(--mx) var(--my),
+      color-mix(in oklch, var(--glass-spec) 34%, transparent),
+      transparent 68%
+    );
   opacity: calc(var(--lit) * var(--glass-spec-strength));
   /* opacity only — the gradient position is a paint, not a layout change */
   transition: opacity 200ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -332,8 +360,16 @@ h1, h2, h3 {
   background: oklch(1 0 0 / 0.028);
   border-color: transparent;
   backdrop-filter: blur(var(--glass-blur)) saturate(1.35);
+  /* Thickness. This is what separates a slab of glass from a translucent
+     rectangle, and it was the piece missing: light comes from above, so the
+     top inner edge catches it and the bottom inner edge sits in its own
+     shadow. Without the asymmetry the surface has no side facing the light
+     and reads as flat no matter how good the blur is.
+     All inset — no new layer, no compositing cost. */
   box-shadow:
-    0 1px 0 0 oklch(1 0 0 / 0.05) inset,
+    0 1px 0 0 oklch(1 0 0 / 0.11) inset,
+    0 -1px 0 0 oklch(0 0 0 / 0.35) inset,
+    0 0 0 1px oklch(1 0 0 / 0.045) inset,
     0 18px 40px -24px oklch(0 0 0 / 0.9);
 }
 
