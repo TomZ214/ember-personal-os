@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useEmber } from "@/lib/store";
 import { parseQuickEvent } from "@/lib/nlp";
+import { bestScore } from "@/lib/fuzzy";
 import { friendlyDay, minutesToLabel } from "@/lib/dates";
 import { useLang, useT } from "@/lib/i18n";
 import { toast } from "@/components/ui/toast";
@@ -103,46 +104,61 @@ export function CommandPalette() {
       });
     }
 
-    const match = (s: string) => query === "" || s.toLowerCase().includes(query);
+    /**
+     * Everything searchable is scored, then ranked as one list.
+     *
+     * The old version filtered per category with a fixed cap each and emitted
+     * them in a fixed order, so a perfect title match on a mail could be
+     * pushed off the end by four weak task matches. Relevance now decides the
+     * order; the category is only a label.
+     */
+    const scored: { r: Result; s: number }[] = [];
+    const add = (s: number | null, r: Result) => {
+      if (s !== null) scored.push({ r, s });
+    };
 
     for (const n of NAV) {
       const label = tr(`nav.${n.key}`);
-      if (match(n.label) || match(label)) {
-        const Icon = n.icon;
-        out.push({
-          id: `nav-${n.href}`,
-          group: tr("cmd.gGoTo"),
-          title: label,
-          icon: <Icon size={16} />,
-          run: go(n.href),
-        });
-      }
+      const Icon = n.icon;
+      // both the English key and the translated label, so "tasks" and
+      // "aufgaben" both find the same page whatever the UI language
+      add(bestScore(query, label, n.label), {
+        id: `nav-${n.href}`,
+        group: tr("cmd.gGoTo"),
+        title: label,
+        icon: <Icon size={16} />,
+        run: go(n.href),
+      });
     }
 
     if (query.length > 0) {
-      for (const t of tasks.filter((t) => match(t.title)).slice(0, 4))
-        out.push({
+      for (const t of tasks)
+        add(bestScore(query, t.title, t.tags.join(" ")), {
           id: `task-${t.id}`, group: tr("cmd.gTasks"), title: t.title,
           hint: t.status, icon: <CheckSquare size={16} />, run: go("/tasks"),
         });
-      for (const n of notes.filter((n) => match(n.title) || match(n.body)).slice(0, 4))
-        out.push({
+      for (const n of notes)
+        add(bestScore(query, n.title, n.body), {
           id: `note-${n.id}`, group: tr("cmd.gNotes"), title: n.title,
           icon: <NotebookPen size={16} />, run: go(`/notes?id=${n.id}`),
         });
-      for (const e of events.filter((e) => match(e.title)).slice(0, 4))
-        out.push({
+      for (const e of events)
+        add(bestScore(query, e.title, e.location), {
           id: `event-${e.id}`, group: tr("cmd.gCalendar"), title: e.title,
           hint: `${friendlyDay(e.date, lang)} · ${minutesToLabel(e.start)}`,
           icon: <CalendarDays size={16} />, run: go("/calendar"),
         });
-      for (const m of mails.filter((m) => match(m.subject) || match(m.from)).slice(0, 3))
-        out.push({
+      for (const m of mails)
+        add(bestScore(query, m.subject, m.from), {
           id: `mail-${m.id}`, group: tr("cmd.gMail"), title: m.subject,
           hint: m.from, icon: <Mail size={16} />, run: go(`/mail?id=${m.id}`),
         });
     }
-    return out.slice(0, 14);
+
+    // stable within equal scores: sort() is stable in every engine we target,
+    // so ties keep the order the categories were collected in
+    scored.sort((a, b) => b.s - a.s);
+    return [...out, ...scored.map((x) => x.r)].slice(0, 14);
   }, [q, tasks, notes, events, mails, addEvent, addTask, router, setOpen, tr, lang]);
 
   // new query -> selection back to the top (render-time adjustment)
