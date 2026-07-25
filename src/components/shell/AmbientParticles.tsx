@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { useEmber } from "@/lib/store";
 import { THEME_PARTICLES } from "@/lib/motion";
 
 /**
@@ -54,7 +53,6 @@ const PARTICLES = Array.from({ length: COUNT }, (_, i) => {
 
 export function AmbientParticles() {
   const pathname = usePathname();
-  const enabled = useEmber((s) => s.settings.ambientParticles ?? true);
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
@@ -65,7 +63,7 @@ export function AmbientParticles() {
 
   // The weather page brings its own full-screen atmosphere (rain, snow, fog);
   // stacking embers on top of that reads as noise rather than ambience.
-  if (!enabled || !visible || pathname.startsWith("/weather")) return null;
+  if (!visible || pathname.startsWith("/weather")) return null;
 
   return (
     <div

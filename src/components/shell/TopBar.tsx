@@ -29,7 +29,7 @@ export function TopBar() {
     // In the desktop shell this header doubles as the frameless title bar, so
     // the whole strip (minus the interactive controls) is a drag region.
     <header
-      className="topbar-float sticky top-0 z-(--z-sticky) border-b border-white/[0.06] bg-bg-deep/70 pt-[env(safe-area-inset-top)] backdrop-blur-xl"
+      className="sticky top-0 z-(--z-sticky) border-b border-white/[0.06] bg-bg-deep/70 pt-[env(safe-area-inset-top)] backdrop-blur-xl"
       {...(desktop ? { "data-tauri-drag-region": true } : {})}
     >
       <div

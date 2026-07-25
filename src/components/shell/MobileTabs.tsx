@@ -30,7 +30,7 @@ export function MobileTabs() {
         // cleared by offsetting the bar — not by padding its inside. Padding it
         // left a tall dead strip inside the pill on iPhone and pushed the icons
         // up. `max()` keeps the 12px gap on devices without an inset.
-        className="glass-strong glass-edge tabs-float fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-(--z-sticky) flex items-stretch justify-around rounded-3xl md:hidden"
+        className="glass-strong glass-edge fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-(--z-sticky) flex items-stretch justify-around rounded-3xl md:hidden"
       >
         {PRIMARY.map((item) => {
           const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
