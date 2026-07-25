@@ -888,6 +888,15 @@ const en: Dict = {
   // appearance / gradient themes
   "theme.title": "Appearance",
   "theme.sub": "Pick the gradient EmberOS is built around. It changes buttons, highlights and the ambient glow everywhere.",
+  "wall.title": "Wallpaper",
+  "wall.sub":
+    "The picture behind everything. Independent of the colour theme — any wallpaper works with any accent.",
+  "wall.none": "No wallpaper",
+  "wall.earth": "Earth",
+  "wall.ridges": "Ridges",
+  "wall.dune": "Dune",
+  "wall.waves": "Waves",
+
   "theme.sunset": "Sunset",
   "theme.tide": "Tide",
   "theme.crimson": "Crimson",
@@ -1843,6 +1852,15 @@ const de: Dict = {
   // appearance / gradient themes
   "theme.title": "Erscheinungsbild",
   "theme.sub": "Wähle den Farbverlauf, um den EmberOS gebaut ist. Er verändert Buttons, Akzente und das Hintergrundleuchten überall.",
+  "wall.title": "Hintergrundbild",
+  "wall.sub":
+    "Das Bild hinter allem. Unabhängig vom Farbthema — jedes Hintergrundbild funktioniert mit jedem Akzent.",
+  "wall.none": "Kein Bild",
+  "wall.earth": "Erde",
+  "wall.ridges": "Bergrücken",
+  "wall.dune": "Düne",
+  "wall.waves": "Wellen",
+
   "theme.sunset": "Sonnenuntergang",
   "theme.tide": "Gezeiten",
   "theme.crimson": "Purpur",

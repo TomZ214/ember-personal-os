@@ -11,6 +11,7 @@ import { ResizeHandles } from "@/components/desktop/ResizeHandles";
 import { AlarmEngine } from "@/components/alarm/AlarmEngine";
 import { AmbientParticles } from "./AmbientParticles";
 import { LightingProvider } from "./LightingProvider";
+import { Wallpaper } from "./Wallpaper";
 import { Shortcuts } from "./Shortcuts";
 import { BootSequence } from "./BootSequence";
 import { CommandPalette } from "./CommandPalette";
@@ -42,8 +43,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
   return (
     <DesktopProvider>
       <ThemeApplier />
-      {/* the slowest parallax layer — the wash the whole interface sits on */}
-      <div className="ambient parallax-bg" aria-hidden />
+      {/* the slowest parallax layer — the wash or picture everything sits on */}
+      <Wallpaper />
       <LightingProvider />
       <AmbientParticles />
       <TopBar />

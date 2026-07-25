@@ -232,6 +232,27 @@ export const THEMES: { id: Theme; from: string; to: string }[] = [
   { id: "orchid", from: "#ff0080", to: "#00e5ff" },
 ];
 
+/**
+ * Desktop wallpaper. Deliberately independent of `theme`: the accent ramp and
+ * the picture behind it are separate choices, so any wallpaper works with any
+ * theme and adding one here needs no theme edit.
+ *
+ * `id` doubles as the filename under /public/wallpapers/. "none" is the
+ * built-in ambient gradient and has no file.
+ */
+export type WallpaperId = "none" | "earth" | "ridges" | "dune" | "waves";
+
+export const WALLPAPERS: { id: WallpaperId; file?: string; dark: boolean }[] = [
+  { id: "none", dark: true },
+  // `dark` says whether the picture is dark enough to carry white text on its
+  // own. A bright one gets a heavier scrim rather than a different text colour,
+  // so every wallpaper keeps the same readable interface.
+  { id: "earth", file: "/wallpapers/earth.jpg", dark: false },
+  { id: "ridges", file: "/wallpapers/ridges.jpg", dark: true },
+  { id: "dune", file: "/wallpapers/dune.jpg", dark: true },
+  { id: "waves", file: "/wallpapers/waves.jpg", dark: false },
+];
+
 export interface Settings {
   userName: string;
   focusMinutes: number;
@@ -245,6 +266,8 @@ export interface Settings {
   language?: Language;
   /** Brand gradient / colour theme */
   theme?: Theme;
+  /** Desktop wallpaper — independent of `theme` */
+  wallpaper?: WallpaperId;
   /** UI sound effects */
   sound?: boolean;
   /** 0..1 master volume for UI sounds */
