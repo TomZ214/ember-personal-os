@@ -315,7 +315,7 @@ function AlertCard({
                   className="flex items-center gap-3 rounded-xl bg-white/[0.04] px-3.5 py-2.5"
                 >
                   <span className="text-[15px] leading-none">{item.emoji}</span>
-                  <span className="text-[14px] leading-snug text-ink">{item.text}</span>
+                  <span className="text-sm leading-snug text-ink">{item.text}</span>
                 </motion.li>
               ))}
             </ul>

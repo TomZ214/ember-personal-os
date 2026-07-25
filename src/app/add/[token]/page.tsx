@@ -174,7 +174,7 @@ export default function QuickAddPage() {
                       type="button"
                       onClick={() => setPriority(u.value)}
                       aria-pressed={active}
-                      className={`flex h-9 items-center justify-center gap-1.5 rounded-[10px] border text-[12px] font-medium transition-colors ${
+                      className={`flex h-9 items-center justify-center gap-1.5 rounded-[10px] border text-xs font-medium transition-colors ${
                         active
                           ? "border-white/[0.18] bg-white/[0.10] text-ink"
                           : "border-white/[0.08] bg-white/[0.03] text-muted hover:border-white/[0.14]"

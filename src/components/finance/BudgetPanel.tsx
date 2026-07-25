@@ -219,7 +219,7 @@ export function BudgetPanel({ txns, blur }: { txns: Movement[]; blur: boolean })
                   <button
                     key={u.category}
                     onClick={() => setEditing(true)}
-                    className="flex items-center gap-1.5 rounded-full bg-white/[0.05] px-3 py-1.5 text-[12px] text-muted transition-colors hover:bg-white/[0.09] hover:text-ink"
+                    className="flex items-center gap-1.5 rounded-full bg-white/[0.05] px-3 py-1.5 text-xs text-muted transition-colors hover:bg-white/[0.09] hover:text-ink"
                   >
                     <Plus size={11} />
                     {tr(`fin.cat.${u.category}`, u.category)}

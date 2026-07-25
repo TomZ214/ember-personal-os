@@ -239,11 +239,11 @@ export function CleanupTool({ open, onClose, onFinished }: { open: boolean; onCl
           <motion.div key="confirm" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex flex-col gap-4">
             <div className="grid grid-cols-3 gap-3">
               <div className="rounded-2xl bg-white/[0.04] p-4 text-center">
-                <p className="num text-2xl font-semibold">{preview.count.toLocaleString(lang === "de" ? "de-DE" : "en")}</p>
+                <p className="num text-2xl font-semibold tracking-tight">{preview.count.toLocaleString(lang === "de" ? "de-DE" : "en")}</p>
                 <p className="mt-0.5 text-[11px] uppercase tracking-wide text-faint">{t("clean.emails")}</p>
               </div>
               <div className="rounded-2xl bg-white/[0.04] p-4 text-center">
-                <p className="num text-2xl font-semibold">≈ {fmtBytes(preview.count * preview.avgBytes)}</p>
+                <p className="num text-2xl font-semibold tracking-tight">≈ {fmtBytes(preview.count * preview.avgBytes)}</p>
                 <p className="mt-0.5 text-[11px] uppercase tracking-wide text-faint">{t("clean.storageFreed")}</p>
               </div>
               <div className="rounded-2xl bg-white/[0.04] p-4 text-center">

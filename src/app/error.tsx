@@ -42,7 +42,7 @@ export default function Error({
         <TriangleAlert size={24} strokeWidth={1.8} />
       </span>
       <h1 className="text-xl font-semibold tracking-tight">{t("err.title")}</h1>
-      <p className="mt-2 max-w-[42ch] text-[13.5px] leading-relaxed text-muted">
+      <p className="mt-2 max-w-[42ch] text-[13px] leading-relaxed text-muted">
         {t("err.body")}
       </p>
 

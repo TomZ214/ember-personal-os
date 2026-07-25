@@ -410,7 +410,7 @@ function TimeGrid({
                         borderColor: `color-mix(in oklch, ${e.color} 40%, transparent)`,
                       }}
                     >
-                      <p className="truncate text-[12px] font-semibold leading-tight"
+                      <p className="truncate text-xs font-semibold leading-tight"
                         style={{ color: `color-mix(in oklch, ${e.color} 70%, white)` }}>
                         {e.title}
                       </p>

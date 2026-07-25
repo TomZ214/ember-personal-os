@@ -134,8 +134,8 @@ function UpdateBanner({ update, onDismiss }: { update: UpdateInfo; onDismiss: ()
           <Sparkles size={16} />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[14px] font-semibold">{t("desktop.updateTitle")}</p>
-          <p className="mt-0.5 text-[12.5px] leading-snug text-muted">
+          <p className="text-sm font-semibold">{t("desktop.updateTitle")}</p>
+          <p className="mt-0.5 text-xs leading-snug text-muted">
             {t("desktop.updateReady").replace("{version}", update.version)}
           </p>
         </div>

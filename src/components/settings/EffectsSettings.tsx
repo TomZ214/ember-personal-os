@@ -41,7 +41,7 @@ export function EffectsSettings() {
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.06] pt-4">
         <div className="min-w-0">
-          <h3 className="flex items-center gap-2 text-[14px] font-medium">
+          <h3 className="flex items-center gap-2 text-sm font-medium">
             <Gauge size={15} /> {t("fx.reduceTitle")}
           </h3>
           <p className="mt-0.5 max-w-[52ch] text-[13px] text-muted">{t("fx.reduceSub")}</p>

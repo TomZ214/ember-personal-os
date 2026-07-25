@@ -28,7 +28,7 @@ export default function NotFound() {
         <Compass size={24} strokeWidth={1.8} />
       </span>
       <h1 className="text-xl font-semibold tracking-tight">{t("nf.title")}</h1>
-      <p className="mt-2 max-w-[40ch] text-[13.5px] leading-relaxed text-muted">{t("nf.body")}</p>
+      <p className="mt-2 max-w-[40ch] text-[13px] leading-relaxed text-muted">{t("nf.body")}</p>
 
       <Link
         href="/"

@@ -124,7 +124,7 @@ export function BriefingWidget() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.32, ease: EASE.out }}
-            className="text-[13.5px] leading-relaxed text-ink/90"
+            className="text-[13px] leading-relaxed text-ink/90"
           >
             {fresh.text}
           </motion.p>
