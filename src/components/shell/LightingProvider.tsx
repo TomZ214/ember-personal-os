@@ -36,9 +36,10 @@ const MAGNET_MAX = 8;
 export function LightingProvider() {
   const glass = useEmber((s) => s.settings.liquidGlass ?? true);
   const reduced = useEmber((s) => s.settings.reducedEffects ?? false);
+  const cursorLight = useEmber((s) => s.settings.cursorLighting ?? true);
 
   useEffect(() => {
-    if (!glass) return;
+    if (!glass || !cursorLight) return;
     // a cursor light is meaningless without a cursor, and prefers-reduced-motion
     // users have asked for exactly this kind of thing to stop moving
     const fine = window.matchMedia("(pointer: fine)");
@@ -151,13 +152,13 @@ export function LightingProvider() {
       document.removeEventListener("pointerleave", onLeave);
       onLeave();
     };
-  }, [glass]);
+  }, [glass, cursorLight]);
 
   // The ambient half of the lighting: one fixed pane carrying a soft bloom at
   // the cursor. It is what makes surfaces *near* the pointer feel lit rather
   // than only the one directly under it — and it costs one composited layer,
   // not per-card work. Dropped entirely under reduced effects.
-  if (!glass || reduced) return null;
+  if (!glass || reduced || !cursorLight) return null;
   return (
     <div
       aria-hidden

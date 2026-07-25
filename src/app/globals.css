@@ -75,14 +75,30 @@
 }
 
 /* ============================================================
-   Themes — each one only re-points the brand ramp + its derived
-   accents, so every component that already uses --grad-sunset /
-   --primary / --accent adapts with zero component changes.
-   `sunset` is :root above (the default); the rest override it.
+   THE APPEARANCE SYSTEM
+
+   Two orthogonal layers. This separation is the whole point: every
+   appearance must work with every accent, including accents that do
+   not exist yet.
+
+     [data-accent]      HUE ONLY — the brand ramp and everything derived
+                        from it. Knows nothing about blur, radius or depth.
+
+     [data-appearance]  MATERIAL ONLY — blur, radius, elevation, surface
+                        opacity, how far things float. Knows nothing about
+                        colour; where it needs one it derives it from the
+                        accent with color-mix, never a literal.
+
+   Adding a fifth accent means adding one block of hues. Adding a sixth
+   appearance means adding one block of material. Neither touches the other,
+   and neither touches a component.
    ============================================================ */
 
+/* ---------- ACCENTS (hue only) ---------- */
+/* `sunset` lives in :root above as the default. */
+
 /* Tide — deep navy into teal. Calm, nautical, low-key. */
-[data-theme="tide"] {
+[data-accent="tide"] {
   --sunset-from: #2c3e50;
   --sunset-to: #4ca1af;
   --on-sunset: #eafcff; /* light text: this ramp is dark */
@@ -93,15 +109,10 @@
   --accent: oklch(0.80 0.10 205);
 
   --c-ember: #4ca1af;
-
-  /* cool, deep water-glass: a touch more blur, a cooler lens */
-  --glass-blur: 20px;
-  --glass-lens: oklch(0.95 0.03 205 / 0.16);
-  --glass-spec-strength: 0.15;
 }
 
 /* Crimson — blood red falling into near-black. Dramatic, cinematic. */
-[data-theme="crimson"] {
+[data-accent="crimson"] {
   --sunset-from: #95122c;
   --sunset-to: #100c08;
   --on-sunset: #ffe9ed; /* light text: this ramp is very dark */
@@ -112,15 +123,10 @@
   --accent: oklch(0.78 0.12 45);
 
   --c-ember: #c81e3c;
-
-  /* smoked glass over embers — dark, dense, warm reflections */
-  --glass-blur: 22px;
-  --glass-lens: oklch(0.85 0.10 30 / 0.15);
-  --glass-spec-strength: 0.2;
 }
 
 /* Orchid — hot magenta into electric cyan. Loud, neon, high-energy. */
-[data-theme="orchid"] {
+[data-accent="orchid"] {
   --sunset-from: #ff0080;
   --sunset-to: #00e5ff;
   --on-sunset: #0a0a12; /* dark text: this ramp is vivid and bright */
@@ -131,11 +137,111 @@
   --accent: oklch(0.82 0.14 205);
 
   --c-ember: #ff2b95;
+}
 
-  /* neon acrylic — thinner, brighter, the loudest specular of the four */
-  --glass-blur: 16px;
-  --glass-lens: oklch(0.90 0.14 320 / 0.2);
-  --glass-spec-strength: 0.26;
+/* ---------- APPEARANCES (material only) ----------
+   Every one of these derives its tinted values from var(--primary) or the
+   sunset ramp, so a new accent lights them correctly with no edit here. */
+
+/* Ember Classic — the original. Dark, warm, moderate glass. */
+:root,
+[data-appearance="ember"] {
+  --glass-blur: 18px;
+  --glass-lens: color-mix(in oklch, white 90%, var(--primary-bright) 10%);
+  --glass-lens-alpha: 0.16;
+  --glass-spec-strength: 0.16;
+  --radius-card: 1.125rem;
+  --radius-float: 1.25rem;
+  --panel-tint: 0.028;
+  --panel-line: 0.05;
+  --float-inset: 0px;
+  --elev-rest: 0 18px 40px -24px oklch(0 0 0 / 0.9);
+  --elev-lift: 0 28px 60px -28px oklch(0 0 0 / 0.95);
+  --lit-top: 0.11;
+  --lit-bottom: 0.35;
+}
+
+/* Tahoe — the newest macOS. Panes float free of their container with a
+   generous inset, corners are much rounder, the blur is heavy and the
+   surfaces are more transparent than anything else here. Shadows are wide
+   and soft rather than tight and dark, which is what makes a macOS window
+   read as hovering rather than stuck down. */
+[data-appearance="tahoe"] {
+  --glass-blur: 30px;
+  --glass-lens: color-mix(in oklch, white 82%, var(--primary-bright) 18%);
+  --glass-lens-alpha: 0.22;
+  --glass-spec-strength: 0.13; /* restrained: macOS specular is a hint, not a shine */
+  --radius-card: 1.25rem;
+  --radius-float: 1.75rem;
+  --panel-tint: 0.055;
+  --panel-line: 0.085;
+  --float-inset: 0.5rem;
+  --elev-rest:
+    0 2px 6px -2px oklch(0 0 0 / 0.4),
+    0 24px 60px -20px oklch(0 0 0 / 0.7);
+  --elev-lift:
+    0 4px 10px -2px oklch(0 0 0 / 0.45),
+    0 40px 90px -24px oklch(0 0 0 / 0.8);
+  --lit-top: 0.2;
+  --lit-bottom: 0.3;
+}
+
+/* Minimal — the glass gets out of the way. Almost no blur, flat surfaces,
+   tight radii. For reading and for slow machines. */
+[data-appearance="minimal"] {
+  --glass-blur: 6px;
+  --glass-lens: color-mix(in oklch, white 96%, var(--primary) 4%);
+  --glass-lens-alpha: 0.09;
+  --glass-spec-strength: 0.05;
+  --radius-card: 0.75rem;
+  --radius-float: 0.875rem;
+  --panel-tint: 0.04;
+  --panel-line: 0.07;
+  --float-inset: 0px;
+  --elev-rest: 0 2px 8px -4px oklch(0 0 0 / 0.5);
+  --elev-lift: 0 6px 16px -6px oklch(0 0 0 / 0.6);
+  --lit-top: 0.05;
+  --lit-bottom: 0.14;
+}
+
+/* Midnight — near-black, high contrast, the glass barely tinted. Deep
+   shadows and a colder edge. */
+[data-appearance="midnight"] {
+  --glass-blur: 22px;
+  --glass-lens: color-mix(in oklch, white 94%, var(--primary) 6%);
+  --glass-lens-alpha: 0.14;
+  --glass-spec-strength: 0.1;
+  --radius-card: 1rem;
+  --radius-float: 1.25rem;
+  --panel-tint: 0.015;
+  --panel-line: 0.06;
+  --float-inset: 0px;
+  --elev-rest: 0 20px 50px -22px oklch(0 0 0 / 1);
+  --elev-lift: 0 32px 70px -26px oklch(0 0 0 / 1);
+  --lit-top: 0.08;
+  --lit-bottom: 0.5;
+}
+
+/* Vision — maximum translucency and the roundest corners. Everything reads
+   as a pane hanging in space; the most expensive of the five. */
+[data-appearance="vision"] {
+  --glass-blur: 40px;
+  --glass-lens: color-mix(in oklch, white 74%, var(--primary-bright) 26%);
+  --glass-lens-alpha: 0.26;
+  --glass-spec-strength: 0.2;
+  --radius-card: 1.5rem;
+  --radius-float: 2rem;
+  --panel-tint: 0.07;
+  --panel-line: 0.1;
+  --float-inset: 0.75rem;
+  --elev-rest:
+    0 2px 8px -2px oklch(0 0 0 / 0.35),
+    0 30px 80px -24px oklch(0 0 0 / 0.65);
+  --elev-lift:
+    0 6px 14px -2px oklch(0 0 0 / 0.4),
+    0 50px 110px -28px oklch(0 0 0 / 0.75);
+  --lit-top: 0.24;
+  --lit-bottom: 0.26;
 }
 
 @theme inline {
@@ -212,13 +318,13 @@ h1, h2, h3 {
 .glass {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
-  backdrop-filter: blur(var(--glass-blur)) saturate(1.3);
+  backdrop-filter: blur(calc(var(--glass-blur) * var(--blur-scale, 1))) saturate(1.3);
 }
 
 .glass-strong {
   background: var(--glass-bg-strong);
   border: 1px solid var(--glass-border-strong);
-  backdrop-filter: blur(calc(var(--glass-blur) * 1.55)) saturate(1.5);
+  backdrop-filter: blur(calc(var(--glass-blur) * 1.55 * var(--blur-scale, 1))) saturate(1.5);
 }
 
 /* No thickness rule for the floating surfaces, deliberately.
@@ -302,15 +408,20 @@ h1, h2, h3 {
      to read as glass rather than as a drawn stroke — any more and it looks
      like a rendering fault. The hues are derived from the theme, so tide's
      edge disperses cool and crimson's warm. */
+  /* --glass-lens is an opaque hue; the appearance decides how strongly the
+     edge shows through --glass-lens-alpha. Keeping them apart is what lets a
+     new accent supply only a colour and still land correctly in all five
+     appearances. */
   background: linear-gradient(
     var(--lens-angle, 150deg),
-    color-mix(in oklch, var(--glass-lens) 88%, var(--sunset-from)),
+    color-mix(in oklch, var(--sunset-from) 22%, var(--glass-lens)),
     var(--glass-lens) 14%,
     transparent 42%,
     transparent 58%,
-    color-mix(in oklch, var(--glass-lens) 55%, transparent) 88%,
-    color-mix(in oklch, var(--glass-lens) 45%, var(--sunset-to))
+    color-mix(in oklch, var(--glass-lens) 60%, transparent) 88%,
+    color-mix(in oklch, var(--sunset-to) 30%, var(--glass-lens))
   );
+  opacity: calc((0.5 + var(--lit) * 0.5) * var(--glass-lens-alpha, 0.16) / 0.16);
   /* mask to the ring only: fill minus content-box leaves the 1px border */
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
@@ -320,7 +431,6 @@ h1, h2, h3 {
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
   mask-composite: exclude;
-  opacity: calc(0.5 + var(--lit) * 0.5);
   transition: opacity 240ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -357,9 +467,9 @@ h1, h2, h3 {
 
 /* layer 2 — the blur, plus a translucent tint so the page shows through */
 [data-glass="on"] .panel {
-  background: oklch(1 0 0 / 0.028);
+  background: oklch(1 0 0 / calc(var(--panel-tint, 0.028) * var(--tint-scale, 1)));
   border-color: transparent;
-  backdrop-filter: blur(var(--glass-blur)) saturate(1.35);
+  backdrop-filter: blur(calc(var(--glass-blur) * var(--blur-scale, 1))) saturate(1.35);
   /* Thickness. This is what separates a slab of glass from a translucent
      rectangle, and it was the piece missing: light comes from above, so the
      top inner edge catches it and the bottom inner edge sits in its own
@@ -367,10 +477,10 @@ h1, h2, h3 {
      and reads as flat no matter how good the blur is.
      All inset — no new layer, no compositing cost. */
   box-shadow:
-    0 1px 0 0 oklch(1 0 0 / 0.11) inset,
-    0 -1px 0 0 oklch(0 0 0 / 0.35) inset,
-    0 0 0 1px oklch(1 0 0 / 0.045) inset,
-    0 18px 40px -24px oklch(0 0 0 / 0.9);
+    0 1px 0 0 oklch(1 0 0 / var(--lit-top, 0.11)) inset,
+    0 -1px 0 0 oklch(0 0 0 / var(--lit-bottom, 0.35)) inset,
+    0 0 0 1px oklch(1 0 0 / var(--panel-line, 0.05)) inset,
+    var(--elev-rest, 0 18px 40px -24px oklch(0 0 0 / 0.9));
 }
 
 /* Reduced effects: keep the material, drop the per-frame half of it. The
@@ -379,6 +489,11 @@ h1, h2, h3 {
 [data-fx="reduced"] {
   --glass-blur: 8px;
 }
+/* Reflections also switch off on their own: someone may want the glass and
+   the blur but find a highlight that follows the pointer distracting. */
+[data-reflect="off"] .panel::after,
+[data-reflect="off"] .glass::after,
+[data-reflect="off"] .glass-strong::after,
 [data-fx="reduced"] .panel::after,
 [data-fx="reduced"] .glass::after,
 [data-fx="reduced"] .glass-strong::after {
@@ -425,6 +540,32 @@ h1, h2, h3 {
 }
 [data-glass="off"] .glow-brand {
   box-shadow: none;
+}
+
+/* ---- floating surfaces ----
+   The signature of the newest macOS: chrome does not touch the edges of its
+   container, it sits inside it with a margin, so the background shows all the
+   way around. --float-inset is 0 in the appearances that don't want it, which
+   means these rules cost nothing there rather than needing to be switched off.
+
+   Applied to the dock, the mobile tab bar and the top bar — the three pieces
+   of persistent chrome. Content panels already float via their own shadow. */
+[data-glass="on"] .dock-float {
+  margin-bottom: var(--float-inset);
+  border-radius: var(--radius-float);
+}
+[data-glass="on"] .tabs-float {
+  margin-inline: var(--float-inset);
+  border-radius: var(--radius-float);
+}
+
+/* Tahoe pulls the top bar in from the window edges too, so the whole shell
+   reads as one floating slab rather than a page with a header stuck to it. */
+[data-appearance="tahoe"][data-glass="on"] .topbar-float,
+[data-appearance="vision"][data-glass="on"] .topbar-float {
+  margin: var(--float-inset) var(--float-inset) 0;
+  border-radius: var(--radius-float);
+  border: 1px solid oklch(1 0 0 / var(--panel-line));
 }
 
 /* ---- ambient cursor light ----
@@ -507,8 +648,9 @@ h1, h2, h3 {
 [data-glass="on"] .panel-hover:hover {
   transform: translate3d(0, -3px, 0) scale(1.004);
   box-shadow:
-    0 1px 0 0 oklch(1 0 0 / 0.08) inset,
-    0 28px 60px -28px oklch(0 0 0 / 0.95);
+    0 1px 0 0 oklch(1 0 0 / var(--lit-top, 0.11)) inset,
+    0 -1px 0 0 oklch(0 0 0 / var(--lit-bottom, 0.35)) inset,
+    var(--elev-lift, 0 28px 60px -28px oklch(0 0 0 / 0.95));
 }
 [data-glass="on"] .panel-hover:active {
   transform: translate3d(0, 0, 0) scale(0.995);

@@ -223,6 +223,14 @@ export interface Alarm {
 export type Language = "en" | "de";
 
 /** Brand gradient themes. `sunset` is the original ember look and the default. */
+/**
+ * Accent — hue only. Adding one here plus a `[data-accent="…"]` block in
+ * globals.css is the whole job; it works in every appearance automatically,
+ * because no appearance names a colour.
+ *
+ * Still called `theme` in Settings for backwards compatibility with saved
+ * data and with everything already synced to other devices.
+ */
 export type Theme = "sunset" | "tide" | "crimson" | "orchid";
 
 export const THEMES: { id: Theme; from: string; to: string }[] = [
@@ -230,6 +238,19 @@ export const THEMES: { id: Theme; from: string; to: string }[] = [
   { id: "tide", from: "#2c3e50", to: "#4ca1af" },
   { id: "crimson", from: "#95122c", to: "#100c08" },
   { id: "orchid", from: "#ff0080", to: "#00e5ff" },
+];
+
+/** Appearance — material only. Orthogonal to accent by construction. */
+export type Appearance = "ember" | "tahoe" | "minimal" | "midnight" | "vision";
+
+export const APPEARANCES: { id: Appearance; blur: number; radius: number; tint: number }[] = [
+  // the numbers here are only for the settings preview tile — the real values
+  // live in CSS, and this list must never become a second source of truth
+  { id: "ember", blur: 18, radius: 18, tint: 0.028 },
+  { id: "tahoe", blur: 30, radius: 28, tint: 0.055 },
+  { id: "minimal", blur: 6, radius: 12, tint: 0.04 },
+  { id: "midnight", blur: 22, radius: 16, tint: 0.015 },
+  { id: "vision", blur: 40, radius: 32, tint: 0.07 },
 ];
 
 export interface Settings {
@@ -249,12 +270,21 @@ export interface Settings {
   sound?: boolean;
   /** 0..1 master volume for UI sounds */
   soundVolume?: number;
+  /** Visual style — material, depth and radius. Independent of `theme`. */
+  appearance?: Appearance;
   /**
    * Liquid Glass: translucent layered surfaces, cursor lighting, refraction,
    * magnetic controls. Off falls back to opaque surfaces — same layout, same
    * features, none of the per-frame work.
    */
   liquidGlass?: boolean;
+  /** Advanced appearance dials, each independently switchable. */
+  cursorLighting?: boolean;
+  glassReflections?: boolean;
+  ambientParticles?: boolean;
+  /** 0..1 multipliers over whatever the appearance sets. */
+  transparencyStrength?: number;
+  blurStrength?: number;
   /**
    * Trims the expensive half of the effects (blur radius, reflections,
    * particle count, cursor lighting) without going fully solid. For weaker

@@ -22,7 +22,7 @@ export function Dock() {
       <motion.div
         onMouseMove={(e) => mouseX.set(e.clientX)}
         onMouseLeave={() => mouseX.set(Infinity)}
-        className="glass-strong glass-edge relative flex h-[60px] items-end gap-1.5 rounded-2xl px-2.5 pb-2 shadow-[0_18px_60px_-10px_rgba(0,0,0,0.65)]"
+        className="glass-strong glass-edge dock-float relative flex h-[60px] items-end gap-1.5 rounded-2xl px-2.5 pb-2 shadow-[0_18px_60px_-10px_rgba(0,0,0,0.65)]"
       >
         {NAV.map((item) => (
           <DockIcon key={item.href} item={item} mouseX={mouseX} active={isActive(pathname, item.href)} />

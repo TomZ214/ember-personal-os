@@ -53,7 +53,7 @@ export default function RootLayout({
             app uses; any failure just leaves the CSS defaults in place. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var s=JSON.parse(localStorage.getItem("ember-os")||"{}")?.state?.settings||{},d=document.documentElement.dataset;if(s.theme&&s.theme!=="sunset")d.theme=s.theme;d.glass=s.liquidGlass===false?"off":"on";d.fx=s.reducedEffects?"reduced":"full";}catch(e){}`,
+            __html: `try{var s=JSON.parse(localStorage.getItem("ember-os")||"{}")?.state?.settings||{},e=document.documentElement,d=e.dataset;if(s.theme&&s.theme!=="sunset")d.accent=s.theme;d.appearance=s.appearance||"ember";d.glass=s.liquidGlass===false?"off":"on";d.fx=s.reducedEffects?"reduced":"full";d.lighting=s.cursorLighting===false?"off":"on";d.reflect=s.glassReflections===false?"off":"on";e.style.setProperty("--blur-scale",s.blurStrength??1);e.style.setProperty("--tint-scale",s.transparencyStrength??1);}catch(e){}`,
           }}
         />
       </head>

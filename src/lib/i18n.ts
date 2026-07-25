@@ -907,6 +907,25 @@ const en: Dict = {
   "fx.reduceTitle": "Reduce visual effects",
   "fx.reduceSub":
     "Lighter blur, no reflections, fewer particles. Easier on the battery and on weaker hardware.",
+  "fx.lighting": "Dynamic lighting",
+  "fx.lightingHint": "A light source that follows your cursor and lights surfaces near it.",
+  "fx.reflections": "Glass reflections",
+  "fx.reflectionsHint": "The highlight that moves across a surface as the pointer crosses it.",
+  "fx.particles": "Ambient particles",
+  "fx.particlesHint": "Slow embers drifting up behind the interface.",
+  "fx.blurStrength": "Blur strength",
+  "fx.transparency": "Transparency",
+
+  // appearance
+  "appear.title": "Appearance",
+  "appear.sub": "The material everything is made of — depth, blur, corners and how far surfaces float.",
+  "appear.accent": "Accent colour",
+  "appear.accentSub": "Works with every appearance.",
+  "appear.ember": "Ember Classic",
+  "appear.tahoe": "Tahoe",
+  "appear.minimal": "Minimal",
+  "appear.midnight": "Midnight",
+  "appear.vision": "Vision",
 
   // error + not found
   "err.title": "That didn't load",
@@ -1862,6 +1881,25 @@ const de: Dict = {
   "fx.reduceTitle": "Effekte reduzieren",
   "fx.reduceSub":
     "Weniger Unschärfe, keine Reflexionen, weniger Partikel. Schont Akku und schwächere Hardware.",
+  "fx.lighting": "Dynamisches Licht",
+  "fx.lightingHint": "Eine Lichtquelle, die deinem Zeiger folgt und Flächen in der Nähe beleuchtet.",
+  "fx.reflections": "Glasreflexionen",
+  "fx.reflectionsHint": "Der Glanzpunkt, der über eine Fläche wandert, wenn der Zeiger sie kreuzt.",
+  "fx.particles": "Umgebungspartikel",
+  "fx.particlesHint": "Langsam aufsteigende Glut hinter der Oberfläche.",
+  "fx.blurStrength": "Unschärfe",
+  "fx.transparency": "Transparenz",
+
+  // appearance
+  "appear.title": "Erscheinungsbild",
+  "appear.sub": "Das Material, aus dem alles besteht — Tiefe, Unschärfe, Ecken und wie weit Flächen schweben.",
+  "appear.accent": "Akzentfarbe",
+  "appear.accentSub": "Funktioniert mit jedem Erscheinungsbild.",
+  "appear.ember": "Ember Classic",
+  "appear.tahoe": "Tahoe",
+  "appear.minimal": "Minimal",
+  "appear.midnight": "Midnight",
+  "appear.vision": "Vision",
 
   // error + not found
   "err.title": "Das hat nicht geladen",
