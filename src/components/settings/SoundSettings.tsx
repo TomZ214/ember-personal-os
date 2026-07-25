@@ -4,6 +4,7 @@ import { Volume2, VolumeX } from "lucide-react";
 import { useEmber } from "@/lib/store";
 import { useT } from "@/lib/i18n";
 import { playCue } from "@/lib/sound";
+import { Switch } from "@/components/ui/Switch";
 
 /** Settings → Sound effects: on/off plus a master volume that previews itself. */
 export function SoundSettings() {
@@ -21,20 +22,15 @@ export function SoundSettings() {
           </h2>
           <p className="mt-0.5 text-[13px] text-muted">{t("sound.sub")}</p>
         </div>
-        <label className="flex items-center gap-2">
-          <span className="text-[13px] text-muted">{sound ? t("sound.on") : t("sound.off")}</span>
-          <input
-            type="checkbox"
-            checked={sound}
-            onChange={(e) => {
-              updateSettings({ sound: e.target.checked });
-              // confirm the change with the thing being changed
-              if (e.target.checked) setTimeout(() => playCue("success"), 40);
-            }}
-            className="h-4 w-4 accent-[var(--accent)]"
-            aria-label={t("sound.title")}
-          />
-        </label>
+        <Switch
+          checked={sound}
+          onChange={(v) => {
+            updateSettings({ sound: v });
+            // confirm the change with the thing being changed
+            if (v) setTimeout(() => playCue("success"), 40);
+          }}
+          label={t("sound.title")}
+        />
       </div>
 
       {sound && (
@@ -51,7 +47,7 @@ export function SoundSettings() {
             // doesn't machine-gun the speaker
             onPointerUp={() => playCue("notify")}
             onKeyUp={() => playCue("notify")}
-            className="h-1.5 w-full min-w-0 flex-1 cursor-pointer appearance-none rounded-full bg-white/[0.12] accent-[var(--accent)]"
+            className="ios w-full min-w-0 flex-1"
             aria-label={t("sound.volume")}
           />
           <Volume2 size={15} className="shrink-0 text-muted" />

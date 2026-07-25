@@ -3,6 +3,7 @@
 import { Gauge, Sparkles } from "lucide-react";
 import { useEmber } from "@/lib/store";
 import { useT } from "@/lib/i18n";
+import { Switch } from "@/components/ui/Switch";
 
 /**
  * Settings → Appearance → Effects.
@@ -27,16 +28,11 @@ export function EffectsSettings() {
           </h2>
           <p className="mt-0.5 max-w-[52ch] text-[13px] text-muted">{t("fx.glassSub")}</p>
         </div>
-        <label className="flex items-center gap-2">
-          <span className="text-[13px] text-muted">{glass ? t("fx.on") : t("fx.off")}</span>
-          <input
-            type="checkbox"
-            checked={glass}
-            onChange={(e) => updateSettings({ liquidGlass: e.target.checked })}
-            className="h-4 w-4 accent-[var(--accent)]"
-            aria-label={t("fx.glassTitle")}
-          />
-        </label>
+        <Switch
+          checked={glass}
+          onChange={(v) => updateSettings({ liquidGlass: v })}
+          label={t("fx.glassTitle")}
+        />
       </div>
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.06] pt-4">
@@ -46,16 +42,11 @@ export function EffectsSettings() {
           </h3>
           <p className="mt-0.5 max-w-[52ch] text-[13px] text-muted">{t("fx.reduceSub")}</p>
         </div>
-        <label className="flex items-center gap-2">
-          <span className="text-[13px] text-muted">{reduced ? t("fx.on") : t("fx.off")}</span>
-          <input
-            type="checkbox"
-            checked={reduced}
-            onChange={(e) => updateSettings({ reducedEffects: e.target.checked })}
-            className="h-4 w-4 accent-[var(--accent)]"
-            aria-label={t("fx.reduceTitle")}
-          />
-        </label>
+        <Switch
+          checked={reduced}
+          onChange={(v) => updateSettings({ reducedEffects: v })}
+          label={t("fx.reduceTitle")}
+        />
       </div>
 
       <p className="mt-4 text-xs text-faint">{t("fx.note")}</p>

@@ -789,6 +789,66 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 .prose-ember strong { font-weight: 650; }
 .prose-ember hr { border: none; border-top: 1px solid oklch(1 0 0 / 0.10); margin: 1.2em 0; }
 
+/* ---- iOS-style range slider ----
+   The browser default is a thin line with a platform-shaped thumb that looks
+   nothing like the switch next to it. This gives the track and the thumb the
+   same proportions and the same shadow the Switch knob uses, so a settings row
+   with both reads as one control family.
+
+   -webkit- and -moz- thumbs cannot be combined into one rule: a selector list
+   containing a pseudo-element the engine does not recognise invalidates the
+   whole list, so each has to be declared separately. */
+input[type="range"].ios {
+  appearance: none;
+  height: 26px;
+  background: transparent;
+  cursor: pointer;
+}
+input[type="range"].ios::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: oklch(1 0 0 / 0.13);
+  box-shadow: inset 0 0 0 1px oklch(1 0 0 / 0.06);
+}
+input[type="range"].ios::-moz-range-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: oklch(1 0 0 / 0.13);
+  box-shadow: inset 0 0 0 1px oklch(1 0 0 / 0.06);
+}
+/* the filled portion, which the default control has no concept of */
+input[type="range"].ios::-moz-range-progress {
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--accent);
+}
+input[type="range"].ios::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -8px; /* centres a 20px thumb on a 4px track */
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+  transition: transform 140ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+input[type="range"].ios::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+  transition: transform 140ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+/* the thumb swells under the finger, the same gesture the switch knob makes */
+input[type="range"].ios:active::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+input[type="range"].ios:active::-moz-range-thumb {
+  transform: scale(1.15);
+}
+
 /* ---- skeletons ---- */
 .skeleton {
   border-radius: 8px;

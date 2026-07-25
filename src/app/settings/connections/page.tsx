@@ -29,6 +29,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Input, Select } from "@/components/ui/inputs";
 import { PageHeader } from "@/components/ui/misc";
 import { toast } from "@/components/ui/toast";
+import { Switch } from "@/components/ui/Switch";
 
 export default function ConnectionsPage() {
   return (
@@ -743,14 +744,11 @@ function NotificationsCard() {
         </p>
       ) : subscribed ? (
         <div className="mt-4 flex flex-col gap-3 border-t border-white/[0.06] pt-4">
-          <label className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              checked={prefs.digest}
-              onChange={(e) => setPrefs({ digest: e.target.checked })}
-              className="h-4 w-4 accent-[var(--accent)]"
-            />
-            <span className="flex-1 text-[13px]">{t("conn.notifDigest")}</span>
+          {/* switch on the right, label on the left — the iOS settings order.
+              The time picker sits between them and is not inside the label, so
+              choosing an hour cannot toggle the row. */}
+          <div className="flex items-center gap-3">
+            <label className="flex-1 text-[13px]">{t("conn.notifDigest")}</label>
             <Select
               value={String(prefs.digestHour)}
               onChange={(e) => setPrefs({ digestHour: Number(e.target.value) })}
@@ -762,24 +760,27 @@ function NotificationsCard() {
                 <option key={h} value={h}>{String(h).padStart(2, "0")}:00</option>
               ))}
             </Select>
-          </label>
-          <label className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              checked={prefs.taskReminders}
-              onChange={(e) => setPrefs({ taskReminders: e.target.checked })}
-              className="h-4 w-4 accent-[var(--accent)]"
+            <Switch
+              checked={prefs.digest}
+              onChange={(v) => setPrefs({ digest: v })}
+              label={t("conn.notifDigest")}
             />
+          </div>
+          <label className="flex items-center gap-3">
             <span className="flex-1 text-[13px]">{t("conn.notifTaskRemind")}</span>
+            <Switch
+              checked={prefs.taskReminders}
+              onChange={(v) => setPrefs({ taskReminders: v })}
+              label={t("conn.notifTaskRemind")}
+            />
           </label>
           <label className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              checked={prefs.eventReminders}
-              onChange={(e) => setPrefs({ eventReminders: e.target.checked })}
-              className="h-4 w-4 accent-[var(--accent)]"
-            />
             <span className="flex-1 text-[13px]">{t("conn.notifEventRemind")}</span>
+            <Switch
+              checked={prefs.eventReminders}
+              onChange={(v) => setPrefs({ eventReminders: v })}
+              label={t("conn.notifEventRemind")}
+            />
           </label>
           <p className="text-xs text-faint">
             {t("conn.notifFootnote")}
