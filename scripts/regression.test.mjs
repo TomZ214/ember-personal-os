@@ -206,3 +206,21 @@ test("cloud vault deletion propagates, while older snapshots without a vault fie
   applyCloudData({ vaultBlob: "new-encrypted" });
   assert.equal(localStorage.getItem("vault"), "new-encrypted");
 });
+
+test("report topics count completed reports and suppress related suggestions", () => {
+  const core = sourceLoader()("src/lib/reports/core.js");
+  const rows = [{ status: "completed", topics: ["Online-Banking"] }, { status: "open", topics: ["Sparbuch"] }];
+  assert.equal(core.topicIndex(rows).length, 1);
+  assert.equal(core.unusedTopics(rows).some(t => t.name === "Onlinebanking"), false);
+  assert.equal(core.unusedTopics(rows).some(t => t.name === "pushTAN"), false);
+  assert.equal(core.unusedTopics(rows).some(t => t.name === "Sparbuch"), true);
+});
+
+test("report import validates dates and reads German CSV", () => {
+  const core = sourceLoader()("src/lib/reports/core.js");
+  const rows = core.parseCSV("Nummer;Von;Bis;Thema;Status\n3;01.11.2026;02.11.2026;Online-Banking;abgeschlossen");
+  assert.equal(rows[0].from, "2026-11-01");
+  assert.equal(rows[0].topics[0], "Onlinebanking");
+  assert.throws(() => core.cleanRecord({ topics: ["Test"], from: "2026-11-03", to: "2026-11-01" }));
+  assert.throws(() => core.cleanRecord({ topics: [] }));
+});
