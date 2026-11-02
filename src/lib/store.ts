@@ -41,6 +41,8 @@ function nextTaskOccurrence(task: Task, order: number): Task | null {
     time: next.time ?? task.time,
     repeat: advanceEnd(rule),
     recurrence: undefined, // migrated onto `repeat`
+    // The submission refers to the completed occurrence, not its successor.
+    sharedId: undefined,
     // a fresh run starts with its checklist cleared
     subtasks: task.subtasks.map((s) => ({ ...s, done: false })),
     order,

@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "node --test scripts/regression.test.mjs",
     "bank:keys": "node scripts/enablebanking-keys.mjs",
     "tauri": "tauri",
     "desktop:dev": "tauri dev",

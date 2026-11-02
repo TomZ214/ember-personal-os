@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { create } from "zustand";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import {
@@ -93,8 +93,9 @@ async function push(uid: string): Promise<void> {
 }
 
 /** pull remote and reconcile — the newer side wins */
-async function reconcile(uid: string): Promise<"pulled" | "pushed" | "in-sync"> {
+async function reconcile(uid: string, isCurrent = () => currentUserId === uid): Promise<"pulled" | "pushed" | "in-sync"> {
   const remote: CloudRow | null = await pullCloud(uid);
+  if (!isCurrent()) return "in-sync";
   const local = localStorage.getItem(LAST_SYNC_KEY);
   if (!remote) {
     await pushCloud(uid);
@@ -103,12 +104,13 @@ async function reconcile(uid: string): Promise<"pulled" | "pushed" | "in-sync"> 
   }
   if (!local || remote.updated_at > local) {
     applyingRemote = true;
-    applyCloudData(remote.data);
-    localStorage.setItem(LAST_SYNC_KEY, remote.updated_at);
-    set({ lastSync: remote.updated_at });
-    setTimeout(() => {
+    try {
+      applyCloudData(remote.data);
+      localStorage.setItem(LAST_SYNC_KEY, remote.updated_at);
+      set({ lastSync: remote.updated_at });
+    } finally {
       applyingRemote = false;
-    }, 300);
+    }
     return "pulled";
   }
   return "in-sync";
@@ -118,9 +120,10 @@ export async function cloudSyncNow(): Promise<void> {
   if (!currentUserId) return;
   set({ syncing: true, error: null });
   try {
-    await drainInbox(currentUserId);
-    const outcome = await reconcile(currentUserId);
-    if (outcome === "in-sync") await push(currentUserId);
+    const uid = currentUserId;
+    await reconcile(uid);
+    if (currentUserId === uid) await drainInbox(uid);
+    if (currentUserId === uid) await push(uid);
   } catch (e) {
     set({ error: e instanceof Error ? e.message : String(e) });
   }
@@ -167,11 +170,7 @@ export function cloudItemCount(): number {
 /* ---------------- engine ---------------- */
 
 export function CloudSyncEngine() {
-  const started = useRef(false);
-
   useEffect(() => {
-    if (started.current) return;
-    started.current = true;
     const sb = supabase();
     const configured = cloudConfigured();
 
@@ -183,8 +182,15 @@ export function CloudSyncEngine() {
     let channel: RealtimeChannel | null = null;
     let pushTimer: ReturnType<typeof setTimeout> | null = null;
     let unsubStore: (() => void) | null = null;
+    let disposed = false;
+    let generation = 0;
 
     const stopSync = () => {
+      generation++;
+      if (pushTimer) {
+        clearTimeout(pushTimer);
+        pushTimer = null;
+      }
       if (channel) {
         sb.removeChannel(channel);
         channel = null;
@@ -196,13 +202,19 @@ export function CloudSyncEngine() {
     };
 
     const startSync = (uid: string) => {
+      if (disposed || currentUserId === uid) return;
       stopSync();
       currentUserId = uid;
+      const ownGeneration = generation;
+      const isCurrent = () => !disposed && generation === ownGeneration && currentUserId === uid;
 
-      void reconcile(uid).catch((e) =>
-        set({ error: e instanceof Error ? e.message : String(e) }),
-      );
-      void drainInbox(uid);
+      // Claim family tasks only after the initial snapshot has been applied.
+      // Otherwise the pull can erase tasks already deleted from the inbox.
+      void reconcile(uid, isCurrent).then(() => {
+        if (isCurrent()) return drainInbox(uid);
+      }).catch((e) => {
+        if (isCurrent()) set({ error: e instanceof Error ? e.message : String(e) });
+      });
       // keep this device's push subscription alive server-side
       void refreshPushSubscription(uid).catch(() => {});
 
@@ -219,15 +231,16 @@ export function CloudSyncEngine() {
           { event: "*", schema: "public", table: "os_state", filter: `user_id=eq.${uid}` },
           (payload) => {
             const row = payload.new as CloudRow;
-            if (!row?.data || row.device_id === deviceId()) return;
+            if (!isCurrent() || !row?.data || row.device_id === deviceId()) return;
             applyingRemote = true;
-            applyCloudData(row.data);
-            localStorage.setItem(LAST_SYNC_KEY, row.updated_at);
-            set({ lastSync: row.updated_at });
-            toast("Synced from another device", "info");
-            setTimeout(() => {
+            try {
+              applyCloudData(row.data);
+              localStorage.setItem(LAST_SYNC_KEY, row.updated_at);
+              set({ lastSync: row.updated_at });
+              toast("Synced from another device", "info");
+            } finally {
               applyingRemote = false;
-            }, 300);
+            }
           },
         )
         .subscribe();
@@ -242,6 +255,7 @@ export function CloudSyncEngine() {
 
     const init = setTimeout(async () => {
       const { data } = await sb.auth.getSession();
+      if (disposed) return;
       const s = data.session;
       set({ authLoading: false, signedIn: !!s, email: s?.user.email ?? null });
       if (s) startSync(s.user.id);
@@ -257,11 +271,13 @@ export function CloudSyncEngine() {
     });
 
     return () => {
+      disposed = true;
       clearTimeout(boot);
       clearTimeout(init);
       if (pushTimer) clearTimeout(pushTimer);
       authSub.subscription.unsubscribe();
       stopSync();
+      currentUserId = null;
     };
   }, []);
 

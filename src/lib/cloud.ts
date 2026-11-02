@@ -70,6 +70,7 @@ export function collectCloudData(): CloudData {
 export function applyCloudData(data: CloudData) {
   useEmber.getState().applyCloudState(data);
   if (data.vaultBlob) localStorage.setItem(VAULT_STORAGE_KEY, data.vaultBlob);
+  else if (data.vaultBlob === null) localStorage.removeItem(VAULT_STORAGE_KEY);
 }
 
 export interface CloudRow {
