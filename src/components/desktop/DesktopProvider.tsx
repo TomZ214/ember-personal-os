@@ -15,6 +15,7 @@ import {
 } from "@/lib/desktop";
 import { useT } from "@/lib/i18n";
 import { toast } from "@/components/ui/toast";
+import { WebUpdateNotice } from "./WebUpdateNotice";
 
 /**
  * The desktop runtime layer. On the web this renders nothing but its children.
@@ -94,6 +95,7 @@ export function DesktopProvider({ children }: { children: React.ReactNode }) {
   return (
     <>
       {children}
+      <WebUpdateNotice />
       <AnimatePresence>
         {desktop && update && (
           <UpdateBanner update={update} onDismiss={() => setUpdate(null)} />
