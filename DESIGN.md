@@ -15,7 +15,8 @@ is applied to text or to scrolling content.
 Pointer light is confined to the hovered pane and coalesced through rAF. Reduced
 effects disable its listener. Light positions ease toward the pointer; the rim
 rotates into the light. Neutral surfaces avoid warm tint and heavy outer shadows.
-Touch uses a finite light wave on press and less blur. Motion
+Interior circular reflections and press waves are removed. Interior shine is
+restrained; the approved edge reflections stay unchanged. Touch uses less blur. Motion
 respects the system preference via MotionConfig. Avoid full-page filter animation
 and nested backdrop filters. Real-device 60 FPS is a target, not a measured claim.
 

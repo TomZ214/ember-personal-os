@@ -155,28 +155,6 @@ export function LightingProvider() {
     };
   }, [glass, reduced]);
 
-  // Touch and mouse share a finite light wave; it never shifts content.
-  useEffect(() => {
-    if (!glass || reduced || matchMedia("(prefers-reduced-motion: reduce), (prefers-reduced-transparency: reduce)").matches) return;
-    const timers = new Map<HTMLElement, ReturnType<typeof setTimeout>>();
-    const press = (event: PointerEvent) => {
-      const surface = (event.target as Element)?.closest<HTMLElement>(SURFACES);
-      if (!surface || event.button !== 0) return;
-      const box = surface.getBoundingClientRect();
-      if (!box.width || !box.height) return;
-      surface.style.setProperty("--mx", `${((event.clientX - box.left) / box.width) * 100}%`);
-      surface.style.setProperty("--my", `${((event.clientY - box.top) / box.height) * 100}%`);
-      surface.dataset.glassPulse = "on";
-      clearTimeout(timers.get(surface));
-      timers.set(surface, setTimeout(() => { delete surface.dataset.glassPulse; timers.delete(surface); }, 820));
-    };
-    document.addEventListener("pointerdown", press, { passive: true });
-    return () => {
-      document.removeEventListener("pointerdown", press);
-      timers.forEach((timer, surface) => { clearTimeout(timer); delete surface.dataset.glassPulse; });
-    };
-  }, [glass, reduced]);
-
   // The ambient half of the lighting: one fixed pane carrying a soft bloom at
   // the cursor. It is what makes surfaces *near* the pointer feel lit rather
   // than only the one directly under it — and it costs one composited layer,
