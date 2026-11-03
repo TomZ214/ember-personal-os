@@ -1,6 +1,6 @@
 [package]
 name = "ember-os"
-version = "0.1.6"
+version = "0.1.7"
 description = "EmberOS — your personal operating system"
 authors = ["Ember"]
 edition = "2021"

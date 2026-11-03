@@ -23,3 +23,7 @@ and nested backdrop filters. Real-device 60 FPS is a target, not a measured clai
 Validated: production build, TypeScript, ESLint for application source, regression
 tests; browser views of settings in both appearances, mobile calendar/dialog and
 local mailbox. iPhone-size browser inspection does not replace Safari hardware QA.
+
+Cursor light: a soft 64px-radius glow uses the current theme primary-bright.
+It appears only with mouse movement and fades on pointer exit or window blur.
+It overlays surfaces without intercepting clicks; no interior ring is restored.

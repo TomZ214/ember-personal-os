@@ -427,16 +427,16 @@ h1, h2, h3 {
   box-shadow: none;
 }
 
-/* ---- ambient cursor light ----
-   One composited pane, positioned entirely by --cursor-x / --cursor-y. This
-   is what lights surfaces *near* the pointer rather than only the one under
-   it, at the cost of a single layer instead of per-card work. */
+/* Small, soft theme-colored light centered on the mouse pointer. */
 .cursor-light {
   background: radial-gradient(
-    420px circle at var(--cursor-x) var(--cursor-y),
-    color-mix(in oklch, var(--primary-bright) 4%, transparent),
-    transparent 70%
+    circle 64px at var(--cursor-x) var(--cursor-y),
+    color-mix(in oklch, var(--primary-bright) 15%, transparent) 0%,
+    color-mix(in oklch, var(--primary-bright) 6%, transparent) 35%,
+    transparent 100%
   );
+  opacity: var(--cursor-visible, 0);
+  transition: opacity 160ms ease-out;
   will-change: background;
 }
 
@@ -1028,7 +1028,7 @@ select option { background: var(--surface-solid); color: var(--ink); }
 }
 /* Keep an optical rim without a bloom around every accent control. */
 [data-glass="on"] .glow-brand { box-shadow: 0 5px 15px -8px var(--primary-glow); }
-[data-appearance="light"] .cursor-light { opacity: 0.25; }
+[data-appearance="light"] .cursor-light { opacity: calc(var(--cursor-visible, 0) * .7); }
 
 /* Liquid revision: neutral transmission and moving caustics instead of a
    uniform bright outline. Only the hovered pane updates its light position. */

@@ -64,6 +64,7 @@ export function LightingProvider() {
 
     const frame = () => {
       queued = false;
+      root.style.setProperty("--cursor-visible", "1");
       root.style.setProperty("--cursor-x", `${x}px`);
       root.style.setProperty("--cursor-y", `${y}px`);
 
@@ -133,6 +134,9 @@ export function LightingProvider() {
       magnetsAt = 0;
     };
     const onLeave = () => {
+      cancelAnimationFrame(frameId);
+      queued = false;
+      root.style.setProperty("--cursor-visible", "0");
       clearLit();
       for (const el of magnets) {
         el.style.setProperty("--mag-x", "0px");
@@ -144,6 +148,7 @@ export function LightingProvider() {
     window.addEventListener("scroll", invalidate, { passive: true, capture: true });
     window.addEventListener("resize", invalidate, { passive: true });
     document.addEventListener("pointerleave", onLeave);
+    window.addEventListener("blur", onLeave);
 
     return () => {
       cancelAnimationFrame(frameId);
@@ -151,6 +156,7 @@ export function LightingProvider() {
       window.removeEventListener("scroll", invalidate, true);
       window.removeEventListener("resize", invalidate);
       document.removeEventListener("pointerleave", onLeave);
+      window.removeEventListener("blur", onLeave);
       onLeave();
     };
   }, [glass, reduced]);
@@ -163,7 +169,7 @@ export function LightingProvider() {
   return (
     <div
       aria-hidden
-      className="cursor-light pointer-events-none fixed inset-0 z-0"
+      className="cursor-light pointer-events-none fixed inset-0 z-[80]"
       // the element is inert; everything about it is driven by --cursor-*
     />
   );
