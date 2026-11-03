@@ -259,6 +259,7 @@ export function CommandPalette() {
                 onChange={(e) => setQ(e.target.value)}
                 onKeyDown={onKeyDown}
                 placeholder={tr("cmd.searchPh")}
+                data-bare-focus=""
                 className="h-13 w-full bg-transparent py-4 text-[15px] text-ink placeholder:text-faint focus:outline-none"
                 aria-label={tr("cmd.searchPh")}
               />

@@ -1,29 +1,50 @@
-# Ember optical glass
+# Ember Liquid Glass
 
-The shared `.panel`, `.glass` and `.glass-strong` classes form the surface API.
-Content panes absorb more background detail than their edge reflection; floating
-navigation has a stronger body, and `.glass-dialog` uses the densest material.
-Nested surfaces drop their backdrop pass. Input wells use `--control-fill`.
-All material colors and elevation shadows derive from central CSS tokens.
+The glass is the product's identity. Its single source is the "Liquid Glass
+material system" section in `src/app/globals.css`; components only use the
+surface classes `.panel`, `.glass`, `.glass-strong`, `.glass-edge` and, for
+form fields, `.glass-input`.
 
-Appearance is independent of accent theme and wallpaper: dark, light, or system.
-The optional settings field preserves the existing dark default. Wallpaper scrims
-adapt to appearance; this is bounded contrast adaptation, not per-pixel luminance
-sampling. The edge gradients simulate refraction; no costly displacement shader
-is applied to text or to scrolling content.
+Five layers, bottom to top: the page behind, the blur (`backdrop-filter`), the
+refraction ring (`::before`, a 1px lens edge drawn from `--lens-ring`), the
+specular (`::after`, a tight core plus a wide pool in the theme colour that
+follows the pointer), then the content. Panels carry inset top light and bottom
+shadow for thickness; hover only re-points `--panel-catch` / `--panel-drop`, so
+the bevel survives the lift.
 
-Pointer light is confined to the hovered pane and coalesced through rAF. Reduced
-effects disable its listener. Light positions ease toward the pointer; the rim
-rotates into the light. Neutral surfaces avoid warm tint and heavy outer shadows.
-Interior circular reflections and press waves are removed. Interior shine is
-restrained; the approved edge reflections stay unchanged. Touch uses less blur. Motion
-respects the system preference via MotionConfig. Avoid full-page filter animation
-and nested backdrop filters. Real-device 60 FPS is a target, not a measured claim.
+`--lens-ring` is declared on each surface so the `--lens-angle` LightingProvider
+writes inline resolves per surface. The bright end faces the light: towards the
+pointer while lit, 330deg (top-left, light from above) at rest and on touch.
+Dispersion hues come from `--lens-from` / `--lens-to`, which must stay light
+colours; tide and crimson re-point them because their ramp ends are dark.
 
-Validated: production build, TypeScript, ESLint for application source, regression
-tests; browser views of settings in both appearances, mobile calendar/dialog and
-local mailbox. iPhone-size browser inspection does not replace Safari hardware QA.
+Floating chrome (`.glass-edge`: dock, tab bar, palette, sheets, dropdowns)
+draws the same ring merged with its top light-catch in one `::before`, and gets
+inner thickness through `--tw-inset-shadow`, the slot Tailwind's `shadow-[...]`
+utilities compose into `box-shadow`. Never declare `box-shadow` on chrome: it
+would delete those drop shadows. Glass nested in blurred glass cannot sample
+the page (the parent is a backdrop root), so nested `.glass-strong` goes dense.
 
-Cursor light: a soft 64px-radius glow uses the current theme primary-bright.
-It appears only with mouse movement and fades on pointer exit or window blur.
-It overlays surfaces without intercepting clicks; no interior ring is restored.
+Anything with a `filter` other than `none` is a backdrop root too. The page
+transition in `template.tsx` therefore ends with `filter: none`; leaving
+`blur(0px)` behind silently stops every card from blurring the page.
+
+The ambient cursor light is an 840px pane moved with `translate` (a compositor
+update, no repaint), behind the surfaces at z-0, faded via `--cursor-visible`.
+
+Appearance (dark default, light, system) is independent of theme and
+wallpaper. Light mode re-points tokens in one block at the end of
+`globals.css`, with its own light ambient field and a white glare specular.
+Rules combine as `[data-appearance][data-glass]` because both attributes sit on
+`<html>`.
+
+Safety: reduced effects drops the specular, lowers blur and thins particles;
+glass off makes surfaces opaque, including Tailwind `backdrop-blur` utilities;
+`prefers-reduced-transparency`, `prefers-contrast` (dark and light) and reduced
+motion (CSS and `MotionConfig`) are honoured. Touch fields use 16px text so iOS
+does not zoom.
+
+History: the November 2026 ChatGPT overrides (neutral conic rim, near-invisible
+specular, 64px cursor dot above content, blur-free transitions) flattened the
+material and were removed. The July material is the reference; the refinements
+above were chosen by a four-lens critique with adversarial verification.

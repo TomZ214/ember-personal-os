@@ -58,6 +58,8 @@ export function LightingProvider() {
     const clearLit = () => {
       if (!lit) return;
       lit.style.setProperty("--lit", "0");
+      // back to the rest angle (light from above) so idle panes agree
+      lit.style.removeProperty("--lens-angle");
       lit = null;
       rect = null;
     };
@@ -169,7 +171,7 @@ export function LightingProvider() {
   return (
     <div
       aria-hidden
-      className="cursor-light pointer-events-none fixed inset-0 z-[80]"
+      className="cursor-light pointer-events-none fixed left-0 top-0 z-0"
       // the element is inert; everything about it is driven by --cursor-*
     />
   );

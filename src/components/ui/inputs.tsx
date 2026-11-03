@@ -3,7 +3,7 @@
 import { forwardRef } from "react";
 
 const base =
-  "glass-input w-full rounded-[11px] border border-white/[0.09] bg-white/[0.05] px-3.5 text-sm text-ink placeholder:text-faint transition-colors duration-150 hover:border-white/[0.14] focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/20";
+  "glass-input w-full rounded-[11px] border border-white/[0.09] px-3.5 text-sm text-ink placeholder:text-faint transition-colors duration-150 hover:border-white/[0.14] focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/20";
 
 /* on touch devices autofocus would pop the keyboard the instant a sheet opens,
    which shoves the whole viewport up on iOS — only honor it with a mouse/trackpad */

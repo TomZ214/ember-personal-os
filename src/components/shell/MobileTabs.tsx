@@ -30,7 +30,7 @@ export function MobileTabs() {
         // cleared by offsetting the bar — not by padding its inside. Padding it
         // left a tall dead strip inside the pill on iPhone and pushed the icons
         // up. `max()` keeps the 12px gap on devices without an inset.
-        className="glass-strong glass-edge glass-navigation fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-(--z-sticky) flex items-stretch justify-around rounded-3xl md:hidden"
+        className="glass-strong glass-edge fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-(--z-sticky) flex items-stretch justify-around rounded-3xl shadow-[0_14px_44px_-12px_rgba(0,0,0,0.6)] md:hidden"
       >
         {PRIMARY.map((item) => {
           const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
@@ -99,7 +99,7 @@ export function MobileTabs() {
               onDragEnd={(_, info) => {
                 if (info.offset.y > 90 || info.velocity.y > 500) setAppsOpen(false);
               }}
-              className="glass-strong glass-edge absolute inset-x-0 bottom-0 rounded-t-[28px] px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3"
+              className="glass-strong glass-edge absolute inset-x-0 bottom-0 rounded-t-[28px] px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-16px_60px_-24px_rgba(0,0,0,0.7)]"
             >
               <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/20" />
               <p className="mb-4 text-sm font-medium text-muted">{t("nav.allApps")}</p>

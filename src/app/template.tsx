@@ -53,10 +53,13 @@ export default function Template({ children }: { children: React.ReactNode }) {
       style={{ transformOrigin: origin ? `${origin.x}px ${origin.y}px` : "50% 25%" }}
       initial={
         back
-          ? { opacity: 0, scale: 1.03, filter: "blur(0px)" }
-          : { opacity: 0, scale: 0.985, y: 6, filter: "blur(0px)" }
+          ? { opacity: 0, scale: 1.03, filter: glass ? "blur(7px)" : "blur(4px)" }
+          : { opacity: 0, scale: 0.955, y: 6, filter: glass ? "blur(9px)" : "blur(5px)" }
       }
-      animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
+      // transitionEnd drops the filter entirely: even blur(0px) makes this
+      // wrapper a backdrop root, and every .panel inside it would then blur
+      // only the wrapper's own transparent paint instead of the page
+      animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)", transitionEnd: { filter: "none" } }}
       transition={{ duration: glass ? DURATION.slow : DURATION.base, ease: EASE.out }}
     >
       {sheen && (

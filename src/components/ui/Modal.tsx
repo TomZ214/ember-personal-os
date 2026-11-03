@@ -69,7 +69,7 @@ export function Modal({ open, onClose, title, children, wide }: Props) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 32, scale: 0.98 }}
             transition={{ type: "spring", stiffness: 380, damping: 34 }}
-            className={`glass-strong glass-edge glass-dialog relative flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-3xl shadow-[0_24px_80px_-12px_rgba(0,0,0,0.7)] sm:m-4 sm:max-h-[calc(100dvh-3rem)] sm:rounded-3xl ${wide ? "sm:max-w-2xl" : "sm:max-w-md"}`}
+            className={`glass-strong glass-edge relative flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-3xl shadow-[0_24px_80px_-12px_rgba(0,0,0,0.7)] sm:m-4 sm:max-h-[calc(100dvh-3rem)] sm:rounded-3xl ${wide ? "sm:max-w-2xl" : "sm:max-w-md"}`}
           >
             {/* header stays put — only the form area scrolls, so the top can never drift off-screen */}
             <div className="flex shrink-0 items-center justify-between px-5 pb-4 pt-5 sm:px-6 sm:pt-6">
