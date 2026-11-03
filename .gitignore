@@ -44,3 +44,13 @@ next-env.d.ts
 enablebanking_private.pem
 enablebanking_public.pem
 enablebanking_netlify_key.txt
+
+# Impeccable design tool — installed locally per machine, not part of the app
+/.claude/agents/impeccable-*.md
+/.claude/skills/impeccable/
+/.github/agents/impeccable-*.agent.md
+/.github/hooks/impeccable.json
+/.github/skills/impeccable/
+
+# personal Claude Code settings
+/.claude/settings.local.json
