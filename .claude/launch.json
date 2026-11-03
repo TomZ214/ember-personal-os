@@ -3,16 +3,16 @@
   "configurations": [
     {
       "name": "ember",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
-      "cwd": "E:\\Claude\\personal-os",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["node_modules/next/dist/bin/next", "dev"],
+      "cwd": "E:\\Claude&Codex\\personal-os",
       "port": 3000
     },
     {
       "name": "ember-prod",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "start", "--", "-p", "3001"],
-      "cwd": "E:\\Claude\\personal-os",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["node_modules/next/dist/bin/next", "start", "-p", "3001"],
+      "cwd": "E:\\Claude&Codex\\personal-os",
       "port": 3001
     }
   ]
