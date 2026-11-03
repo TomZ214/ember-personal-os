@@ -40,7 +40,7 @@ export const Button = forwardRef<HTMLButtonElement, Props>(function Button(
          sync with this one. Primary actions only: if everything leans toward
          the cursor, nothing reads as important. */
       data-magnetic={variant === "primary" && !disabled ? "" : undefined}
-      className={`inline-flex select-none items-center justify-center font-medium transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 ${styles[variant]} ${sizes[size]} ${className}`}
+      className={`glass-button inline-flex select-none items-center justify-center font-medium transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 ${styles[variant]} ${sizes[size]} ${className}`}
       {...rest}
     >
       {children}

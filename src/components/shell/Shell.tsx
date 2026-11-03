@@ -1,5 +1,6 @@
 "use client";
 
+import { MotionConfig } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { Celebrations } from "@/components/ui/celebrate";
 import { ThemeApplier } from "@/components/ui/ThemeApplier";
@@ -41,6 +42,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   }
 
   return (
+    <MotionConfig reducedMotion="user">
     <DesktopProvider>
       <ThemeApplier />
       {/* the slowest parallax layer — the wash or picture everything sits on */}
@@ -67,5 +69,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <AlarmEngine />
       {desktop && <ResizeHandles />}
     </DesktopProvider>
+    </MotionConfig>
   );
 }

@@ -11,6 +11,7 @@ import { THEMES, type Theme } from "@/lib/types";
  * the choice is made by looking rather than reading.
  */
 export function ThemePicker() {
+  const appearance = useEmber((s) => s.settings.appearance ?? "dark");
   const theme = useEmber((s) => s.settings.theme ?? "sunset");
   const updateSettings = useEmber((s) => s.updateSettings);
   const t = useT();
@@ -22,6 +23,9 @@ export function ThemePicker() {
       <h2 className="text-[15px] font-semibold">{t("theme.title")}</h2>
       <p className="mt-0.5 text-[13px] text-muted">{t("theme.sub")}</p>
 
+      <div className="mt-4 flex gap-1 rounded-xl bg-black/10 p-1" role="group" aria-label="Appearance">
+        {(["dark", "light", "system"] as const).map(mode => <button key={mode} aria-pressed={appearance === mode} onClick={() => updateSettings({ appearance: mode })} className={`flex-1 rounded-lg px-3 py-2 text-sm transition-colors ${appearance === mode ? "glass text-ink" : "text-muted"}`}>{t(`appearance.${mode}`)}</button>)}
+      </div>
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {THEMES.map((th) => {
           const active = theme === th.id;

@@ -38,7 +38,7 @@ export function LightingProvider() {
   const reduced = useEmber((s) => s.settings.reducedEffects ?? false);
 
   useEffect(() => {
-    if (!glass) return;
+    if (!glass || reduced) return;
     // a cursor light is meaningless without a cursor, and prefers-reduced-motion
     // users have asked for exactly this kind of thing to stop moving
     const fine = window.matchMedia("(pointer: fine)");
@@ -49,6 +49,7 @@ export function LightingProvider() {
     let x = 0;
     let y = 0;
     let queued = false;
+    let frameId = 0;
     let lit: HTMLElement | null = null;
     let rect: DOMRect | null = null;
     let magnets: HTMLElement[] = [];
@@ -122,7 +123,7 @@ export function LightingProvider() {
       y = e.clientY;
       if (!queued) {
         queued = true;
-        requestAnimationFrame(frame);
+        frameId = requestAnimationFrame(frame);
       }
     };
 
@@ -145,13 +146,36 @@ export function LightingProvider() {
     document.addEventListener("pointerleave", onLeave);
 
     return () => {
+      cancelAnimationFrame(frameId);
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("scroll", invalidate, true);
       window.removeEventListener("resize", invalidate);
       document.removeEventListener("pointerleave", onLeave);
       onLeave();
     };
-  }, [glass]);
+  }, [glass, reduced]);
+
+  // Touch and mouse share a finite light wave; it never shifts content.
+  useEffect(() => {
+    if (!glass || reduced || matchMedia("(prefers-reduced-motion: reduce), (prefers-reduced-transparency: reduce)").matches) return;
+    const timers = new Map<HTMLElement, ReturnType<typeof setTimeout>>();
+    const press = (event: PointerEvent) => {
+      const surface = (event.target as Element)?.closest<HTMLElement>(SURFACES);
+      if (!surface || event.button !== 0) return;
+      const box = surface.getBoundingClientRect();
+      if (!box.width || !box.height) return;
+      surface.style.setProperty("--mx", `${((event.clientX - box.left) / box.width) * 100}%`);
+      surface.style.setProperty("--my", `${((event.clientY - box.top) / box.height) * 100}%`);
+      surface.dataset.glassPulse = "on";
+      clearTimeout(timers.get(surface));
+      timers.set(surface, setTimeout(() => { delete surface.dataset.glassPulse; timers.delete(surface); }, 820));
+    };
+    document.addEventListener("pointerdown", press, { passive: true });
+    return () => {
+      document.removeEventListener("pointerdown", press);
+      timers.forEach((timer, surface) => { clearTimeout(timer); delete surface.dataset.glassPulse; });
+    };
+  }, [glass, reduced]);
 
   // The ambient half of the lighting: one fixed pane carrying a soft bloom at
   // the cursor. It is what makes surfaces *near* the pointer feel lit rather

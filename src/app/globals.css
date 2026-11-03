@@ -920,3 +920,151 @@ input[type="range"].ios:active::-moz-range-thumb {
     outline-width: 3px;
   }
 }
+
+/* Optical material system: absorbent body, polished rim, reflected light.
+   Existing panel/glass classes are the reusable surface API across modules. */
+:root {
+  --surface-body: oklch(0.16 0 0 / 0.28);
+  --surface-floating: oklch(0.16 0 0 / 0.60);
+  --surface-modal: oklch(0.18 0.006 27 / 0.92);
+  --surface-solid: oklch(0.18 0.006 27);
+  --surface-edge: oklch(1 0 0 / 0.12);
+  --surface-shadow: oklch(0 0 0 / 0.24);
+  --surface-highlight: oklch(1 0 0 / 0.10);
+  --control-fill: oklch(0.08 0.004 27 / 0.24);
+  --control-edge: oklch(1 0 0 / 0.15);
+  --glass-bg-strong: var(--surface-floating);
+  color-scheme: dark;
+}
+[data-glass="on"] .panel {
+  background: linear-gradient(155deg, var(--surface-highlight), transparent 38%), var(--surface-body);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.45);
+  box-shadow: inset 0 1px 0 var(--surface-edge), inset 0 -1px 0 oklch(0 0 0 / 0.18),
+    0 4px 8px -5px var(--surface-shadow), 0 22px 44px -26px var(--surface-shadow);
+}
+[data-glass="on"] .glass-strong {
+  background: linear-gradient(145deg, var(--surface-highlight), transparent 42%), var(--surface-floating);
+  border-color: var(--surface-edge);
+}
+[data-glass="on"] .glass-dialog { --surface-floating: var(--surface-modal); }
+[data-glass="on"] .glass-navigation {
+  box-shadow: inset 0 1px 0 var(--surface-edge), inset 0 -1px 0 oklch(0 0 0 / 0.2),
+    0 8px 16px -8px var(--surface-shadow), 0 24px 52px -20px var(--surface-shadow);
+}
+[data-glass="on"] :is(.panel,.glass,.glass-strong):not(.glass-edge)::before {
+  background: linear-gradient(var(--lens-angle,145deg), oklch(1 0 0 / 0.55), var(--glass-lens) 16%,
+    transparent 38%, transparent 63%, color-mix(in oklch,var(--primary-bright) 22%,transparent) 88%, oklch(1 0 0 / 0.3));
+  opacity: calc(0.72 + var(--lit) * 0.28);
+}
+[data-glass="on"] :is(.panel,.glass,.glass-strong)::after {
+  background: radial-gradient(ellipse 240px 110px at var(--mx) var(--my), oklch(1 0 0 / 0.10), transparent 72%),
+    radial-gradient(ellipse 420px 240px at var(--mx) var(--my), color-mix(in oklch,var(--glass-spec) 7%,transparent), transparent 75%);
+  opacity: calc(0.25 + var(--lit) * 0.75);
+}
+[data-glass="on"] .glass-edge::before {
+  inset: 0 4% auto;
+  background: linear-gradient(90deg, transparent, var(--surface-edge) 18%, oklch(1 0 0 / 0.52) 42%, var(--glass-lens) 70%, transparent);
+}
+/* A second pane inside a pane needs a boundary, not another backdrop pass. */
+[data-glass="on"] :is(.panel,.glass-strong) :is(.panel,.glass) {
+  backdrop-filter: none;
+  background: var(--control-fill);
+  box-shadow: inset 0 1px 0 var(--surface-edge);
+}
+.glass-input {
+  background: var(--control-fill);
+  border-color: var(--control-edge);
+  box-shadow: inset 0 1px 3px oklch(0 0 0 / 0.08);
+  caret-color: var(--accent);
+}
+select option { background: var(--surface-solid); color: var(--ink); }
+.glass-button { box-shadow: inset 0 1px 0 var(--surface-edge), 0 3px 6px -4px var(--surface-shadow); }
+.glass-button:disabled { box-shadow: none; }
+@media (hover: hover) and (pointer: fine) {
+  .glass-button:not(:disabled):hover { box-shadow: inset 0 1px 0 var(--surface-edge), 0 6px 12px -7px var(--surface-shadow); }
+}
+[data-appearance="light"] {
+  color-scheme: light;
+  --bg: oklch(0.97 0.003 250); --bg-deep: oklch(0.94 0.005 250);
+  --ink: oklch(0.23 0.018 27); --muted: oklch(0.40 0.018 27); --faint: oklch(0.46 0.015 27);
+  --accent: oklch(0.45 0.12 35);
+  --surface-body: oklch(1 0 0 / 0.42);
+  --surface-floating: oklch(1 0 0 / 0.68);
+  --surface-modal: oklch(0.99 0.003 75 / 0.97);
+  --surface-solid: oklch(0.98 0.005 75);
+  --surface-edge: oklch(1 0 0 / 0.85);
+  --surface-shadow: oklch(0.3 0.01 250 / 0.10);
+  --surface-highlight: oklch(1 0 0 / 0.4);
+  --control-fill: oklch(0.65 0.02 27 / 0.08);
+  --control-edge: oklch(0.3 0.02 27 / 0.20);
+  --glass-bg: oklch(1 0 0 / 0.6);
+  --glass-border: var(--control-edge); --glass-border-strong: var(--control-edge);
+}
+[data-appearance="light"] .wallpaper-scrim { background: linear-gradient(180deg, #f2f6fa80, #f2f6fab3) !important; }
+[data-appearance="light"] .ambient { opacity: 0.32; }
+[data-appearance="light"] .panel { border-color: var(--control-edge); }
+[data-appearance="light"] [data-glass="off"] .panel,
+[data-appearance="light"][data-glass="off"] :is(.panel,.glass,.glass-strong) { background: var(--surface-solid); }
+[data-appearance="light"] input[role="switch"] + span { border: 1px solid var(--control-edge); }
+@media (pointer: coarse) {
+  :root { --glass-blur: 12px; }
+  [data-glass="on"] :is(.panel,.glass,.glass-strong)::after { opacity: 0.35; }
+  .glass-button { min-height: 44px; }
+  input.glass-input, select.glass-input, textarea.glass-input { font-size: 16px; }
+}
+[data-fx="reduced"] :is(.panel,.glass,.glass-strong) { backdrop-filter: blur(8px); }
+[data-glass="off"] :is(.panel,.glass,.glass-strong) { backdrop-filter: none; }
+@media (prefers-reduced-transparency: reduce) {
+  [data-glass="on"] :is(.panel,.glass,.glass-strong) { background: var(--surface-solid); backdrop-filter: none; }
+  [data-glass="on"] :is(.panel,.glass,.glass-strong)::after { display: none; }
+}
+@media (prefers-contrast: more) {
+  :is(.panel,.glass,.glass-strong,.glass-input) { border-color: var(--ink); }
+}
+[data-appearance="light"] {
+  --success: oklch(0.42 0.10 155);
+  --info: oklch(0.44 0.10 230);
+  --warning: oklch(0.46 0.10 65);
+}
+/* Keep an optical rim without a bloom around every accent control. */
+[data-glass="on"] .glow-brand { box-shadow: 0 5px 15px -8px var(--primary-glow); }
+[data-appearance="light"] .cursor-light { opacity: 0.25; }
+
+/* Liquid revision: neutral transmission and moving caustics instead of a
+   uniform bright outline. Only the hovered pane updates its light position. */
+@property --lens-angle { syntax: "<angle>"; inherits: true; initial-value: 145deg; }
+@property --mx { syntax: "<percentage>"; inherits: false; initial-value: 50%; }
+@property --my { syntax: "<percentage>"; inherits: false; initial-value: 0%; }
+[data-glass="on"] :is(.panel,.glass,.glass-strong) {
+  transition: --lens-angle 480ms cubic-bezier(.16,1,.3,1),
+    --mx 180ms ease-out, --my 180ms ease-out;
+}
+[data-glass="on"] :is(.panel,.glass,.glass-strong)::after { --mx: inherit; --my: inherit; }
+[data-glass="on"] .panel {
+  box-shadow: inset 0 1px 0 oklch(1 0 0 / .08), 0 10px 28px -22px var(--surface-shadow);
+}
+[data-glass="on"] :is(.panel,.glass,.glass-strong):not(.glass-edge)::before {
+  background: conic-gradient(from var(--lens-angle) at 50% 50%, transparent 0deg,
+    oklch(1 0 0 / .55) 28deg, oklch(.88 .035 230 / .20) 48deg,
+    transparent 85deg 170deg, oklch(1 0 0 / .28) 205deg,
+    oklch(.92 .025 70 / .16) 225deg, transparent 260deg);
+  opacity: calc(.35 + var(--lit) * .65);
+}
+[data-glass="on"] :is(.panel,.glass,.glass-strong)::after {
+  background:
+    radial-gradient(ellipse 260px 160px at var(--mx) var(--my), transparent 46%, oklch(1 0 0 / .10) 49%, oklch(.9 .025 230 / .05) 52%, transparent 58%),
+    linear-gradient(var(--lens-angle), transparent 25%, oklch(1 0 0 / .035) 43%, oklch(1 0 0 / .10) 48%, transparent 56%);
+  opacity: calc(.12 + var(--lit) * .88);
+  transition: opacity 500ms ease-out;
+}
+@keyframes glass-wave {
+  0% { opacity: .65; transform: scale(.97); }
+  45% { opacity: 1; }
+  100% { opacity: .12; transform: scale(1); }
+}
+[data-glass="on"] [data-glass-pulse]::after { animation: glass-wave 800ms cubic-bezier(.16,1,.3,1); }
+[data-appearance="light"] .panel { border-color: oklch(0 0 0 / .045); }
+@media (prefers-reduced-motion: reduce) {
+  [data-glass="on"] :is(.panel,.glass,.glass-strong) { transition: none; }
+  [data-glass="on"] [data-glass-pulse]::after { animation: none; }
+}

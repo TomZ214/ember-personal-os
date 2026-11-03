@@ -39,7 +39,7 @@ export function Wallpaper() {
       {/* the scrim: enough to guarantee text contrast, not so much that the
           picture becomes a grey rectangle */}
       <div
-        className="absolute inset-0"
+        className="wallpaper-scrim absolute inset-0"
         style={{
           background: paper.dark
             ? "linear-gradient(180deg, oklch(0 0 0 / 0.35), oklch(0 0 0 / 0.55))"

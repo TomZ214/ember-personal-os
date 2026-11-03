@@ -53,8 +53,8 @@ export default function Template({ children }: { children: React.ReactNode }) {
       style={{ transformOrigin: origin ? `${origin.x}px ${origin.y}px` : "50% 25%" }}
       initial={
         back
-          ? { opacity: 0, scale: 1.03, filter: glass ? "blur(7px)" : "blur(4px)" }
-          : { opacity: 0, scale: 0.955, y: 6, filter: glass ? "blur(9px)" : "blur(5px)" }
+          ? { opacity: 0, scale: 1.03, filter: "blur(0px)" }
+          : { opacity: 0, scale: 0.985, y: 6, filter: "blur(0px)" }
       }
       animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
       transition={{ duration: glass ? DURATION.slow : DURATION.base, ease: EASE.out }}

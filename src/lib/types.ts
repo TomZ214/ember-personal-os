@@ -257,6 +257,7 @@ export const WALLPAPERS: { id: WallpaperId; file?: string; thumb?: string; dark:
 ];
 
 export interface Settings {
+  appearance?: "dark" | "light" | "system";
   userName: string;
   focusMinutes: number;
   breakMinutes: number;

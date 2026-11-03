@@ -16,6 +16,7 @@ import { useEmber } from "@/lib/store";
  * including when a change arrives from cloud sync on another device.
  */
 export function ThemeApplier() {
+  const appearance = useEmber((s) => s.settings.appearance ?? "dark");
   const theme = useEmber((s) => s.settings.theme ?? "sunset");
   // both default ON — the glass look is the product, not an opt-in
   const glass = useEmber((s) => s.settings.liquidGlass ?? true);
@@ -35,5 +36,11 @@ export function ThemeApplier() {
     document.documentElement.dataset.fx = reduced ? "reduced" : "full";
   }, [reduced]);
 
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const apply = () => { document.documentElement.dataset.appearance = appearance === "system" ? (media.matches ? "dark" : "light") : appearance; };
+    apply(); media.addEventListener("change", apply);
+    return () => media.removeEventListener("change", apply);
+  }, [appearance]);
   return null;
 }
