@@ -44,6 +44,22 @@ export async function saveReports(updates: Report[], deleted?: string): Promise<
     tx.onabort = () => { db.close(); reject(error ?? tx.error); };
   });
 }
+const meta = async <T,>(mode: IDBTransactionMode, run: (store: IDBObjectStore) => IDBRequest<T> | void): Promise<T | undefined> => {
+  const db = await open();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('meta', mode);
+    const req = run(tx.objectStore('meta'));
+    tx.oncomplete = () => { db.close(); resolve(req ? req.result : undefined); };
+    tx.onabort = () => { db.close(); reject(tx.error); };
+  });
+};
+/** ISO timestamp of the last backup made on this device, if any. */
+export const lastBackup = async () => (await meta<string | undefined>('readonly', store => store.get('lastBackup'))) ?? null;
+const decode = (data: string) => {
+  const binary = atob(data), bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+};
 export async function attachment(file: File): Promise<Attachment> {
   if (!/\.(docx|doc|pdf|txt)$/i.test(file.name)) throw new Error('Bitte DOCX, DOC, PDF oder TXT auswählen.');
   if (file.size > LIMIT) throw new Error('Maximal 20 MB pro Datei.');
@@ -59,23 +75,30 @@ export async function exportBackup(records: Report[]) {
     for (let i = 0; i < bytes.length; i += 8192) binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
     return { name: a.name, type: a.blob.type, data: btoa(binary) };
   })) })));
-  download(new Blob([JSON.stringify({ format: 'berichtsheft-checker', version: 1, records: rows })], { type: 'application/json' }), 'berichtsheft-backup.json');
+  const now = new Date().toISOString();
+  download(new Blob([JSON.stringify({ format: 'berichtsheft-checker', version: 1, exportedAt: now, records: rows })], { type: 'application/json' }), `berichtsheft-backup-${now.slice(0, 10)}.json`);
+  await meta('readwrite', store => { store.put(now, 'lastBackup'); });
+  return now;
 }
 export async function importReports(files: File[], existing: Report[]): Promise<Report[]> {
   if (files.length > 50 || files.reduce((n, f) => n + f.size, 0) > 150 * 1024 * 1024) throw new Error('Maximal 50 Dateien / 150 MB pro Import.');
   const rows: Report[] = [], docs: Report[] = [];
   for (const file of files) {
-    const ext = file.name.split('.').pop()?.toLowerCase();
+    const ext = file.name.includes('.') ? file.name.split('.').pop()?.toLowerCase() : '';
+    if (!['json', 'csv', 'docx', 'doc', 'pdf', 'txt'].includes(ext ?? '')) throw new Error(`${file.name}: Dateityp wird nicht unterstützt.`);
     if (ext !== 'json' && file.size > LIMIT) throw new Error('Maximal 20 MB pro Datei.');
     if (ext === 'json') {
-      const data = JSON.parse(await file.text());
+      let data;
+      try { data = JSON.parse(await file.text()); } catch { throw new Error(`${file.name} ist keine gültige Backup-Datei.`); }
       if (data.format !== 'berichtsheft-checker' || data.version !== 1 || !Array.isArray(data.records) || data.records.length > 5000) throw new Error('Ungültiges Berichtsheft-Backup.');
       for (const raw of data.records) {
         const r: Report = { ...cleanRecord(raw), id: typeof raw.id === 'string' && /^(?:[a-f0-9-]{32,36}|bestand-2026-10-26-\d+)$/i.test(raw.id) ? raw.id : crypto.randomUUID(), attachments: [] };
         if (raw.attachments && !Array.isArray(raw.attachments)) throw new Error('Ungültige Anhänge.');
         for (const a of raw.attachments ?? []) {
           if (typeof a.data !== 'string' || a.data.length > LIMIT * 1.34 || typeof a.name !== 'string') throw new Error('Ungültiger Anhang.');
-          const blob = new Blob([Uint8Array.from(atob(a.data), c => c.charCodeAt(0))], { type: typeof a.type === 'string' ? a.type : '' });
+          let bytes: Uint8Array<ArrayBuffer>;
+          try { bytes = decode(a.data); } catch { throw new Error(`Anhang „${a.name}“ ist beschädigt.`); }
+          const blob = new Blob([bytes], { type: typeof a.type === 'string' ? a.type : '' });
           if (blob.size > LIMIT) throw new Error('Anhang größer als 20 MB.');
           r.attachments.push({ id: crypto.randomUUID(), name: a.name.slice(0, 300), blob });
         }

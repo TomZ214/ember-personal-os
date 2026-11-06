@@ -224,3 +224,27 @@ test("report import validates dates and reads German CSV", () => {
   assert.throws(() => core.cleanRecord({ topics: ["Test"], from: "2026-11-03", to: "2026-11-01" }));
   assert.throws(() => core.cleanRecord({ topics: [] }));
 });
+
+test("report checker finds numbering gaps, next defaults and topic conflicts", () => {
+  const core = sourceLoader()("src/lib/reports/core.js");
+  const rows = [
+    { id: "a", number: "1", to: "2026-10-30", status: "completed", topics: ["Onlinebanking"] },
+    { id: "b", number: "2", status: "completed", topics: ["Sparbuch"] },
+    { id: "c", number: "2", status: "open", topics: ["Kreditkarte"] },
+    { id: "d", number: "5", status: "open", topics: ["Tagesgeld"] },
+  ];
+  const issues = core.numberingIssues(rows);
+  assert.deepEqual([...issues.missing], [3, 4]);
+  assert.deepEqual([...issues.duplicates], [2]);
+  const next = core.nextReportDefaults(rows);
+  assert.equal(next.number, "6");
+  assert.equal(next.from, "2026-11-02");
+  assert.equal(next.to, "2026-11-06");
+  assert.deepEqual(rows.slice().sort(core.compareReports).map(r => r.id), ["d", "b", "c", "a"]);
+  const conflicts = core.topicConflicts("Online-Banking; pushTAN; Bausparen", rows);
+  assert.equal(conflicts.length, 2);
+  assert.equal(conflicts[0].same[0].id, "a");
+  assert.equal(conflicts[1].related[0].name, "Onlinebanking");
+  assert.equal(core.topicConflicts("Onlinebanking", rows, "a").length, 0);
+  assert.ok(core.searchable({ topics: ["SEPA-Überweisung"], attachments: [{ name: "KW44.docx" }] }).includes("uberweisung"));
+});
