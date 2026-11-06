@@ -140,3 +140,60 @@ export function filenameTopic(name){return String(name).replace(/\.[^.]+$/,'').r
 export function inferTopics(heading,filename){const title=String(heading||'').trim();if(title&&title.length<160){const exact=canonical(title);if(aliases.has(normalize(exact)))return [exact];return splitTopics(title);}return splitTopics(filenameTopic(filename));}
 export function recordSignature(r){return JSON.stringify([r.number||'',r.from||'',r.to||'',normalize(r.department),(r.topics||[]).map(t=>normalize(canonical(t))).sort(),r.status||'completed',(r.attachments||[]).map(a=>a.hash||a.name).sort(),r.reference||'']);}
 export function cleanRecord(raw){if(!raw||typeof raw!=='object')throw new Error('Ungültiger Bericht im Backup.');const text=(key,max)=>String(raw[key]||'').slice(0,max);const topics=splitTopics(Array.isArray(raw.topics)?raw.topics:raw.topics||raw.topic||'');if(!topics.length||topics.length>50||topics.some(t=>t.length>500))throw new Error('Ein Bericht enthält keine gültigen Themen.');const from=dateValue(raw.from),to=dateValue(raw.to);if(from&&to&&from>to)throw new Error('Das Enddatum liegt vor dem Anfangsdatum.');if(raw.status&&!['open','completed'].includes(raw.status))throw new Error('Ein Bericht hat einen ungültigen Status.');return {number:text('number',40),from,to,department:text('department',150),topics,status:raw.status||'completed',note:text('note',2000),reference:text('reference',300),attachments:[]};}
+// ---------------------------------------------------------------------------
+// Checker helpers used by the Berichtsheft page. Pure functions, no storage.
+
+const naturalNumber = value => /^\s*\d+\s*$/.test(String(value || '')) ? Number(value) : null;
+
+// Newest first: report number (natural order) wins, the period breaks ties and
+// orders reports without a number.
+export function compareReports(a, b) {
+ const na = String(a.number || ''), nb = String(b.number || '');
+ if (na && nb && na !== nb) return nb.localeCompare(na, 'de', { numeric: true });
+ if (!!na !== !!nb) return na ? -1 : 1;
+ return String(b.from || b.to || '').localeCompare(String(a.from || a.to || ''));
+}
+
+// Gaps and duplicates in the numeric report numbers. Huge jumps (a typo such as
+// 1000 after 12) are reported as a count so the list stays readable.
+export function numberingIssues(records) {
+ const counts = new Map();
+ for (const r of records) { const n = naturalNumber(r.number); if (n !== null) counts.set(n, (counts.get(n) || 0) + 1); }
+ const numbers = [...counts.keys()].sort((a, b) => a - b), missing = [];
+ let missingCount = 0;
+ for (let i = 1; i < numbers.length; i++) for (let n = numbers[i - 1] + 1; n < numbers[i]; n++) { missingCount++; if (missing.length < 20) missing.push(n); }
+ return { missing, missingCount, duplicates: numbers.filter(n => counts.get(n) > 1) };
+}
+
+const isoDay = date => date.toISOString().slice(0, 10);
+
+// Defaults for a new report: the next number and the working week after the
+// latest documented period.
+export function nextReportDefaults(records) {
+ const numbers = records.map(r => naturalNumber(r.number)).filter(n => n !== null);
+ const latest = records.map(r => r.to || r.from).filter(Boolean).sort().pop();
+ const defaults = { number: numbers.length ? String(Math.max(...numbers) + 1) : '', from: '', to: '' };
+ if (latest) {
+  const monday = new Date(`${latest}T00:00:00Z`);
+  do monday.setUTCDate(monday.getUTCDate() + 1); while (monday.getUTCDay() !== 1);
+  const friday = new Date(monday); friday.setUTCDate(friday.getUTCDate() + 4);
+  defaults.from = isoDay(monday); defaults.to = isoDay(friday);
+ }
+ return defaults;
+}
+
+// For each entered topic: completed reports that already cover exactly this
+// topic, and covered topics that share a content area with it.
+export function topicConflicts(topics, records, excludeId) {
+ const index = topicIndex(records.filter(r => r.id !== excludeId));
+ return splitTopics(topics).map(topic => {
+  const key = normalize(topic), areas = topicContentAreas(topic);
+  const same = index.find(t => t.key === key);
+  const related = index.filter(t => t.key !== key && areasIntersect(areas, topicContentAreas(t.name)));
+  return { topic, same: same ? same.records : [], related };
+ }).filter(c => c.same.length || c.related.length);
+}
+
+export function searchable(r) {
+ return normalize([r.number, ...(r.topics || []), r.department, r.note, r.reference, ...(r.attachments || []).map(a => a.name)].join(' '));
+}

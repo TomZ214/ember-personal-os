@@ -1,9 +1,16 @@
 import type { Report } from "./types";
+type TopicEntry = { key: string; name: string; records: Report[] };
+export function normalize(value: unknown): string;
 export function cleanRecord(raw: unknown): Omit<Report, "id">;
 export function splitTopics(value: string | string[]): string[];
 export function recordSignature(record: Report): string;
 export function parseCSV(text: string): Omit<Report, "id">[];
 export function inferTopics(heading: string, filename: string): string[];
-export function topicIndex(records: Report[]): { key: string; name: string; records: Report[] }[];
+export function topicIndex(records: Report[]): TopicEntry[];
 export function unusedTopics(records: Report[]): { name: string; category: string; idea: string }[];
-export function similarTopics(index: ReturnType<typeof topicIndex>): string[][];
+export function similarTopics(index: TopicEntry[]): string[][];
+export function compareReports(a: Report, b: Report): number;
+export function numberingIssues(records: Report[]): { missing: number[]; missingCount: number; duplicates: number[] };
+export function nextReportDefaults(records: Report[]): { number: string; from: string; to: string };
+export function topicConflicts(topics: string | string[], records: Report[], excludeId?: string): { topic: string; same: Report[]; related: TopicEntry[] }[];
+export function searchable(record: Report): string;
