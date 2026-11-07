@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { create } from "zustand";
-import type { RealtimeChannel } from "@supabase/supabase-js";
+import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
 import {
   applyCloudData, claimInboxTasks, cloudConfigured, collectCloudData, deviceId, LAST_SYNC_KEY,
   pullCloud, pushCloud, reconcileSharedTasks, supabase, type CloudRow,
@@ -50,7 +50,7 @@ let applyingRemote = false;
 /* ---------------- actions ---------------- */
 
 export async function cloudSignIn(email: string): Promise<string | null> {
-  const sb = supabase();
+  const sb = await supabase();
   if (!sb) return "Cloud sync is not configured";
   const { error } = await sb.auth.signInWithOtp({
     email,
@@ -65,7 +65,7 @@ export async function cloudSignIn(email: string): Promise<string | null> {
  * standalone app can't see — a code typed inside the app works everywhere.
  */
 export async function cloudVerifyCode(email: string, code: string): Promise<string | null> {
-  const sb = supabase();
+  const sb = await supabase();
   if (!sb) return "Cloud sync is not configured";
   const { error } = await sb.auth.verifyOtp({
     email: email.trim(),
@@ -76,7 +76,7 @@ export async function cloudVerifyCode(email: string, code: string): Promise<stri
 }
 
 export async function cloudSignOut(): Promise<void> {
-  await supabase()?.auth.signOut();
+  await (await supabase())?.auth.signOut();
   localStorage.removeItem(LAST_SYNC_KEY);
   set({ lastSync: null });
 }
@@ -171,115 +171,135 @@ export function cloudItemCount(): number {
 
 export function CloudSyncEngine() {
   useEffect(() => {
-    const sb = supabase();
     const configured = cloudConfigured();
 
     const boot = setTimeout(() => {
       set({ configured, authLoading: configured, lastSync: localStorage.getItem(LAST_SYNC_KEY) });
     }, 0);
-    if (!sb) return () => clearTimeout(boot);
+    if (!configured) return () => clearTimeout(boot);
 
-    let channel: RealtimeChannel | null = null;
-    let pushTimer: ReturnType<typeof setTimeout> | null = null;
-    let unsubStore: (() => void) | null = null;
-    let disposed = false;
-    let generation = 0;
-
-    const stopSync = () => {
-      generation++;
-      if (pushTimer) {
-        clearTimeout(pushTimer);
-        pushTimer = null;
-      }
-      if (channel) {
-        sb.removeChannel(channel);
-        channel = null;
-      }
-      if (unsubStore) {
-        unsubStore();
-        unsubStore = null;
-      }
-    };
-
-    const startSync = (uid: string) => {
-      if (disposed || currentUserId === uid) return;
-      stopSync();
-      currentUserId = uid;
-      const ownGeneration = generation;
-      const isCurrent = () => !disposed && generation === ownGeneration && currentUserId === uid;
-
-      // Claim family tasks only after the initial snapshot has been applied.
-      // Otherwise the pull can erase tasks already deleted from the inbox.
-      void reconcile(uid, isCurrent).then(() => {
-        if (isCurrent()) return drainInbox(uid);
-      }).catch((e) => {
-        if (isCurrent()) set({ error: e instanceof Error ? e.message : String(e) });
+    // the client library is loaded on demand (see supabase()); if this effect
+    // is torn down before it arrives — Strict Mode does exactly that — the
+    // engine never starts
+    let cancelled = false;
+    let teardown: (() => void) | null = null;
+    void supabase()
+      .then((sb) => {
+        if (sb && !cancelled) teardown = startEngine(sb);
+      })
+      .catch((e) => {
+        if (!cancelled) set({ authLoading: false, error: e instanceof Error ? e.message : String(e) });
       });
-      // keep this device's push subscription alive server-side
-      void refreshPushSubscription(uid).catch(() => {});
-
-      // realtime: other devices' pushes land here instantly
-      channel = sb
-        .channel(`os_state_${uid}`)
-        .on(
-          "postgres_changes",
-          { event: "INSERT", schema: "public", table: "task_inbox", filter: `user_id=eq.${uid}` },
-          () => void drainInbox(uid),
-        )
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "os_state", filter: `user_id=eq.${uid}` },
-          (payload) => {
-            const row = payload.new as CloudRow;
-            if (!isCurrent() || !row?.data || row.device_id === deviceId()) return;
-            applyingRemote = true;
-            try {
-              applyCloudData(row.data);
-              localStorage.setItem(LAST_SYNC_KEY, row.updated_at);
-              set({ lastSync: row.updated_at });
-              toast("Synced from another device", "info");
-            } finally {
-              applyingRemote = false;
-            }
-          },
-        )
-        .subscribe();
-
-      // local changes → debounced push
-      unsubStore = useEmber.subscribe(() => {
-        if (applyingRemote) return;
-        if (pushTimer) clearTimeout(pushTimer);
-        pushTimer = setTimeout(() => void push(uid), 2500);
-      });
-    };
-
-    const init = setTimeout(async () => {
-      const { data } = await sb.auth.getSession();
-      if (disposed) return;
-      const s = data.session;
-      set({ authLoading: false, signedIn: !!s, email: s?.user.email ?? null });
-      if (s) startSync(s.user.id);
-    }, 0);
-
-    const { data: authSub } = sb.auth.onAuthStateChange((_evt, s) => {
-      set({ authLoading: false, signedIn: !!s, email: s?.user.email ?? null });
-      if (s && currentUserId !== s.user.id) startSync(s.user.id);
-      if (!s) {
-        currentUserId = null;
-        stopSync();
-      }
-    });
 
     return () => {
-      disposed = true;
+      cancelled = true;
       clearTimeout(boot);
-      clearTimeout(init);
-      if (pushTimer) clearTimeout(pushTimer);
-      authSub.subscription.unsubscribe();
-      stopSync();
-      currentUserId = null;
+      teardown?.();
     };
   }, []);
 
   return null;
+}
+
+/** subscribe to auth, realtime and local changes; returns the cleanup */
+function startEngine(sb: SupabaseClient): () => void {
+  let channel: RealtimeChannel | null = null;
+  let pushTimer: ReturnType<typeof setTimeout> | null = null;
+  let unsubStore: (() => void) | null = null;
+  let disposed = false;
+  let generation = 0;
+
+  const stopSync = () => {
+    generation++;
+    if (pushTimer) {
+      clearTimeout(pushTimer);
+      pushTimer = null;
+    }
+    if (channel) {
+      sb.removeChannel(channel);
+      channel = null;
+    }
+    if (unsubStore) {
+      unsubStore();
+      unsubStore = null;
+    }
+  };
+
+  const startSync = (uid: string) => {
+    if (disposed || currentUserId === uid) return;
+    stopSync();
+    currentUserId = uid;
+    const ownGeneration = generation;
+    const isCurrent = () => !disposed && generation === ownGeneration && currentUserId === uid;
+
+    // Claim family tasks only after the initial snapshot has been applied.
+    // Otherwise the pull can erase tasks already deleted from the inbox.
+    void reconcile(uid, isCurrent).then(() => {
+      if (isCurrent()) return drainInbox(uid);
+    }).catch((e) => {
+      if (isCurrent()) set({ error: e instanceof Error ? e.message : String(e) });
+    });
+    // keep this device's push subscription alive server-side
+    void refreshPushSubscription(uid).catch(() => {});
+
+    // realtime: other devices' pushes land here instantly
+    channel = sb
+      .channel(`os_state_${uid}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "task_inbox", filter: `user_id=eq.${uid}` },
+        () => void drainInbox(uid),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "os_state", filter: `user_id=eq.${uid}` },
+        (payload) => {
+          const row = payload.new as CloudRow;
+          if (!isCurrent() || !row?.data || row.device_id === deviceId()) return;
+          applyingRemote = true;
+          try {
+            applyCloudData(row.data);
+            localStorage.setItem(LAST_SYNC_KEY, row.updated_at);
+            set({ lastSync: row.updated_at });
+            toast("Synced from another device", "info");
+          } finally {
+            applyingRemote = false;
+          }
+        },
+      )
+      .subscribe();
+
+    // local changes → debounced push
+    unsubStore = useEmber.subscribe(() => {
+      if (applyingRemote) return;
+      if (pushTimer) clearTimeout(pushTimer);
+      pushTimer = setTimeout(() => void push(uid), 2500);
+    });
+  };
+
+  const init = setTimeout(async () => {
+    const { data } = await sb.auth.getSession();
+    if (disposed) return;
+    const s = data.session;
+    set({ authLoading: false, signedIn: !!s, email: s?.user.email ?? null });
+    if (s) startSync(s.user.id);
+  }, 0);
+
+  const { data: authSub } = sb.auth.onAuthStateChange((_evt, s) => {
+    set({ authLoading: false, signedIn: !!s, email: s?.user.email ?? null });
+    if (s && currentUserId !== s.user.id) startSync(s.user.id);
+    if (!s) {
+      currentUserId = null;
+      stopSync();
+    }
+  });
+
+  return () => {
+    disposed = true;
+    clearTimeout(init);
+    if (pushTimer) clearTimeout(pushTimer);
+    authSub.subscription.unsubscribe();
+    stopSync();
+    currentUserId = null;
+  };
 }

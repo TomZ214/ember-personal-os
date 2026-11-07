@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { recordBackNav, recordNavOrigin } from "@/lib/navOrigin";
+import { markTransitionOrigin, recordBackNav, recordNavOrigin } from "@/lib/navOrigin";
 
 /**
  * Watches for the gesture that starts a navigation and records where on screen
@@ -18,8 +18,12 @@ export function NavOriginTracker() {
       // internal routes only — external links leave the app entirely
       if (!href || !href.startsWith("/")) return;
       recordNavOrigin(e.clientX, e.clientY);
+      markTransitionOrigin(e.clientX, e.clientY);
     };
-    const onPop = () => recordBackNav();
+    const onPop = () => {
+      recordBackNav();
+      document.documentElement.dataset.nav = "back";
+    };
 
     document.addEventListener("pointerdown", onDown, true);
     window.addEventListener("popstate", onPop);

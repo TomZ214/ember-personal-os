@@ -663,7 +663,7 @@ function NotificationsCard() {
   const enable = async () => {
     setBusy(true);
     try {
-      const uid = (await supabase()?.auth.getSession())?.data.session?.user.id;
+      const uid = (await (await supabase())?.auth.getSession())?.data.session?.user.id;
       if (!uid) {
         toast(t("conn.signInCloudFirst"), "info");
         return;
@@ -824,7 +824,7 @@ function FamilyCard() {
   const create = async () => {
     setBusy(true);
     try {
-      const uid = (await supabase()?.auth.getSession())?.data.session?.user.id;
+      const uid = (await (await supabase())?.auth.getSession())?.data.session?.user.id;
       if (!uid) throw new Error(t("conn.notSignedIn"));
       const link = await createShareLink(uid, "Familie");
       setLinks([...(links ?? []), link]);

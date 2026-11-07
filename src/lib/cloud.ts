@@ -1,6 +1,6 @@
 "use client";
 
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { VAULT_STORAGE_KEY } from "./crypto";
 import { useEmber, type CloudData } from "./store";
 import type { RepeatRule } from "./types";
@@ -24,15 +24,24 @@ export function cloudConfigured(): boolean {
   return !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 }
 
-let client: SupabaseClient | null = null;
+let client: Promise<SupabaseClient> | null = null;
 
-export function supabase(): SupabaseClient | null {
-  if (!cloudConfigured()) return null;
+/**
+ * The Supabase client, loaded on first use. The library is ~200 KB of
+ * JavaScript; start-up should not have to parse it before the first frame.
+ * Everything that talks to the cloud is async anyway.
+ */
+export function supabase(): Promise<SupabaseClient | null> {
+  if (!cloudConfigured()) return Promise.resolve(null);
   if (!client) {
-    client = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    const loading = import("@supabase/supabase-js").then(({ createClient }) =>
+      createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!),
     );
+    // a chunk that failed to load (offline) must not poison every later attempt
+    loading.catch(() => {
+      if (client === loading) client = null;
+    });
+    client = loading;
   }
   return client;
 }
@@ -82,7 +91,7 @@ export interface CloudRow {
 }
 
 export async function pushCloud(userId: string): Promise<string> {
-  const sb = supabase();
+  const sb = await supabase();
   if (!sb) throw new Error("cloud not configured");
   const updated_at = new Date().toISOString();
   const { error } = await sb.from("os_state").upsert({
@@ -97,7 +106,7 @@ export async function pushCloud(userId: string): Promise<string> {
 }
 
 export async function pullCloud(userId: string): Promise<CloudRow | null> {
-  const sb = supabase();
+  const sb = await supabase();
   if (!sb) throw new Error("cloud not configured");
   const { data, error } = await sb
     .from("os_state")
@@ -117,7 +126,7 @@ export interface ShareLink {
 }
 
 export async function listShareLinks(): Promise<ShareLink[]> {
-  const sb = supabase();
+  const sb = await supabase();
   if (!sb) throw new Error("cloud not configured");
   const { data, error } = await sb
     .from("share_links")
@@ -128,7 +137,7 @@ export async function listShareLinks(): Promise<ShareLink[]> {
 }
 
 export async function createShareLink(userId: string, label: string): Promise<ShareLink> {
-  const sb = supabase();
+  const sb = await supabase();
   if (!sb) throw new Error("cloud not configured");
   const { data, error } = await sb
     .from("share_links")
@@ -140,7 +149,7 @@ export async function createShareLink(userId: string, label: string): Promise<Sh
 }
 
 export async function deleteShareLink(token: string): Promise<void> {
-  const sb = supabase();
+  const sb = await supabase();
   if (!sb) throw new Error("cloud not configured");
   const { error } = await sb.from("share_links").delete().eq("token", token);
   if (error) throw new Error(error.message);
@@ -165,7 +174,7 @@ export interface InboxTask {
  * so the created task can later report its status back to the sender.
  */
 export async function claimInboxTasks(userId: string): Promise<InboxTask[]> {
-  const sb = supabase();
+  const sb = await supabase();
   if (!sb) throw new Error("cloud not configured");
   const { data, error } = await sb
     .from("task_inbox")
@@ -185,7 +194,7 @@ export async function reconcileSharedTasks(
   userId: string,
   tasks: { sharedId?: string; status: string; completedAt?: string }[],
 ): Promise<void> {
-  const sb = supabase();
+  const sb = await supabase();
   if (!sb) return;
   const mine = tasks.filter((t) => t.sharedId);
   if (mine.length === 0) return;
@@ -218,7 +227,7 @@ export interface SharedTaskView {
 
 /** family member reads back the tasks they submitted through a link + status */
 export async function listSharedTasks(token: string): Promise<SharedTaskView[]> {
-  const sb = supabase();
+  const sb = await supabase();
   if (!sb) throw new Error("cloud not configured");
   const { data, error } = await sb.rpc("inbox_list_tasks", { share_token: token });
   if (error) throw new Error(error.message);

@@ -59,19 +59,24 @@ export default function QuickAddPage() {
 
   // live-refresh the status list as the owner works through the tasks
   useEffect(() => {
-    const sb = supabase();
-    if (!sb) return;
-    const ch = sb
-      .channel(`shared_${token}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "shared_tasks", filter: `token=eq.${token}` }, () => void loadSent())
-      .subscribe();
+    let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
+    void supabase().then((sb) => {
+      if (!sb || cancelled) return;
+      const ch = sb
+        .channel(`shared_${token}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: "shared_tasks", filter: `token=eq.${token}` }, () => void loadSent())
+        .subscribe();
+      unsubscribe = () => void sb.removeChannel(ch);
+    });
     return () => {
-      void sb.removeChannel(ch);
+      cancelled = true;
+      unsubscribe?.();
     };
   }, [token, loadSent]);
 
   const send = async () => {
-    const sb = supabase();
+    const sb = await supabase();
     if (!sb) {
       setError("Cloud-Sync ist auf diesem Server nicht eingerichtet.");
       return;
