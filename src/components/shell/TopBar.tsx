@@ -50,7 +50,8 @@ export function TopBar() {
           >
             <Search size={15} />
             <span className="hidden sm:inline">{t("topbar.search")}</span>
-            <span className="hidden items-center gap-1 sm:flex">
+            {/* shortcut hint only where a keyboard is likely: touch-only iPads hide it */}
+            <span className="hidden items-center gap-1 sm:flex [@media(hover:none)]:hidden">
               <Kbd>⌘</Kbd>
               <Kbd>K</Kbd>
             </span>

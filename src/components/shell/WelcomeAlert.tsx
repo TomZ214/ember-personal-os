@@ -363,7 +363,7 @@ function AllClearPill() {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -8, scale: 0.97 }}
       transition={{ type: "spring", stiffness: 340, damping: 28 }}
-      className="glass glass-edge fixed right-4 top-[calc(env(safe-area-inset-top)+4.25rem)] z-(--z-toast) flex items-center gap-2.5 rounded-full py-2.5 pl-3 pr-4 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.6)] sm:right-6"
+      className="glass glass-edge pointer-events-none fixed right-4 top-[calc(env(safe-area-inset-top)+4.25rem)] z-(--z-toast) flex items-center gap-2.5 rounded-full py-2.5 pl-3 pr-4 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.6)] sm:right-6"
     >
       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-success/15 text-success">
         <Check size={13} strokeWidth={3} />

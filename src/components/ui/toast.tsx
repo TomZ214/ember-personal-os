@@ -67,7 +67,7 @@ export function Toaster() {
 
   return (
     <div
-      className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] z-(--z-toast) flex flex-col items-center gap-2 md:bottom-24"
+      className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] z-(--z-toast) flex flex-col items-center gap-2 md:bottom-[calc(5.5rem+max(1rem,env(safe-area-inset-bottom)))]"
       // Toasts were silent to screen readers entirely. "assertive" while an
       // error is up so a failure interrupts; "polite" otherwise so routine
       // confirmations wait their turn.
