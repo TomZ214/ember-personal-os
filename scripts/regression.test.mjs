@@ -248,3 +248,150 @@ test("report checker finds numbering gaps, next defaults and topic conflicts", (
   assert.equal(core.topicConflicts("Onlinebanking", rows, "a").length, 0);
   assert.ok(core.searchable({ topics: ["SEPA-Überweisung"], attachments: [{ name: "KW44.docx" }] }).includes("uberweisung"));
 });
+
+test("nutrition targets follow Mifflin-St Jeor, goals and the safe minimum", () => {
+  const n = sourceLoader()("src/lib/nutrition.ts");
+  const p = { ...n.DEFAULT_PROFILE, sex: "male", age: 25, heightCm: 180, weightKg: 80, activity: "moderate", goal: "maintain" };
+  // 10*80 + 6.25*180 - 5*25 + 5 = 1805
+  assert.equal(n.bmr(p), 1805);
+  const keep = n.targets(p);
+  assert.equal(keep.tdee, Math.round(1805 * 1.55));
+  assert.equal(keep.kcal, Math.round((1805 * 1.55) / 10) * 10);
+  // 0.5 kg/week = 550 kcal/day less
+  assert.equal(n.targets({ ...p, goal: "lose", rate: 0.5 }).kcal, Math.round((1805 * 1.55 - 550) / 10) * 10);
+  const tiny = n.targets({ ...p, sex: "female", weightKg: 45, heightCm: 150, age: 60, activity: "sedentary", goal: "lose", rate: 1 });
+  assert.equal(tiny.kcal, 1200);
+  assert.equal(tiny.clamped, true);
+  const manual = n.targets({ ...p, manualKcal: 2222 });
+  assert.equal(manual.kcal, 2222);
+  // balanced split: 30 % protein → kcal*0.3/4 g
+  assert.equal(manual.protein, Math.round((2222 * 0.3) / 4));
+  assert.equal(manual.fat, Math.round((2222 * 0.3) / 9));
+});
+
+test("nutrition arithmetic, dates, streaks and search", () => {
+  const n = sourceLoader()("src/lib/nutrition.ts");
+  const { BUILTIN_FOODS } = sourceLoader()("src/lib/nutrition-foods.ts");
+  assert.deepEqual({ ...n.scale({ kcal: 372, protein: 13.5, carbs: 58.7, fat: 7 }, 50) }, { kcal: 186, protein: 6.8, carbs: 29.4, fat: 3.5 });
+  assert.equal(n.shiftDay("2026-03-01", -1), "2026-02-28");
+  assert.equal(n.shiftDay("2026-12-31", 1), "2027-01-01");
+  // across the DST change in late March the date still moves by exactly one
+  assert.equal(n.shiftDay("2026-03-29", 1), "2026-03-30");
+  const e = (date, kcal) => ({ date, kcal, protein: 0, carbs: 0, fat: 0, createdAt: `${date}T08:00:00Z` });
+  const entries = [e("2026-11-05", 500), e("2026-11-06", 700), e("2026-11-06", 300), e("2026-11-07", 100)];
+  assert.equal(n.streak(entries, "2026-11-07"), 3);
+  assert.equal(n.streak(entries, "2026-11-08"), 3, "the streak survives the morning before the first entry");
+  assert.equal(n.streak(entries, "2026-11-09"), 0);
+  const week = n.dailyKcal(entries, "2026-11-07", 3);
+  assert.deepEqual([...week.map((d) => d.kcal)], [500, 1000, 100]);
+  assert.equal(n.mealForTime(new Date(2026, 0, 1, 8, 0)), "breakfast");
+  assert.equal(n.mealForTime(new Date(2026, 0, 1, 12, 30)), "lunch");
+  assert.equal(n.mealForTime(new Date(2026, 0, 1, 19, 0)), "dinner");
+  assert.equal(n.mealForTime(new Date(2026, 0, 1, 23, 30)), "snack");
+  assert.equal(n.searchFoods("hahnchen", BUILTIN_FOODS)[0].name.startsWith("Hähnchenbrust"), true, "umlaut-insensitive");
+  assert.equal(n.searchFoods("oats", BUILTIN_FOODS)[0].name, "Haferflocken", "English names are searchable");
+  const ids = new Set(BUILTIN_FOODS.map((f) => f.id));
+  assert.equal(ids.size, BUILTIN_FOODS.length, "built-in ids are unique");
+  for (const f of BUILTIN_FOODS) {
+    assert.ok(f.kcal >= 0 && f.kcal <= 900 && f.protein + f.carbs + f.fat <= 101, f.name);
+    // energy from macros must roughly match the stated calories (alcohol and fibre aside)
+    const fromMacros = f.protein * 4 + f.carbs * 4 + f.fat * 9;
+    if (!/bier|wein/i.test(f.name) && f.kcal > 40) assert.ok(Math.abs(fromMacros - f.kcal) / f.kcal < 0.25, `${f.name}: ${fromMacros} vs ${f.kcal}`);
+  }
+});
+
+test("nutrition sanitises Open Food Facts and AI data", () => {
+  const n = sourceLoader()("src/lib/nutrition.ts");
+  const off = n.parseOffProduct({
+    code: "3017620422003", product_name: "Nutella", brands: "Ferrero, Nutella", serving_quantity: "15", quantity: "400 g",
+    nutriments: { "energy-kcal_100g": 539, proteins_100g: "6,3", carbohydrates_100g: 57.5, fat_100g: 30.9 },
+  });
+  assert.equal(off.kcal, 539);
+  assert.equal(off.protein, 6.3);
+  assert.equal(off.brand, "Ferrero");
+  assert.equal(off.serving, 15);
+  assert.equal(off.unit, "g");
+  assert.equal(n.parseOffProduct({ product_name: "Saft", quantity: "1 l", nutriments: { energy_100g: 188 } }).kcal, 45, "kJ fallback");
+  assert.equal(n.parseOffProduct({ product_name: "Saft", quantity: "1 l", nutriments: { energy_100g: 188 } }).unit, "ml");
+  assert.equal(n.parseOffProduct({ product_name: "x", nutriments: {} }), null);
+  assert.equal(n.parseOffProduct({ product_name: "x", nutriments: { "energy-kcal_100g": 5000 } }), null);
+  assert.equal(n.parseOffProduct(null), null);
+
+  const items = n.cleanEstimate({ items: [
+    { name: "Brötchen", grams: 120, kcal: 324, protein: 10.8, carbs: 64.8, fat: 1.8 },
+    { name: "", grams: 10, kcal: 10 },
+    { name: "Bad", grams: -5, kcal: 10 },
+    { name: "Huge", grams: 100, kcal: 99999 },
+    "nonsense",
+  ] });
+  assert.equal(items.length, 1);
+  assert.deepEqual({ ...n.per100From(items[0], items[0].amount) }, { kcal: 270, protein: 9, carbs: 54, fat: 1.5 });
+  assert.equal(n.per100From(items[0], 0), null);
+  assert.deepEqual([...n.cleanEstimate({ items: "x" })], []);
+  assert.equal(n.cleanMacros({ kcal: "abc" }), null);
+  assert.equal(n.cleanMacros({ kcal: 100, protein: 500 }).protein, 100);
+  assert.equal(n.cleanMacros({ kcal: 2000, protein: 150 }, 10000, 1000).protein, 150);
+
+  const p = n.cleanProfile({ age: 500, heightCm: "abc", activity: "couch", rate: 7, waterGoalMl: 10, sex: "female" });
+  assert.equal(p.age, 100);
+  assert.equal(p.heightCm, n.DEFAULT_PROFILE.heightCm);
+  assert.equal(p.activity, n.DEFAULT_PROFILE.activity);
+  assert.equal(p.rate, n.DEFAULT_PROFILE.rate);
+  assert.equal(p.waterGoalMl, 500);
+  assert.equal(p.sex, "female");
+});
+
+test("nutrition store actions keep the slice consistent", () => {
+  const { useEmber } = sourceLoader({}, { window: {} })("src/lib/store.ts");
+  const s = () => useEmber.getState();
+  assert.equal(s().nutrition.entries.length, 0);
+  const base = { meal: "breakfast", name: "Ei", amount: 60, unit: "g", per100: { kcal: 143, protein: 12.6, carbs: 0.7, fat: 9.5 }, source: "builtin", kcal: 86, protein: 7.6, carbs: 0.4, fat: 5.7 };
+  s().addFoodEntries([{ ...base, date: "2026-11-06" }, { ...base, date: "2026-11-06", meal: "lunch" }]);
+  assert.equal(s().nutrition.entries.length, 2);
+  assert.ok(s().nutrition.entries.every((e) => e.id && e.createdAt));
+  assert.equal(s().copyMeal("2026-11-06", "2026-11-07", "breakfast"), 1);
+  assert.equal(s().copyMeal("2026-11-06", "2026-11-07", "dinner"), 0);
+  const copy = s().nutrition.entries.find((e) => e.date === "2026-11-07");
+  assert.notEqual(copy.id, s().nutrition.entries[0].id);
+  s().deleteFoodEntry(copy.id);
+  s().restoreFoodEntry(copy);
+  s().restoreFoodEntry(copy);
+  assert.equal(s().nutrition.entries.filter((e) => e.id === copy.id).length, 1, "undo never duplicates");
+  s().setWater("2026-11-07", 750);
+  s().setWater("2026-11-07", -250);
+  assert.equal(s().nutrition.water["2026-11-07"], undefined, "zero water removes the day");
+  s().logWeight("2026-11-01", 80);
+  s().logWeight("2026-11-05", 79.4);
+  s().logWeight("2026-11-03", 79.9);
+  assert.equal(s().nutrition.profile.weightKg, 79.4, "the newest weigh-in drives the target");
+  s().logWeight("2026-11-05", 79.1);
+  assert.equal(s().nutrition.weights.length, 3, "one weigh-in per day");
+  s().updateNutritionProfile({ age: 9999 });
+  assert.equal(s().nutrition.profile.age, 100);
+  // a cloud snapshot from an older device with a partial slice must not break anything
+  s().applyCloudState({ nutrition: { entries: [] } });
+  assert.equal(s().nutrition.profile.waterGoalMl, 2500);
+  assert.deepEqual([...s().nutrition.weights], []);
+});
+
+test("every nutrition text exists in English and German", () => {
+  const src = ["src/app/nutrition/page.tsx", "src/components/nutrition/AddFoodSheet.tsx", "src/components/nutrition/charts.tsx"]
+    .map((f) => readFileSync(path.join(root, f), "utf8")).join("\n");
+  const keys = new Set([...src.matchAll(/t\("(nut\.[\w.]+)"/g)].map((m) => m[1]));
+  const dynamic = {
+    "nut.meal.": ["breakfast", "lunch", "snack", "dinner"],
+    "nut.macro.": ["kcal", "protein", "carbs", "fat"],
+    "nut.activity.": ["sedentary", "light", "moderate", "active", "very"],
+    "nut.goal.": ["lose", "maintain", "gain"],
+    "nut.preset.": ["balanced", "protein", "lowcarb"],
+  };
+  for (const [prefix, names] of Object.entries(dynamic)) for (const k of names) keys.add(prefix + k);
+  assert.ok(keys.size > 100);
+  const i18n = readFileSync(path.join(root, "src/lib/i18n.ts"), "utf8");
+  const deStart = i18n.indexOf("const de: Dict");
+  const en = i18n.slice(0, deStart), de = i18n.slice(deStart);
+  for (const k of [...keys, "nav.nutrition"]) {
+    assert.ok(en.includes(`"${k}":`), `missing English text ${k}`);
+    assert.ok(de.includes(`"${k}":`), `missing German text ${k}`);
+  }
+});

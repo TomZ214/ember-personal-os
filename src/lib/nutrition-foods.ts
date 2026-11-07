@@ -1,0 +1,140 @@
+import type { Food } from "./nutrition";
+
+/**
+ * Built-in foods, per 100 g (or 100 ml for drinks). Typical values from common
+ * German/EU nutrition tables, carbohydrates without fibre as on EU labels.
+ * They are averages: a packaged product's label (via Open Food Facts) wins.
+ *
+ * [German name, English name, kcal, protein, carbs, fat, serving, unit?]
+ */
+type Row = [string, string, number, number, number, number, number, ("ml" | undefined)?];
+
+const ROWS: Row[] = [
+  // bread, cereals, spreads
+  ["Haferflocken", "Rolled oats", 372, 13.5, 58.7, 7, 50],
+  ["Vollkornbrot", "Wholegrain bread", 205, 7, 39, 1.2, 50],
+  ["Weizenbrötchen", "Bread roll", 270, 9, 54, 1.5, 50],
+  ["Toastbrot", "White toast", 260, 8, 48, 3.5, 25],
+  ["Laugenbrezel", "Pretzel", 270, 8, 55, 2, 80],
+  ["Croissant", "Croissant", 406, 8, 45, 21, 60],
+  ["Cornflakes", "Cornflakes", 378, 7.5, 84, 0.9, 30],
+  ["Müsli (ungezuckert)", "Muesli (unsweetened)", 360, 10, 62, 6, 50],
+  ["Butter", "Butter", 741, 0.7, 0.6, 83, 10],
+  ["Margarine", "Margarine", 720, 0.2, 0.4, 80, 10],
+  ["Nuss-Nougat-Creme", "Hazelnut cocoa spread", 539, 6.3, 57.5, 30.9, 15],
+  ["Honig", "Honey", 304, 0.3, 82, 0, 20],
+  ["Marmelade", "Jam", 250, 0.4, 60, 0.1, 20],
+  ["Erdnussbutter", "Peanut butter", 588, 25, 20, 50, 15],
+  // dairy & eggs
+  ["Ei (Hühnerei)", "Egg", 143, 12.6, 0.7, 9.5, 60],
+  ["Vollmilch 3,5 %", "Whole milk 3.5%", 64, 3.3, 4.8, 3.5, 250, "ml"],
+  ["Fettarme Milch 1,5 %", "Low-fat milk 1.5%", 47, 3.4, 4.9, 1.5, 250, "ml"],
+  ["Haferdrink", "Oat drink", 46, 0.6, 7, 1.5, 250, "ml"],
+  ["Naturjoghurt 3,5 %", "Natural yoghurt 3.5%", 63, 3.8, 4.1, 3.5, 150],
+  ["Griechischer Joghurt 10 %", "Greek yoghurt 10%", 120, 5, 4, 10, 150],
+  ["Magerquark", "Low-fat quark", 67, 12, 4, 0.2, 250],
+  ["Skyr", "Skyr", 63, 11, 4, 0.2, 150],
+  ["Hüttenkäse", "Cottage cheese", 98, 12, 3, 4.3, 200],
+  ["Gouda", "Gouda", 356, 25, 0, 28, 30],
+  ["Mozzarella", "Mozzarella", 250, 18, 1, 19, 125],
+  ["Feta", "Feta", 264, 14, 4, 21, 50],
+  ["Parmesan", "Parmesan", 431, 38, 4.1, 29, 10],
+  ["Frischkäse (Doppelrahm)", "Cream cheese", 240, 5.5, 3.5, 23, 30],
+  ["Schlagsahne 30 %", "Whipping cream 30%", 292, 2.4, 3.2, 30, 30, "ml"],
+  // meat, fish, protein
+  ["Hähnchenbrust (roh)", "Chicken breast (raw)", 110, 23, 0, 1.5, 150],
+  ["Hähnchenbrust (gebraten)", "Chicken breast (cooked)", 165, 31, 0, 3.6, 120],
+  ["Rinderhackfleisch (roh)", "Ground beef (raw)", 250, 17, 0, 20, 125],
+  ["Rindersteak (roh)", "Beef steak (raw)", 150, 22, 0, 7, 200],
+  ["Schweineschnitzel (roh)", "Pork escalope (raw)", 106, 22, 0, 1.9, 150],
+  ["Bratwurst", "Bratwurst", 297, 14, 1, 26, 100],
+  ["Salami", "Salami", 380, 21, 0.5, 33, 20],
+  ["Kochschinken", "Cooked ham", 107, 18, 1, 3.5, 20],
+  ["Lachs (roh)", "Salmon (raw)", 208, 20, 0, 13.4, 125],
+  ["Thunfisch (Dose, im eigenen Saft)", "Tuna (canned in water)", 116, 26, 0, 1, 130],
+  ["Fischstäbchen", "Fish fingers", 190, 13, 17, 8, 30],
+  ["Garnelen", "Prawns", 99, 24, 0.2, 0.3, 100],
+  ["Tofu (natur)", "Tofu (plain)", 122, 13, 1.5, 7, 100],
+  ["Proteinpulver (Whey)", "Whey protein powder", 380, 75, 8, 6, 30],
+  // carbs & sides
+  ["Reis (gekocht)", "Rice (cooked)", 130, 2.7, 28, 0.3, 150],
+  ["Reis (roh)", "Rice (uncooked)", 350, 7, 77, 0.6, 75],
+  ["Nudeln (gekocht)", "Pasta (cooked)", 158, 5.8, 31, 0.9, 200],
+  ["Nudeln (roh)", "Pasta (dry)", 355, 12.5, 71, 1.5, 100],
+  ["Kartoffeln (gekocht)", "Potatoes (boiled)", 72, 2, 15, 0.1, 200],
+  ["Pommes frites", "French fries", 290, 3.4, 36, 15, 150],
+  ["Süßkartoffel (gekocht)", "Sweet potato (boiled)", 76, 1.4, 17.7, 0.1, 200],
+  ["Quinoa (gekocht)", "Quinoa (cooked)", 120, 4.4, 21.3, 1.9, 150],
+  ["Couscous (gekocht)", "Couscous (cooked)", 112, 3.8, 23.2, 0.2, 150],
+  ["Weizen-Tortilla", "Wheat tortilla", 305, 8.5, 51, 7.5, 60],
+  ["Kichererbsen (gekocht)", "Chickpeas (cooked)", 120, 7, 15, 2.5, 120],
+  ["Linsen (gekocht)", "Lentils (cooked)", 108, 8.5, 15, 0.5, 150],
+  // vegetables
+  ["Brokkoli", "Broccoli", 34, 3, 2.7, 0.4, 150],
+  ["Karotte", "Carrot", 36, 0.8, 7, 0.2, 80],
+  ["Tomate", "Tomato", 18, 0.9, 2.6, 0.2, 120],
+  ["Gurke", "Cucumber", 12, 0.6, 1.8, 0.2, 100],
+  ["Paprika (rot)", "Red pepper", 31, 1, 5.3, 0.3, 150],
+  ["Eisbergsalat", "Iceberg lettuce", 14, 0.9, 2, 0.1, 80],
+  ["Spinat", "Spinach", 23, 2.9, 1.4, 0.4, 100],
+  ["Zwiebel", "Onion", 40, 1.1, 7.6, 0.1, 80],
+  ["Champignons", "Mushrooms", 22, 3.1, 0.6, 0.3, 100],
+  ["Zucchini", "Courgette", 17, 1.2, 2.2, 0.3, 200],
+  ["Avocado", "Avocado", 160, 2, 1.9, 15, 80],
+  ["Mais (Dose)", "Sweetcorn (canned)", 82, 2.9, 15, 1.2, 70],
+  // fruit
+  ["Apfel", "Apple", 54, 0.3, 11.4, 0.2, 150],
+  ["Banane", "Banana", 93, 1.1, 20, 0.2, 120],
+  ["Orange", "Orange", 47, 1, 9, 0.2, 150],
+  ["Erdbeeren", "Strawberries", 32, 0.7, 5.5, 0.4, 150],
+  ["Weintrauben", "Grapes", 69, 0.7, 16, 0.2, 100],
+  ["Heidelbeeren", "Blueberries", 50, 0.7, 10, 0.4, 100],
+  ["Mango", "Mango", 60, 0.8, 13, 0.4, 150],
+  ["Birne", "Pear", 57, 0.4, 12.4, 0.3, 160],
+  ["Kiwi", "Kiwi", 61, 1.1, 10, 0.5, 75],
+  ["Ananas", "Pineapple", 50, 0.5, 12, 0.1, 150],
+  // nuts
+  ["Mandeln", "Almonds", 600, 24, 6, 52, 30],
+  ["Walnüsse", "Walnuts", 670, 15, 7, 65, 30],
+  ["Cashewkerne", "Cashews", 585, 18, 30, 44, 30],
+  ["Erdnüsse (geröstet)", "Peanuts (roasted)", 607, 25, 7.5, 50, 30],
+  // sweets & snacks
+  ["Vollmilchschokolade", "Milk chocolate", 535, 6.3, 57, 31, 25],
+  ["Zartbitterschokolade 70 %", "Dark chocolate 70%", 580, 8, 33, 43, 25],
+  ["Gummibärchen", "Gummy bears", 343, 6.9, 77, 0.1, 25],
+  ["Kartoffelchips", "Potato crisps", 530, 6.5, 50, 33, 30],
+  ["Butterkekse", "Butter biscuits", 440, 7, 73, 12, 25],
+  ["Vanilleeis", "Vanilla ice cream", 207, 3.5, 24, 11, 100],
+  ["Müsliriegel", "Granola bar", 400, 6, 65, 12, 25],
+  // drinks
+  ["Kaffee (schwarz)", "Coffee (black)", 2, 0.2, 0, 0, 200, "ml"],
+  ["Cappuccino", "Cappuccino", 32, 1.7, 2.6, 1.7, 200, "ml"],
+  ["Latte Macchiato", "Latte macchiato", 45, 2.3, 3.4, 2.4, 300, "ml"],
+  ["Cola", "Cola", 42, 0, 10.6, 0, 330, "ml"],
+  ["Cola Zero", "Cola zero", 0.3, 0, 0, 0, 330, "ml"],
+  ["Orangensaft", "Orange juice", 45, 0.7, 10, 0.2, 250, "ml"],
+  ["Apfelschorle", "Apple spritzer", 24, 0, 5.5, 0, 400, "ml"],
+  ["Energy Drink", "Energy drink", 45, 0, 11, 0, 250, "ml"],
+  ["Bier (Pils)", "Beer (lager)", 43, 0.5, 3.1, 0, 500, "ml"],
+  ["Rotwein", "Red wine", 85, 0.1, 2.6, 0, 200, "ml"],
+  // dishes
+  ["Pizza Margherita", "Pizza margherita", 250, 10, 31, 9, 350],
+  ["Döner Kebab", "Doner kebab", 210, 11, 21, 9, 380],
+  ["Cheeseburger", "Cheeseburger", 255, 13, 28, 10, 120],
+  ["Spaghetti Bolognese", "Spaghetti bolognese", 150, 7, 18, 5.5, 400],
+  ["Lasagne", "Lasagne", 150, 8, 13, 7, 400],
+  ["Currywurst mit Soße", "Currywurst with sauce", 230, 10, 9, 17, 200],
+  ["Schnitzel (paniert, gebraten)", "Breaded schnitzel (fried)", 240, 19, 11, 13, 180],
+  ["Sushi (Maki)", "Sushi (maki)", 150, 5, 29, 1, 200],
+  ["Falafel", "Falafel", 333, 13, 31, 18, 100],
+  // basics
+  ["Olivenöl", "Olive oil", 884, 0, 0, 100, 10, "ml"],
+  ["Zucker", "Sugar", 400, 0, 100, 0, 5],
+  ["Ketchup", "Ketchup", 102, 1.2, 23, 0.2, 15],
+  ["Mayonnaise", "Mayonnaise", 700, 1, 2, 77, 15],
+];
+
+export const BUILTIN_FOODS: Food[] = ROWS.map(([name, nameEn, kcal, protein, carbs, fat, serving, unit], i) => ({
+  id: `builtin:${i}:${nameEn.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+  name, nameEn, kcal, protein, carbs, fat, serving, unit: unit ?? "g", source: "builtin",
+}));

@@ -60,6 +60,7 @@ export function collectCloudData(): CloudData {
     subs: s.subs,
     mails: s.mails,
     alarms: s.alarms,
+    nutrition: s.nutrition,
     settings: s.settings,
     completionLog: s.completionLog,
     vaultBlob: localStorage.getItem(VAULT_STORAGE_KEY),

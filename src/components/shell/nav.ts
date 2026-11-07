@@ -1,5 +1,5 @@
 import {
-  BookOpen, CalendarDays, CheckSquare, CloudSun, Coins, FileBox, Flag, Flame, LayoutGrid, Mail, NotebookPen,
+  Apple, BookOpen, CalendarDays, CheckSquare, CloudSun, Coins, FileBox, Flag, Flame, LayoutGrid, Mail, NotebookPen,
   Repeat, Settings, ShieldCheck, } from "lucide-react";
 
 export interface NavItem {
@@ -19,6 +19,7 @@ export const NAV: NavItem[] = [
   { href: "/mail", label: "Mail", key: "mail", icon: Mail },
   { href: "/notes", label: "Notes", key: "notes", icon: NotebookPen },
   { href: "/berichtsheft", label: "Training reports", key: "reports", icon: BookOpen },
+  { href: "/nutrition", label: "Nutrition", key: "nutrition", icon: Apple },
   { href: "/habits", label: "Habits", key: "habits", icon: Repeat },
   { href: "/goals", label: "Goals", key: "goals", icon: Flag },
   { href: "/finance", label: "Finance", key: "finance", icon: Coins },

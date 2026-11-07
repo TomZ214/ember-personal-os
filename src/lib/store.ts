@@ -5,6 +5,7 @@ import { persist } from "zustand/middleware";
 import { dayKey, todayKey } from "./dates";
 import { advanceEnd, nextOccurrence as ruleNext, ruleExhausted, ruleForTask } from "./recurrence";
 import { purgeSeedData } from "./migrations";
+import { cleanProfile, emptyNutrition, type FoodEntry, type Food, type Meal, type NutritionProfile, type NutritionState } from "./nutrition";
 import type {
   Alarm, Briefing, EventItem, FileMeta, Folder, Goal, Habit, Mail, Note, Settings, Subscription, Task, Txn,
 } from "./types";
@@ -61,6 +62,8 @@ export interface CloudData {
   subs: Subscription[];
   mails: Mail[];
   alarms?: Alarm[];
+  /** calorie tracker: entries, own foods, water, weight, profile */
+  nutrition?: NutritionState;
   settings: Settings;
   /** yyyy-MM-dd → how many completed tasks were auto-purged that day, so the
    *  activity chart keeps its history after the tasks themselves are gone */
@@ -84,6 +87,7 @@ interface EmberState {
   mails: Mail[];
   files: FileMeta[];
   alarms: Alarm[];
+  nutrition: NutritionState;
 
   briefing: Briefing | null;
   settings: Settings;
@@ -147,6 +151,20 @@ interface EmberState {
   updateAlarm: (id: string, patch: Partial<Alarm>) => void;
   deleteAlarm: (id: string) => void;
 
+  addFoodEntries: (entries: Omit<FoodEntry, "id" | "createdAt">[]) => void;
+  updateFoodEntry: (id: string, patch: Partial<Omit<FoodEntry, "id">>) => void;
+  deleteFoodEntry: (id: string) => void;
+  /** put back an entry removed by mistake (undo) */
+  restoreFoodEntry: (entry: FoodEntry) => void;
+  /** copy every entry of one meal from one day to another */
+  copyMeal: (from: string, to: string, meal: Meal) => number;
+  saveFood: (food: Omit<Food, "id" | "source"> & { id?: string }) => Food;
+  deleteFood: (id: string) => void;
+  setWater: (day: string, ml: number) => void;
+  logWeight: (day: string, kg: number) => void;
+  deleteWeight: (day: string) => void;
+  updateNutritionProfile: (patch: Partial<NutritionProfile>) => void;
+
   setBriefing: (b: Briefing | null) => void;
 
   updateSettings: (patch: Partial<Settings>) => void;
@@ -172,6 +190,7 @@ export const useEmber = create<EmberState>()(
       mails: [],
       files: [],
       alarms: [],
+      nutrition: emptyNutrition(),
 
       briefing: null,
       completionLog: {},
@@ -200,6 +219,9 @@ export const useEmber = create<EmberState>()(
         const slices = Object.fromEntries(
           Object.entries(data).filter(([k]) => k !== "vaultBlob"),
         );
+        // a snapshot from a device on an older version may carry a partial
+        // nutrition slice; fill in whatever it lacks instead of crashing on it
+        if (data.nutrition) slices.nutrition = withNutritionDefaults(data.nutrition);
         set(slices);
       },
 
@@ -380,6 +402,70 @@ export const useEmber = create<EmberState>()(
         })),
       deleteAlarm: (id) => set((s) => ({ alarms: s.alarms.filter((a) => a.id !== id) })),
 
+      addFoodEntries: (entries) =>
+        set((s) => {
+          const now = new Date().toISOString();
+          const added = entries.map((e) => ({ ...e, id: uid(), createdAt: now }));
+          return { nutrition: { ...s.nutrition, entries: [...s.nutrition.entries, ...added] } };
+        }),
+      updateFoodEntry: (id, patch) =>
+        set((s) => ({
+          nutrition: { ...s.nutrition, entries: s.nutrition.entries.map((e) => (e.id === id ? { ...e, ...patch } : e)) },
+        })),
+      deleteFoodEntry: (id) =>
+        set((s) => ({ nutrition: { ...s.nutrition, entries: s.nutrition.entries.filter((e) => e.id !== id) } })),
+      restoreFoodEntry: (entry) =>
+        set((s) =>
+          s.nutrition.entries.some((e) => e.id === entry.id)
+            ? s
+            : { nutrition: { ...s.nutrition, entries: [...s.nutrition.entries, entry] } },
+        ),
+      copyMeal: (from, to, meal) => {
+        const source = get().nutrition.entries.filter((e) => e.date === from && e.meal === meal);
+        if (!source.length) return 0;
+        const now = new Date().toISOString();
+        set((s) => ({
+          nutrition: {
+            ...s.nutrition,
+            entries: [...s.nutrition.entries, ...source.map((e) => ({ ...e, id: uid(), date: to, createdAt: now }))],
+          },
+        }));
+        return source.length;
+      },
+      saveFood: (food) => {
+        const saved: Food = { ...food, id: food.id ?? uid(), source: "custom" };
+        set((s) => ({
+          nutrition: {
+            ...s.nutrition,
+            foods: [saved, ...s.nutrition.foods.filter((f) => f.id !== saved.id)],
+          },
+        }));
+        return saved;
+      },
+      deleteFood: (id) =>
+        set((s) => ({ nutrition: { ...s.nutrition, foods: s.nutrition.foods.filter((f) => f.id !== id) } })),
+      setWater: (day, ml) =>
+        set((s) => {
+          const water = { ...s.nutrition.water };
+          const value = Math.round(Math.min(10_000, Math.max(0, ml)));
+          if (value) water[day] = value;
+          else delete water[day];
+          return { nutrition: { ...s.nutrition, water } };
+        }),
+      logWeight: (day, kg) =>
+        set((s) => {
+          const weights = [...s.nutrition.weights.filter((w) => w.date !== day), { date: day, kg }].sort((a, b) =>
+            a.date.localeCompare(b.date),
+          );
+          // the newest weigh-in drives the calorie target
+          const latest = weights[weights.length - 1];
+          return { nutrition: { ...s.nutrition, weights, profile: { ...s.nutrition.profile, weightKg: latest.kg } } };
+        }),
+      deleteWeight: (day) =>
+        set((s) => ({ nutrition: { ...s.nutrition, weights: s.nutrition.weights.filter((w) => w.date !== day) } })),
+      updateNutritionProfile: (patch) =>
+        set((s) => ({ nutrition: { ...s.nutrition, profile: cleanProfile({ ...s.nutrition.profile, ...patch }) } })),
+
       setBriefing: (b) => set({ briefing: b }),
 
       updateSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
@@ -419,12 +505,31 @@ export const useEmber = create<EmberState>()(
         Object.fromEntries(
           Object.entries(s).filter(([k]) => k !== "paletteOpen" && k !== "hydrated"),
         ) as EmberState,
+      // shallow merge would drop new nutrition fields for anyone who saved an
+      // older shape; deep-fill that one slice
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<EmberState>;
+        return { ...current, ...p, nutrition: withNutritionDefaults(p.nutrition) };
+      },
       onRehydrateStorage: () => (state) => {
         state?.setHydrated();
       },
     },
   ),
 );
+
+/** a nutrition slice with every field present and the profile in range */
+function withNutritionDefaults(raw: Partial<NutritionState> | undefined): NutritionState {
+  const base = emptyNutrition();
+  if (!raw || typeof raw !== "object") return base;
+  return {
+    profile: cleanProfile(raw.profile),
+    entries: Array.isArray(raw.entries) ? raw.entries : base.entries,
+    foods: Array.isArray(raw.foods) ? raw.foods : base.foods,
+    water: raw.water && typeof raw.water === "object" ? raw.water : base.water,
+    weights: Array.isArray(raw.weights) ? raw.weights : base.weights,
+  };
+}
 
 /** true once the persisted state has been loaded on the client */
 export function useHydrated() {
