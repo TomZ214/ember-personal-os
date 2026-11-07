@@ -659,6 +659,85 @@ h1, h2, h3 {
   }
 }
 
+/* ---- Boot sequence ------------------------------------------------------
+   The cold-start curtain (BootSequence.tsx). Keyframes on transform and
+   opacity only: they run on the compositor, so the busiest moment of the
+   app's life (hydration, sync, first fetches) cannot make them stutter, and
+   they begin with the first paint rather than after JavaScript has loaded.
+   Timings match the old Framer version; times count from first paint.      */
+.boot-curtain {
+  animation: boot-curtain 500ms cubic-bezier(0.22, 1, 0.36, 1) 2150ms forwards;
+}
+/* a tap or key skips: a fresh animation (a new name restarts the timeline) */
+.boot-curtain[data-skipped] {
+  animation: boot-curtain 300ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes boot-curtain {
+  to { opacity: 0; }
+}
+.boot-glow {
+  opacity: 0;
+  animation: boot-glow 1.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes boot-glow {
+  0% { opacity: 0; transform: scale(0.5); }
+  55% { opacity: 0.85; transform: scale(1.15); }
+  100% { opacity: 0.5; transform: scale(1); }
+}
+.boot-beam {
+  opacity: 0;
+  animation: boot-beam 1.15s cubic-bezier(0.22, 1, 0.36, 1) 1.05s both;
+}
+@keyframes boot-beam {
+  0% { opacity: 0; transform: translateX(-160%); }
+  50% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(520%); }
+}
+[data-glass="off"] .boot-beam,
+[data-fx="reduced"] .boot-beam {
+  display: none;
+}
+.boot-ember {
+  opacity: 0;
+  animation: boot-ember 1.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes boot-ember {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.4); }
+  50% { opacity: 0.9; transform: translate(calc(var(--dx) * 0.5), calc(var(--dy) * 0.5)) scale(1); }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.3); }
+}
+/* the old spring (stiffness 220, damping 18): a small overshoot, then rest */
+.boot-mark {
+  animation: boot-mark 650ms cubic-bezier(0.34, 1.4, 0.64, 1) 50ms both;
+}
+@keyframes boot-mark {
+  from { opacity: 0; transform: scale(0.82); }
+  to { opacity: 1; transform: scale(1); }
+}
+.boot-icon {
+  animation: boot-icon 2.4s ease-in-out infinite;
+}
+@keyframes boot-icon {
+  0%, 100% { transform: rotate(-3deg) scale(1); }
+  50% { transform: rotate(3deg) scale(1.04); }
+}
+.boot-word {
+  animation: boot-word 280ms cubic-bezier(0.22, 1, 0.36, 1) 280ms both;
+}
+@keyframes boot-word {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+/* the sheen that wipes across a page as it arrives (template.tsx) */
+.page-sheen {
+  opacity: 0;
+  animation: boot-beam 850ms cubic-bezier(0.22, 1, 0.36, 1) 50ms both;
+}
+/* asked for less motion: no curtain at all, hidden before it is ever painted */
+@media (prefers-reduced-motion: reduce) {
+  .boot-curtain { display: none; }
+}
+
 /* ---- unread mail marker -------------------------------------------------
    A soft halo breathing around the unread dot. CSS keyframes on transform and
    opacity only: a mailbox can hold hundreds of rows, and animating box-shadow
