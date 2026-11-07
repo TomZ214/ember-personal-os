@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { format, parseISO, subMonths } from "date-fns";
-import { ArrowDownLeft, ArrowUpRight, Coins, Eye, EyeOff, Landmark, NotebookPen, Plus, Trash2 } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Coins, Eye, EyeOff, Landmark, NotebookPen, Plus, Trash2, Upload } from "lucide-react";
 import { useEmber, useHydrated } from "@/lib/store";
 import { useBank } from "@/hooks/useIntegrations";
 import { eur, todayKey, dfLocale } from "@/lib/dates";
@@ -12,6 +12,7 @@ import { useLang, useT } from "@/lib/i18n";
 import { CATEGORY_VAR, type Txn } from "@/lib/types";
 import { BankPanel } from "@/components/finance/BankPanel";
 import { BudgetPanel } from "@/components/finance/BudgetPanel";
+import { FinanzguruImport } from "@/components/finance/FinanzguruImport";
 import { Donut, MonthBars, SummaryCard } from "@/components/finance/charts";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -27,6 +28,7 @@ export default function FinancePage() {
   const subs = useEmber((s) => s.subs);
   const deleteTxn = useEmber((s) => s.deleteTxn);
   const [adding, setAdding] = useState(false);
+  const [importing, setImporting] = useState(false);
   const bank = useBank();
   const privacy = useEmber((s) => s.privacy);
   const togglePrivacy = useEmber((s) => s.togglePrivacy);
@@ -120,6 +122,11 @@ export default function FinancePage() {
                   </button>
                 ))}
               </div>
+            )}
+            {!showBank && (
+              <Button onClick={() => setImporting(true)} aria-label={tr("fin.fg.button")} title={tr("fin.fg.title")}>
+                <Upload size={16} /> <span className="hidden sm:inline">{tr("fin.fg.button")}</span>
+              </Button>
             )}
             {!showBank && (
               <Button variant="primary" onClick={() => setAdding(true)}>
@@ -237,6 +244,7 @@ export default function FinancePage() {
       )}
 
       <AddTxn open={adding} onClose={() => setAdding(false)} />
+      <FinanzguruImport open={importing} onClose={() => setImporting(false)} />
     </div>
   );
 }

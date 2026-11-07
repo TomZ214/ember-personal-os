@@ -395,3 +395,84 @@ test("every nutrition text exists in English and German", () => {
     assert.ok(de.includes(`"${k}":`), `missing German text ${k}`);
   }
 });
+
+test("Finanzguru import reads German exports, categories, transfers and duplicates", () => {
+  const fg = sourceLoader()("src/lib/finance/finanzguru.ts");
+  assert.equal(fg.parseAmount("-1.234,56 €", true), -1234.56);
+  assert.equal(fg.parseAmount("1,234.56", false), 1234.56);
+  assert.equal(fg.parseAmount("−12,30", true), -12.3);
+  assert.equal(fg.parseAmount("abc", true), null);
+  assert.equal(fg.parseDate("07.11.2026"), "2026-11-07");
+  assert.equal(fg.parseDate("31.02.2026"), null);
+  assert.equal(fg.parseDate("07.11.26"), "2026-11-07");
+  assert.equal(fg.parseDate(46333), "2026-11-07", "Excel day serial");
+  assert.equal(fg.parseDate("2026-11-07T00:00:00"), "2026-11-07");
+
+  const csv = [
+    "Finanzguru Export",
+    "Buchungstag;Referenzkonto;Name Referenzkonto;Betrag;Waehrung;Beguenstigter/Auftraggeber;Verwendungszweck;Analyse-Hauptkategorie;Analyse-Unterkategorie",
+    '01.11.2026;DE00;Girokonto;2.150,00;EUR;Sparkasse Heidelberg;"Gehalt November";Einnahmen;Gehalt',
+    "02.11.2026;DE00;Girokonto;-45,90;EUR;REWE SAGT DANKE. 44301612//HEIDELBERG/DE;Einkauf;Lebensmittel & Drogerie;Supermarkt",
+    "03.11.2026;DE00;Girokonto;-3,20;EUR;Café Rossi;Kaffee;Freizeit;Restaurants & Cafés",
+    "03.11.2026;DE00;Girokonto;-3,20;EUR;Café Rossi;Kaffee;Freizeit;Restaurants & Cafés",
+    "04.11.2026;DE00;Girokonto;-500,00;EUR;Tom Kurr;Sparen;Umbuchung;Eigene Konten",
+    "04.11.2026;DE01;Tagesgeld;500,00;EUR;Tom Kurr;Sparen;Umbuchung;Eigene Konten",
+    "05.11.2026;DE00;Girokonto;-19,99;USD;Shop;USD Kauf;Shopping;Elektronik",
+    "06.11.2026;DE00;Girokonto;12,99;EUR;Amazon;Erstattung;Shopping;Online-Handel",
+    ";;;;;;;;",
+  ].join("\r\n");
+  const out = fg.parseImport(fg.parseDelimited(csv));
+  assert.deepEqual([...out.accounts], ["Girokonto", "Tagesgeld"]);
+  assert.equal(out.skipped, 1, "the USD row is skipped");
+  assert.equal(out.rows.length, 7);
+  const [salary, rewe, coffee1, coffee2] = out.rows;
+  assert.equal(salary.kind, "income");
+  assert.equal(salary.amount, 2150);
+  assert.equal(salary.category, "Salary");
+  assert.equal(rewe.category, "Groceries");
+  assert.equal(rewe.amount, 45.9);
+  assert.ok(rewe.note.startsWith("Rewe"), rewe.note);
+  assert.equal(coffee1.category, "Dining", "the subcategory is more specific than 'Freizeit'");
+  assert.notEqual(coffee1.importKey, coffee2.importKey, "two identical coffees are two purchases");
+  assert.equal(out.rows.filter((r) => r.transfer).length, 2);
+  const refund = out.rows.find((r) => r.note.includes("Erstattung"));
+  assert.equal(refund.kind, "income");
+  assert.equal(refund.category, "Other", "a refund is not shopping");
+  // the same export parsed again yields the same keys → re-import adds nothing
+  const again = fg.parseImport(fg.parseDelimited(csv));
+  assert.deepEqual([...again.rows.map((r) => r.importKey)], [...out.rows.map((r) => r.importKey)]);
+
+  // minimal export with only the known core columns, numbers as numbers (from Excel)
+  const minimal = fg.parseImport([
+    ["Buchungstag", "Betrag", "Beguenstigter/Auftraggeber", "Verwendungszweck", "Name Referenzkonto"],
+    [46333, -9.99, "SPOTIFY", "Premium", "Giro"],
+  ]);
+  assert.equal(minimal.rows[0].date, "2026-11-07");
+  assert.equal(minimal.rows[0].category, "Subscriptions", "no category column → rule-based");
+  assert.throws(() => fg.parseImport([["Datum der Sache", "Wert"], ["x", "y"]]), (e) => e.found.length === 2);
+});
+
+test("importing transactions skips known rows and can be undone", () => {
+  const { useEmber } = sourceLoader({}, { window: {} })("src/lib/store.ts");
+  const s = () => useEmber.getState();
+  s().addTxn({ kind: "expense", amount: 5, category: "Other", date: "2026-11-01", note: "manual" });
+  const row = (k) => ({ kind: "expense", amount: 3.2, category: "Dining", date: "2026-11-03", note: "Café", importKey: k, importBatch: "b1", account: "Giro" });
+  assert.equal(s().importTxns([row("fg:a:1"), row("fg:a:2"), row("fg:a:1")]), 2, "duplicates inside one file are dropped too");
+  assert.equal(s().importTxns([{ ...row("fg:a:1"), importBatch: "b2" }, { ...row("fg:b:1"), importBatch: "b2" }]), 1);
+  assert.equal(s().txns.length, 4);
+  assert.equal(s().deleteTxnBatch("b1"), 2);
+  assert.equal(s().txns.length, 2);
+  assert.ok(s().txns.some((t) => t.note === "manual"), "manual entries are never touched");
+});
+
+test("every Finanzguru import text exists in English and German", () => {
+  const src = readFileSync(path.join(root, "src/components/finance/FinanzguruImport.tsx"), "utf8") + readFileSync(path.join(root, "src/app/finance/page.tsx"), "utf8");
+  const keys = new Set([...src.matchAll(/t[r]?\("(fin\.fg\.[\w.]+)"/g)].map((m) => m[1]));
+  assert.ok(keys.size > 25);
+  const i18n = readFileSync(path.join(root, "src/lib/i18n.ts"), "utf8");
+  const deStart = i18n.indexOf("const de: Dict");
+  for (const k of [...keys, "fin.cat.Insurance", "fin.cat.Cash", "fin.cat.Fees"]) {
+    assert.ok(i18n.slice(0, deStart).includes(`"${k}":`), `missing English ${k}`);
+    assert.ok(i18n.slice(deStart).includes(`"${k}":`), `missing German ${k}`);
+  }
+});

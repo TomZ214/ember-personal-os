@@ -136,6 +136,10 @@ interface EmberState {
 
   addTxn: (t: Omit<Txn, "id">) => void;
   deleteTxn: (id: string) => void;
+  /** add imported rows, skipping any whose importKey is already present; returns how many were added */
+  importTxns: (rows: Omit<Txn, "id">[]) => number;
+  /** undo one import */
+  deleteTxnBatch: (batch: string) => number;
   addSub: (s: Omit<Subscription, "id">) => void;
   deleteSub: (id: string) => void;
 
@@ -369,6 +373,30 @@ export const useEmber = create<EmberState>()(
 
       addTxn: (t) => set((s) => ({ txns: [{ ...t, id: uid() }, ...s.txns] })),
       deleteTxn: (id) => set((s) => ({ txns: s.txns.filter((t) => t.id !== id) })),
+      importTxns: (rows) => {
+        let added = 0;
+        set((s) => {
+          const known = new Set(s.txns.map((t) => t.importKey).filter(Boolean));
+          const fresh: Txn[] = [];
+          for (const r of rows) {
+            if (r.importKey && known.has(r.importKey)) continue;
+            if (r.importKey) known.add(r.importKey);
+            fresh.push({ ...r, id: uid() });
+          }
+          added = fresh.length;
+          return added ? { txns: [...fresh, ...s.txns] } : s;
+        });
+        return added;
+      },
+      deleteTxnBatch: (batch) => {
+        let removed = 0;
+        set((s) => {
+          const kept = s.txns.filter((t) => t.importBatch !== batch);
+          removed = s.txns.length - kept.length;
+          return removed ? { txns: kept } : s;
+        });
+        return removed;
+      },
       addSub: (sub) => set((s) => ({ subs: [...s.subs, { ...sub, id: uid() }] })),
       deleteSub: (id) => set((s) => ({ subs: s.subs.filter((x) => x.id !== id) })),
 
