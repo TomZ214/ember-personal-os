@@ -2,27 +2,22 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import {
-  Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Sun, WifiOff,
-} from "lucide-react";
+import { WifiOff } from "lucide-react";
 import { useEmber } from "@/lib/store";
 import { useLang, useT } from "@/lib/i18n";
-import { condition, conditionLabel, type Condition } from "@/lib/weather";
+import { condition, conditionLabel } from "@/lib/weather";
+import { WeatherGlyph } from "@/components/weather/WeatherGlyph";
 
 interface Wx {
   temp: number;
   code: number;
+  /** absent in snapshots cached before it existed → treat as day */
+  isDay?: boolean;
   wind: number;
   hi: number;
   lo: number;
   days: { code: number; hi: number; lo: number; label: string }[];
 }
-
-const ICONS: Record<Condition, typeof Sun> = {
-  clear: Sun, partly: CloudSun, cloudy: Cloud, fog: CloudFog, drizzle: CloudDrizzle,
-  rain: CloudRain, snow: CloudSnow, showers: CloudRain, thunder: CloudLightning,
-};
 
 export function WeatherWidget() {
   const { latitude, longitude, place } = useEmber((s) => s.settings);
@@ -45,7 +40,7 @@ export function WeatherWidget() {
           }
         }
         return fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,weather_code&forecast_days=4&timezone=auto`,
+          `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code,is_day,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,weather_code&forecast_days=4&timezone=auto`,
         ).then((r) => r.json());
       })
       .then((d) => {
@@ -62,6 +57,7 @@ export function WeatherWidget() {
         const data: Wx = {
           temp: Math.round(d.current.temperature_2m),
           code: d.current.weather_code,
+          isDay: d.current.is_day !== 0,
           wind: Math.round(d.current.wind_speed_10m),
           hi: days[0].hi,
           lo: days[0].lo,
@@ -93,7 +89,6 @@ export function WeatherWidget() {
       </div>
     );
 
-  const Icon = ICONS[condition(wx.code)];
   const dayLabel = (label: string) =>
     label === "__today__" ? t("w.today") : label === "__tomorrow__" ? t("w.tomorrow") : label;
 
@@ -118,22 +113,17 @@ export function WeatherWidget() {
             {conditionLabel(wx.code, lang)} · H {wx.hi}° L {wx.lo}°
           </p>
         </div>
-        <motion.span
-          initial={{ scale: 0.6, opacity: 0, rotate: -12 }}
-          animate={{ scale: 1, opacity: 1, rotate: 0 }}
-          transition={{ type: "spring", stiffness: 200, damping: 16 }}
-          className="text-info"
-        >
-          <Icon size={40} strokeWidth={1.5} />
-        </motion.span>
+        {/* deliberately not animated: a transformed layer over the blurred
+            backdrop showed as a dark box around the icon on iPad */}
+        <WeatherGlyph cond={condition(wx.code)} isDay={wx.isDay !== false} size={60} className="-mr-1 -mt-1" />
       </div>
       <div className="mt-5 grid grid-cols-4 gap-1 border-t border-white/[0.06] pt-4">
         {wx.days.map((d, i) => {
-          const DIcon = ICONS[condition(d.code)];
           return (
-            <div key={i} className="flex flex-col items-center gap-1.5">
-              <span className="text-[11px] text-faint">{d.label === "__today__" ? t("w.now") : dayLabel(d.label).slice(0, 3)}</span>
-              <DIcon size={16} className="text-muted" strokeWidth={1.8} />
+            <div key={i} className="flex flex-col items-center gap-1">
+              {/* full words: slicing "Morgen" to three letters gave "Mor" */}
+              <span className="text-[11px] text-faint">{d.label === "__today__" ? t("w.now") : dayLabel(d.label)}</span>
+              <WeatherGlyph cond={condition(d.code)} isDay={i === 0 ? wx.isDay !== false : true} size={26} />
               <span className="num text-xs">
                 {d.hi}° <span className="text-faint">{d.lo}°</span>
               </span>
