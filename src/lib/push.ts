@@ -88,7 +88,7 @@ export async function enablePush(userId: string): Promise<string | null> {
   const json = sub.toJSON() as { endpoint?: string; keys?: { p256dh: string; auth: string } };
   if (!json.endpoint || !json.keys) return "The browser returned an unusable subscription.";
 
-  const sb = supabase();
+  const sb = await supabase();
   if (!sb) return "Cloud sync isn't configured.";
   const { error } = await sb.from("push_subscriptions").upsert({
     endpoint: json.endpoint,
@@ -126,7 +126,7 @@ export async function refreshPushSubscription(userId: string): Promise<void> {
 
   const json = sub.toJSON() as { endpoint?: string; keys?: { p256dh: string; auth: string } };
   if (!json.endpoint || !json.keys) return;
-  await supabase()?.from("push_subscriptions").upsert({
+  await (await supabase())?.from("push_subscriptions").upsert({
     endpoint: json.endpoint,
     user_id: userId,
     p256dh: json.keys.p256dh,
@@ -140,7 +140,7 @@ export async function disablePush(): Promise<void> {
   if (!sub) return;
   const endpoint = sub.endpoint;
   await sub.unsubscribe();
-  await supabase()?.from("push_subscriptions").delete().eq("endpoint", endpoint);
+  await (await supabase())?.from("push_subscriptions").delete().eq("endpoint", endpoint);
 }
 
 /** fire a one-off notification through the server, to prove the whole chain works */

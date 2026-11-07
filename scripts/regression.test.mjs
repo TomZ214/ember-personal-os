@@ -76,7 +76,7 @@ function syncFixture() {
     react: { useEffect: (fn) => { effect = fn; }, useRef: () => ({ current: false }) },
     zustand: { create },
     "@/lib/cloud": {
-      supabase: () => sb, cloudConfigured: () => true,
+      supabase: async () => sb, cloudConfigured: () => true,
       LAST_SYNC_KEY: "last-sync", deviceId: () => "device",
       pullCloud: async () => { pulls++; return pull(); },
       pushCloud: async () => { pushes++; return "2026-11-02T12:00:00Z"; },
@@ -105,6 +105,8 @@ function syncFixture() {
     signOut: () => { session = null; auth("SIGNED_OUT", null); },
     counters: () => ({ pulls, claims, pushes }),
     async run(delay) {
+      // the client arrives asynchronously; let the engine start first
+      for (let i = 0; i < 12; i++) await Promise.resolve();
       for (const [id, timer] of [...timers]) {
         if (timer.delay === delay) { timers.delete(id); await timer.fn(); }
       }
@@ -475,4 +477,30 @@ test("every Finanzguru import text exists in English and German", () => {
     assert.ok(i18n.slice(0, deStart).includes(`"${k}":`), `missing English ${k}`);
     assert.ok(i18n.slice(deStart).includes(`"${k}":`), `missing German ${k}`);
   }
+});
+
+test("the Supabase client loads on demand, once, and recovers from a failed load", async () => {
+  let loads = 0, created = 0, fail = true;
+  const sdk = new Proxy({}, { get(_, key) {
+    if (key === "createClient") return () => ({ id: ++created });
+    return undefined;
+  } });
+  const env = { NEXT_PUBLIC_SUPABASE_URL: "https://x.supabase.co", NEXT_PUBLIC_SUPABASE_ANON_KEY: "key" };
+  const make = (environment) => sourceLoader({
+    "@supabase/supabase-js": new Proxy({}, { get(_, key) {
+      if (key === "__esModule") return true;
+      loads++;
+      if (fail) { fail = false; throw new Error("chunk failed"); }
+      return sdk[key];
+    } }),
+    "./store": { useEmber: { getState: () => ({}) } },
+    "./crypto": { VAULT_STORAGE_KEY: "vault" },
+  }, { process: { env: environment } })("src/lib/cloud.ts");
+  assert.equal(await make({}).supabase(), null, "not configured → no client, nothing loaded");
+  assert.equal(loads, 0);
+  const cloud = make(env);
+  await assert.rejects(cloud.supabase(), /chunk failed/);
+  const [a, b] = await Promise.all([cloud.supabase(), cloud.supabase()]);
+  assert.equal(a, b, "one client for everyone");
+  assert.equal(created, 1);
 });

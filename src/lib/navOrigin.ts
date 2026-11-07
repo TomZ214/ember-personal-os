@@ -33,6 +33,24 @@ export function recordNavOrigin(x: number, y: number) {
   write({ x, y, back: false });
 }
 
+/**
+ * Hand the View Transition its origin: the route-transition keyframes in
+ * globals.css grow the new page out of this viewport point. They read the
+ * values from <html>, the element the transition pseudo-elements hang off.
+ */
+export function markTransitionOrigin(x: number, y: number) {
+  const root = document.documentElement;
+  const page = document.querySelector("main > div")?.getBoundingClientRect();
+  if (page) {
+    root.style.setProperty("--nav-old-x", `${Math.round(x - page.left)}px`);
+    root.style.setProperty("--nav-old-y", `${Math.round(y - page.top)}px`);
+    // the new page arrives scrolled to the top
+    root.style.setProperty("--nav-x", `${Math.round(x - page.left)}px`);
+    root.style.setProperty("--nav-y", `${Math.round(y - page.top - window.scrollY)}px`);
+  }
+  root.dataset.nav = "forward";
+}
+
 /** Browser back/forward: the page should recede rather than grow. */
 export function recordBackNav() {
   write({ x: 0, y: 0, back: true });

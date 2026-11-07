@@ -733,6 +733,88 @@ h1, h2, h3 {
   opacity: 0;
   animation: boot-beam 850ms cubic-bezier(0.22, 1, 0.36, 1) 50ms both;
 }
+/* ---- Route transitions ----------------------------------------------------
+   template.tsx wraps each page in a React <ViewTransition>; a navigation
+   snapshots the old page, renders the new one, and these keyframes animate
+   the two snapshots on the compositor. The shell (top bar, dock, wallpaper)
+   is the root snapshot and simply stays put.
+   Forward: the old page tips back and falls away, the new one swings up out
+   of the tapped point (--nav-x/-y, set by NavOriginTracker). Back: the old
+   page sinks, the previous one settles down from above.                     */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+::view-transition-old(.page-exit) {
+  transform-origin: var(--nav-old-x, 50%) var(--nav-old-y, 0px);
+  animation: page-exit 320ms cubic-bezier(0.4, 0, 0.85, 0.4) both;
+}
+::view-transition-new(.page-enter) {
+  transform-origin: var(--nav-x, 50%) var(--nav-y, 0px);
+  animation: page-enter 680ms cubic-bezier(0.16, 1.12, 0.3, 1) 110ms both;
+}
+@keyframes page-exit {
+  to {
+    opacity: 0;
+    transform: perspective(1400px) translateY(-26px) rotateX(8deg) scale(0.9);
+  }
+}
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: perspective(1400px) translateY(64px) rotateX(-10deg) scale(0.84);
+  }
+  45% { opacity: 1; }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+html[data-nav="back"]::view-transition-old(.page-exit) {
+  transform-origin: 50% 0;
+  animation-name: page-exit-back;
+}
+html[data-nav="back"]::view-transition-new(.page-enter) {
+  transform-origin: 50% 0;
+  animation-name: page-enter-back;
+}
+@keyframes page-exit-back {
+  to { opacity: 0; transform: translateY(48px) scale(0.94); }
+}
+@keyframes page-enter-back {
+  from { opacity: 0; transform: translateY(-36px) scale(1.06); }
+  to { opacity: 1; transform: none; }
+}
+/* less motion: a short crossfade instead of the flight */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(.page-exit),
+  html[data-nav="back"]::view-transition-old(.page-exit) {
+    animation: page-fade-out 140ms ease-out both;
+  }
+  ::view-transition-new(.page-enter),
+  html[data-nav="back"]::view-transition-new(.page-enter) {
+    animation: page-fade-in 180ms ease-out both;
+  }
+}
+/* The shell rides above the pages in flight: top bar, dock and tab bar get
+   their own transition layer (named in their components) that neither moves
+   nor crossfades — the live new state simply stays on top. */
+::view-transition-group(shell-topbar),
+::view-transition-group(shell-dock),
+::view-transition-group(shell-tabs),
+::view-transition-new(shell-topbar),
+::view-transition-new(shell-dock),
+::view-transition-new(shell-tabs) {
+  animation: none;
+}
+::view-transition-old(shell-topbar),
+::view-transition-old(shell-dock),
+::view-transition-old(shell-tabs) {
+  display: none;
+}
+@keyframes page-fade-out { to { opacity: 0; } }
+@keyframes page-fade-in { from { opacity: 0; } }
+
 /* asked for less motion: no curtain at all, hidden before it is ever painted */
 @media (prefers-reduced-motion: reduce) {
   .boot-curtain { display: none; }
