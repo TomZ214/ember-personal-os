@@ -144,6 +144,12 @@ export interface Txn {
   category: string;
   date: string; // yyyy-MM-dd
   note: string;
+  /** imported rows: stable key, so a re-import never adds a row twice */
+  importKey?: string;
+  /** imported rows: which import added it, so that import can be undone */
+  importBatch?: string;
+  /** imported rows: the bank account it was booked on */
+  account?: string;
 }
 
 export interface Subscription {
