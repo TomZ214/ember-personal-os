@@ -50,7 +50,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <LightingProvider />
       <AmbientParticles />
       <TopBar />
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pb-32 pt-6 sm:px-6 md:pb-28">
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pb-32 pt-6 sm:px-6 md:pb-[calc(6.5rem+max(1rem,env(safe-area-inset-bottom)))]">
         {children}
       </main>
       <Dock />

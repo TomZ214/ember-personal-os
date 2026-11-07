@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -9,23 +9,39 @@ import {
 import { useT } from "@/lib/i18n";
 import { NAV, type NavItem } from "./nav";
 
-/** macOS-style dock with cursor magnification. Desktop only. */
+/* A finger has no hover, so on touch screens (iPad) the dock drops the
+   magnification and uses 44pt targets instead (Apple's minimum). An iPad
+   with a trackpad reports pointer "mouse" and gets the full dock. */
+const coarseQuery = "(pointer: coarse) and (hover: none)";
+function subscribeCoarse(cb: () => void) {
+  const mq = window.matchMedia(coarseQuery);
+  mq.addEventListener("change", cb);
+  return () => mq.removeEventListener("change", cb);
+}
+const useTouchOnly = () =>
+  useSyncExternalStore(subscribeCoarse, () => window.matchMedia(coarseQuery).matches, () => false);
+
+/** macOS-style dock with cursor magnification. Tablet and desktop. */
 export function Dock() {
   const mouseX = useMotionValue(Infinity);
   const pathname = usePathname();
+  const touch = useTouchOnly();
 
   return (
     <nav
       aria-label="Main"
-      className="fixed inset-x-0 bottom-4 z-(--z-sticky) hidden justify-center md:flex"
+      // clears the iPad home indicator instead of sitting on top of it
+      className="fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-(--z-sticky) hidden justify-center md:flex"
     >
       <motion.div
-        onMouseMove={(e) => mouseX.set(e.clientX)}
-        onMouseLeave={() => mouseX.set(Infinity)}
-        className="glass-strong glass-edge relative flex h-[60px] items-end gap-1.5 rounded-2xl px-2.5 pb-2 shadow-[0_18px_60px_-10px_rgba(0,0,0,0.65)]"
+        // pointer events, mouse only: iOS replays a tap as mousemove, which
+        // left an icon magnified (and its label up) after every tap
+        onPointerMove={(e) => { if (e.pointerType === "mouse") mouseX.set(e.clientX); }}
+        onPointerLeave={() => mouseX.set(Infinity)}
+        className={`glass-strong glass-edge relative flex items-end gap-1.5 rounded-2xl px-2.5 pb-2 shadow-[0_18px_60px_-10px_rgba(0,0,0,0.65)] ${touch ? "h-[64px]" : "h-[60px]"}`}
       >
         {NAV.map((item) => (
-          <DockIcon key={item.href} item={item} mouseX={mouseX} active={isActive(pathname, item.href)} />
+          <DockIcon key={item.href} item={item} mouseX={mouseX} touch={touch} active={isActive(pathname, item.href)} />
         ))}
       </motion.div>
     </nav>
@@ -36,7 +52,7 @@ function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 
-function DockIcon({ item, mouseX, active }: { item: NavItem; mouseX: MotionValue<number>; active: boolean }) {
+function DockIcon({ item, mouseX, active, touch }: { item: NavItem; mouseX: MotionValue<number>; active: boolean; touch: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState(false);
   const t = useT();
@@ -46,9 +62,10 @@ function DockIcon({ item, mouseX, active }: { item: NavItem; mouseX: MotionValue
     const r = ref.current?.getBoundingClientRect();
     return r ? x - (r.x + r.width / 2) : Infinity;
   });
-  const sizeRaw = useTransform(distance, [-110, 0, 110], [38, 58, 38]);
+  const rest = touch ? 46 : 38;
+  const sizeRaw = useTransform(distance, [-110, 0, 110], [rest, touch ? rest : 58, rest]);
   const size = useSpring(sizeRaw, { mass: 0.1, stiffness: 320, damping: 16 });
-  const iconScale = useTransform(size, [38, 58], [1, 1.28]);
+  const iconScale = useTransform(size, [rest, 58], [1, 1.28]);
 
   const Icon = item.icon;
 
@@ -71,10 +88,11 @@ function DockIcon({ item, mouseX, active }: { item: NavItem; mouseX: MotionValue
         href={item.href}
         aria-label={label}
         aria-current={active ? "page" : undefined}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        onPointerEnter={(e) => { if (e.pointerType === "mouse") setHovered(true); }}
+        onPointerLeave={() => setHovered(false)}
+        onClick={() => setHovered(false)}
         /* app icons lean toward the cursor as it travels the dock */
-        data-magnetic=""
+        data-magnetic={touch ? undefined : ""}
         className="outline-offset-4"
       >
         <motion.span
@@ -87,7 +105,7 @@ function DockIcon({ item, mouseX, active }: { item: NavItem; mouseX: MotionValue
           }`}
         >
           <motion.span style={{ scale: iconScale }} className="flex">
-            <Icon size={19} strokeWidth={1.9} />
+            <Icon size={touch ? 21 : 19} strokeWidth={1.9} />
           </motion.span>
         </motion.span>
       </Link>

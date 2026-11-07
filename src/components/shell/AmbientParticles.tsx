@@ -24,29 +24,32 @@ import { THEME_PARTICLES } from "@/lib/motion";
 /** Tuned for a desktop canvas; CSS drops the tail on phones. */
 const COUNT = 30;
 
-/** cheap deterministic pseudo-random in [0,1) — stable across SSR/CSR */
+/** cheap deterministic pseudo-random in [0,1) — stable across SSR/CSR.
+ *  Rounded to 4 places: Math.sin differs in the last digits between the
+ *  server's and the browser's engine, which broke hydration. */
 function rand(seed: number) {
   const x = Math.sin(seed * 12.9898) * 43758.5453;
-  return x - Math.floor(x);
+  return Math.round((x - Math.floor(x)) * 1e4) / 1e4;
 }
+const r2 = (n: number) => Math.round(n * 100) / 100;
 
 const PARTICLES = Array.from({ length: COUNT }, (_, i) => {
   const a = rand(i + 1);
   const b = rand(i + 7.3);
   const c = rand(i + 19.1);
-  const size = 2.5 + b * 4;
+  const size = r2(2.5 + b * 4);
   return {
     id: i,
-    left: a * 100,
+    left: r2(a * 100),
     size,
-    duration: 20 + c * 22,
+    duration: r2(20 + c * 22),
     // negative delay: the drift is already mid-flight on first paint instead
     // of every particle launching from the floor at once
-    delay: -(a * 40),
-    drift: `${(b - 0.5) * 90}px`,
-    opacity: 0.28 + c * 0.34,
+    delay: -r2(a * 40),
+    drift: `${r2((b - 0.5) * 90)}px`,
+    opacity: r2(0.28 + c * 0.34),
     // the halo scales with the ember, which is what sells the colour
-    glow: `${size * 2.4}px`,
+    glow: `${r2(size * 2.4)}px`,
     color: THEME_PARTICLES[i % THEME_PARTICLES.length],
   };
 });

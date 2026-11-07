@@ -30,6 +30,23 @@ export function ViewportFix() {
       );
     };
 
+    // The on-screen keyboard shrinks only the *visual* viewport; fixed dialogs
+    // are laid out against the full window, so on an iPad their lower half
+    // (and the Save button) ended up behind the keyboard. Publish the visible
+    // area so dialogs can fit into it.
+    const root = document.documentElement.style;
+    let frame = 0;
+    const publish = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        root.setProperty("--vv-height", `${Math.round(vv.height)}px`);
+        root.setProperty("--vv-top", `${Math.round(vv.offsetTop)}px`);
+      });
+    };
+    publish();
+    vv.addEventListener("resize", publish);
+    vv.addEventListener("scroll", publish);
+
     let t: ReturnType<typeof setTimeout> | undefined;
     const nudge = () => {
       clearTimeout(t);
@@ -45,6 +62,9 @@ export function ViewportFix() {
     document.addEventListener("focusout", nudge);
     return () => {
       clearTimeout(t);
+      cancelAnimationFrame(frame);
+      vv.removeEventListener("resize", publish);
+      vv.removeEventListener("scroll", publish);
       vv.removeEventListener("resize", nudge);
       document.removeEventListener("focusout", nudge);
     };

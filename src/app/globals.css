@@ -171,6 +171,20 @@
 
 html {
   color-scheme: dark;
+  /* iOS/iPadOS: no grey flash over every tapped control, and no font
+     inflation when the iPad rotates to landscape. */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Touch: no double-tap-zoom wait on controls, and no "copy / share link"
+   callout when a nav item is held a moment too long. */
+a, button, [role="button"], [role="tab"], label, summary, select {
+  touch-action: manipulation;
+}
+nav a, nav button {
+  -webkit-touch-callout: none;
 }
 
 body {
@@ -467,8 +481,10 @@ h1, h2, h3 {
 .glow-brand.glow-hover {
   transition: box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
-[data-glass="on"] .glow-brand.glow-hover:hover {
-  box-shadow: 0 3px 30px -3px var(--primary-glow);
+@media (hover: hover) {
+  [data-glass="on"] .glow-brand.glow-hover:hover {
+    box-shadow: 0 3px 30px -3px var(--primary-glow);
+  }
 }
 [data-fx="reduced"] .glow-brand {
   box-shadow: 0 2px 12px -6px var(--primary-glow);
@@ -509,8 +525,10 @@ h1, h2, h3 {
     translate 380ms cubic-bezier(0.22, 1, 0.36, 1),
     scale 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
-[data-glass="on"] [data-magnetic]:hover {
-  scale: 1.02;
+@media (hover: hover) {
+  [data-glass="on"] [data-magnetic]:hover {
+    scale: 1.02;
+  }
 }
 [data-magnetic]:active {
   scale: 0.985;
@@ -548,11 +566,15 @@ h1, h2, h3 {
     background-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
     transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
 }
-.panel-hover:hover {
-  background: oklch(1 0 0 / 0.055);
-  border-color: oklch(1 0 0 / 0.12);
-  /* the card lifts toward you — transform only, so it composites on the GPU */
-  transform: translateY(-2px);
+/* Hover lifts only where a real pointer hovers: on iPad a tap fires :hover
+   and it sticks until the next tap elsewhere, leaving the card raised. */
+@media (hover: hover) {
+  .panel-hover:hover {
+    background: oklch(1 0 0 / 0.055);
+    border-color: oklch(1 0 0 / 0.12);
+    /* the card lifts toward you — transform only, so it composites on the GPU */
+    transform: translateY(-2px);
+  }
 }
 
 /* With glass on, the lift gains depth: the card rises further, the shadow
@@ -563,10 +585,12 @@ h1, h2, h3 {
     box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
     background-color 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
-[data-glass="on"] .panel-hover:hover {
-  transform: translate3d(0, -3px, 0) scale(1.004);
-  --panel-catch: oklch(1 0 0 / 0.16);
-  --panel-drop: 0 28px 60px -28px oklch(0 0 0 / 0.95);
+@media (hover: hover) {
+  [data-glass="on"] .panel-hover:hover {
+    transform: translate3d(0, -3px, 0) scale(1.004);
+    --panel-catch: oklch(1 0 0 / 0.16);
+    --panel-drop: 0 28px 60px -28px oklch(0 0 0 / 0.95);
+  }
 }
 [data-glass="on"] .panel-hover:active {
   transform: translate3d(0, 0, 0) scale(0.995);
@@ -614,8 +638,10 @@ h1, h2, h3 {
 }
 
 /* The count is tuned for a desktop canvas; on a phone that many embers in a
-   fraction of the area reads as busy, so the tail of them drops out. */
-@media (max-width: 767px) {
+   fraction of the area reads as busy, so the tail of them drops out. Tablets
+   drop it too: every ember under a pane re-runs that pane's backdrop blur,
+   which a tablet GPU (iPad Air 4 / A14) feels at 2x resolution. */
+@media (max-width: 767px), (pointer: coarse) {
   .ambient-particle:nth-child(n + 19) {
     display: none;
   }
@@ -1040,12 +1066,22 @@ select option {
   background: oklch(0.17 0.004 27);
   color: var(--ink);
 }
-/* iOS zooms the whole page into any field set below 16px */
+/* iOS zooms the whole page into any field set below 16px — every text
+   field, not only the shared .glass-input ones. */
 @media (pointer: coarse) {
-  input.glass-input,
-  select.glass-input,
-  textarea.glass-input {
+  input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"]),
+  select,
+  textarea {
     font-size: 16px;
+  }
+}
+
+/* Controls revealed on hover (delete, move) would be invisible on a touch
+   screen, which has no hover — show them. Tooltips are pointer-events-none
+   and stay hover-only. */
+@media (hover: none) {
+  .group-hover\:opacity-100:not(.pointer-events-none) {
+    opacity: 1;
   }
 }
 /* A field is a well: it sits below the pane, where buttons sit on it. */
@@ -1111,9 +1147,11 @@ select option {
     0 0 0 1px oklch(0.3 0.02 27 / 0.07) inset,
     var(--panel-drop);
 }
-[data-appearance="light"][data-glass="on"] .panel-hover:hover {
-  --panel-catch: oklch(1 0 0 / 1);
-  --panel-drop: 0 26px 50px -28px oklch(0.3 0.02 250 / 0.38);
+@media (hover: hover) {
+  [data-appearance="light"][data-glass="on"] .panel-hover:hover {
+    --panel-catch: oklch(1 0 0 / 1);
+    --panel-drop: 0 26px 50px -28px oklch(0.3 0.02 250 / 0.38);
+  }
 }
 [data-appearance="light"][data-glass="off"] .glass,
 [data-appearance="light"][data-glass="off"] .glass-strong,

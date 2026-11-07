@@ -37,7 +37,10 @@ export function isStandalone(): boolean {
 
 export function isIOS(): boolean {
   if (typeof navigator === "undefined") return false;
-  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+  // iPadOS Safari asks for desktop sites and reports itself as a Mac; a Mac
+  // with a multi-touch screen is an iPad.
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+    (/macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
 }
 
 export function permission(): NotificationPermission | "unsupported" {
