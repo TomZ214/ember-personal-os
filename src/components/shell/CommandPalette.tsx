@@ -15,6 +15,8 @@ import { useLang, useT } from "@/lib/i18n";
 import { toast } from "@/components/ui/toast";
 import { Kbd } from "@/components/ui/misc";
 import { NAV } from "./nav";
+import { markNavDirection } from "@/lib/navOrigin";
+import { transitionTo } from "@/lib/routeTransition";
 
 interface Result {
   id: string;
@@ -76,7 +78,9 @@ export function CommandPalette() {
     const query = q.trim().toLowerCase();
     const out: Result[] = [];
     const go = (href: string) => () => {
-      router.push(href);
+      // same screen crossfade as a link click
+      markNavDirection("forward");
+      transitionTo(() => router.push(href));
       setOpen(false);
     };
 

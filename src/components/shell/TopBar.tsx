@@ -1,6 +1,6 @@
 "use client";
 
-import { ViewTransition, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { Flame, Search } from "lucide-react";
@@ -28,9 +28,6 @@ export function TopBar() {
     // pt-safe: in the iOS home-screen app the page runs under the status bar.
     // In the desktop shell this header doubles as the frameless title bar, so
     // the whole strip (minus the interactive controls) is a drag region.
-    // its own layer during a route View Transition, so a page in flight passes
-    // beneath it (React applies the name only while a transition runs)
-    <ViewTransition name="shell-topbar">
     <header
       className="sticky top-0 z-(--z-sticky) border-b border-white/[0.06] bg-bg-deep/70 pt-[env(safe-area-inset-top)] backdrop-blur-xl"
       {...(desktop ? { "data-tauri-drag-region": true } : {})}
@@ -72,6 +69,5 @@ export function TopBar() {
         </div>
       </div>
     </header>
-    </ViewTransition>
   );
 }
