@@ -3,22 +3,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Droplets, Eye,
-  Gauge, Sun, Sunrise, Sunset, Umbrella, Wind, WifiOff,
+  Cloud, Droplets, Eye, Gauge, Sun, Sunrise, Sunset, Umbrella, Wind, WifiOff,
 } from "lucide-react";
 import { useEmber, useHydrated } from "@/lib/store";
 import { useLang, useT } from "@/lib/i18n";
 import {
   aqiMeta, condition, conditionLabel, fetchWeather, hhmm, moonPhase, uvMeta, windCompass,
-  type Condition, type WeatherData,
+  type WeatherData,
 } from "@/lib/weather";
 import { WeatherBackground } from "@/components/weather/WeatherBackground";
+import { WeatherGlyph } from "@/components/weather/WeatherGlyph";
 import { PageHeader } from "@/components/ui/misc";
-
-const ICONS: Record<Condition, typeof Sun> = {
-  clear: Sun, partly: CloudSun, cloudy: Cloud, fog: CloudFog, drizzle: CloudDrizzle,
-  rain: CloudRain, snow: CloudSnow, showers: CloudRain, thunder: CloudLightning,
-};
 
 export default function WeatherPage() {
   const hydrated = useHydrated();
@@ -59,7 +54,6 @@ export default function WeatherPage() {
 
   const c = wx.current;
   const cond = condition(c.code);
-  const Icon = ICONS[cond];
   const moon = moonPhase(new Date(), lang);
   const uv = uvMeta(c.uv, lang);
   const air = aqiMeta(c.aqi, lang);
@@ -92,14 +86,9 @@ export default function WeatherPage() {
                 H {wx.todayHi}° · L {wx.todayLo}° · {t("wx.feels")} {c.feels}°
               </p>
             </div>
-            <motion.span
-              initial={{ scale: 0.5, opacity: 0, rotate: -14 }}
-              animate={{ scale: 1, opacity: 1, rotate: 0 }}
-              transition={{ type: "spring", stiffness: 180, damping: 15 }}
-              className="text-white drop-shadow-md"
-            >
-              <Icon size={64} strokeWidth={1.4} />
-            </motion.span>
+            {/* not animated, no CSS filter: either turns into a dark box over
+                the blurred hero background in iPad Safari */}
+            <WeatherGlyph cond={cond} isDay={c.isDay} size={96} className="-mr-2 -mt-2" />
           </div>
         </div>
       </motion.div>
@@ -108,14 +97,14 @@ export default function WeatherPage() {
       <Section title={t("wx.next48")}>
         <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1">
           {wx.hourly.map((h, i) => {
-            const HIcon = ICONS[condition(h.code)];
             return (
               <div key={h.time} className="flex min-w-[58px] flex-col items-center gap-2 rounded-2xl bg-white/[0.03] px-2 py-3">
                 <span className="text-[11px] text-faint">
                   {i === 0 ? t("wx.now") : new Date(h.time).toLocaleTimeString(lang === "de" ? "de-DE" : "en-GB", { hour: "2-digit" })}
                 </span>
-                <HIcon size={18} className={h.isDay ? "text-accent" : "text-info"} strokeWidth={1.8} />
-                {h.precipProb > 10 && <span className="text-[10px] text-info">{h.precipProb}%</span>}
+                <WeatherGlyph cond={condition(h.code)} isDay={h.isDay} size={28} />
+                {/* the line is always there, so every temperature sits at the same height */}
+                <span className={`h-3 text-[10px] leading-3 text-info ${h.precipProb > 10 ? "" : "invisible"}`}>{h.precipProb}%</span>
                 <span className="num text-sm font-medium">{h.temp}°</span>
               </div>
             );
@@ -291,7 +280,6 @@ function TenDay({ wx }: { wx: WeatherData }) {
   return (
     <ul className="flex flex-col">
       {wx.daily.map((d, i) => {
-        const DIcon = ICONS[condition(d.code)];
         const left = ((d.lo - lo) / span) * 100;
         const width = ((d.hi - d.lo) / span) * 100;
         return (
@@ -299,8 +287,8 @@ function TenDay({ wx }: { wx: WeatherData }) {
             <span className="w-10 shrink-0 text-[13px] font-medium">
               {i === 0 ? t("wx.today") : new Date(d.date).toLocaleDateString(lang === "de" ? "de-DE" : "en", { weekday: "short" })}
             </span>
-            <span className="flex w-10 shrink-0 items-center gap-1 text-info">
-              <DIcon size={16} strokeWidth={1.8} />
+            <span className="flex w-10 shrink-0 items-center justify-center">
+              <WeatherGlyph cond={condition(d.code)} size={26} />
             </span>
             <span className="w-9 shrink-0 text-right text-[11px] text-info">
               {d.precipProb > 10 ? `${d.precipProb}%` : ""}
