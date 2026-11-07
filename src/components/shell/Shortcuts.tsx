@@ -10,6 +10,8 @@ import { useT } from "@/lib/i18n";
 import { EASE } from "@/lib/motion";
 import { playCue } from "@/lib/sound";
 import { Kbd } from "@/components/ui/misc";
+import { markNavDirection } from "@/lib/navOrigin";
+import { transitionTo } from "@/lib/routeTransition";
 
 /**
  * Keyboard shortcuts.
@@ -94,7 +96,8 @@ export function Shortcuts() {
         if (href) {
           e.preventDefault();
           playCue("navigate");
-          router.push(href);
+          markNavDirection("forward");
+          transitionTo(() => router.push(href));
         }
         return;
       }

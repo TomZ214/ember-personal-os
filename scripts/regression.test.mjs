@@ -504,3 +504,51 @@ test("the Supabase client loads on demand, once, and recovers from a failed load
   assert.equal(a, b, "one client for everyone");
   assert.equal(created, 1);
 });
+
+test("route transitions navigate inside the view transition and never hang", async () => {
+  const timers = [];
+  let started = 0, done = null, navigated = 0;
+  const document = {
+    startViewTransition: (update) => {
+      started++;
+      done = update();
+      return { ready: Promise.resolve(), finished: done };
+    },
+  };
+  const window = { location: { href: "https://ember.app/tasks", origin: "https://ember.app", pathname: "/tasks" } };
+  const rt = sourceLoader({}, {
+    document, window, URL,
+    setTimeout: (fn, ms) => { timers.push({ fn, ms }); return timers.length; },
+  })("src/lib/routeTransition.ts");
+
+  rt.transitionTo(() => navigated++);
+  assert.equal(started, 1);
+  assert.equal(navigated, 1, "the navigation runs inside the transition");
+  let settled = false;
+  done.then(() => { settled = true; });
+  await Promise.resolve();
+  assert.equal(settled, false, "the old frame is held until the page mounts");
+  rt.routeReady();
+  await Promise.resolve();
+  assert.equal(settled, true);
+
+  // a page that never mounts cannot freeze the screen
+  rt.transitionTo(() => navigated++);
+  let released = false;
+  done.then(() => { released = true; });
+  const guard = timers.at(-1);
+  assert.equal(guard.ms, 1500);
+  guard.fn();
+  await Promise.resolve();
+  assert.equal(released, true);
+
+  assert.equal(rt.isRouteChange("/habits"), true);
+  assert.equal(rt.isRouteChange("/tasks?view=list"), false, "same page, other query: no transition");
+  assert.equal(rt.isRouteChange("https://example.com/x"), false);
+
+  // without View Transitions the navigation simply happens
+  const plain = sourceLoader({}, { document: {}, window, URL, setTimeout })("src/lib/routeTransition.ts");
+  let direct = 0;
+  plain.transitionTo(() => direct++);
+  assert.equal(direct, 1);
+});

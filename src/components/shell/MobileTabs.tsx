@@ -1,6 +1,6 @@
 "use client";
 
-import { ViewTransition, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
@@ -24,8 +24,6 @@ export function MobileTabs() {
 
   return (
     <>
-      {/* its own layer during a route View Transition: pages pass beneath */}
-      <ViewTransition name="shell-tabs">
       <nav
         aria-label="Main"
         // The bar FLOATS (inset-x-3 / bottom), so the home indicator has to be
@@ -78,7 +76,6 @@ export function MobileTabs() {
           <span className={`relative text-[10px] font-medium ${inPrimary ? "text-faint" : "text-ink"}`}>{t("nav.apps")}</span>
         </button>
       </nav>
-      </ViewTransition>
 
       <AnimatePresence>
         {appsOpen && (
