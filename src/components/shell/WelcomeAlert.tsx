@@ -14,6 +14,7 @@ import { useGmailUnread } from "@/hooks/useIntegrations";
 import { dayKey, occursOn, todayKey } from "@/lib/dates";
 import { greetingFor, useLang, useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/Button";
+import { bootRemaining } from "./BootSequence";
 
 /**
  * The welcome alert — a Dynamic-Island-flavoured system notification that
@@ -125,7 +126,9 @@ export function WelcomeAlert() {
         setAllClear(true);
         setTimeout(() => setAllClear(false), 4200);
       }
-    }, DECIDE_DELAY_MS);
+      // never under the boot curtain: its entrance would play unseen and
+      // compete with start-up for the GPU
+    }, Math.max(DECIDE_DELAY_MS, bootRemaining()));
     return () => clearTimeout(t);
   }, [hydrated, build]);
 
