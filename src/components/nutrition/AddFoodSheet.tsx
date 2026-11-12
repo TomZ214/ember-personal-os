@@ -308,7 +308,7 @@ function MacroLine({ m, t, lang }: { m: Macros; t: Translator; lang: string }) {
   return (
     <div className="grid grid-cols-4 gap-2 text-center">
       {([["kcal", m.kcal, "kcal"], ["protein", m.protein, "g"], ["carbs", m.carbs, "g"], ["fat", m.fat, "g"]] as const).map(([key, v, u]) => (
-        <div key={key} className="rounded-xl bg-white/[0.04] px-2 py-2.5">
+        <div key={key} className="rounded-xl tile px-2 py-2.5">
           <p className="num text-lg font-semibold">{fmt(v, lang)}<span className="ml-0.5 text-xs font-normal text-muted">{u}</span></p>
           <p className="text-[11px] text-muted">{t(`nut.macro.${key}`)}</p>
         </div>
@@ -443,7 +443,7 @@ function AiTab({ meal, day, onDone }: { meal: Meal; day: string; onDone: () => v
             const m = totalsOf(d);
             const patch = (p: Partial<Draft>) => setItems((list) => list?.map((x, j) => (j === i ? { ...x, ...p } : x)) ?? null);
             return (
-              <li key={i} className={`rounded-xl bg-white/[0.04] p-3 ${d.keep ? "" : "opacity-50"}`}>
+              <li key={i} className={`rounded-xl tile p-3 ${d.keep ? "" : "opacity-50"}`}>
                 <div className="flex items-center gap-2">
                   <input type="checkbox" className="h-5 w-5 shrink-0 accent-[var(--accent)]" checked={d.keep} aria-label={t("nut.include")} onChange={(e) => patch({ keep: e.target.checked })} />
                   {/* the shared Input is w-full, so widths live on wrappers */}

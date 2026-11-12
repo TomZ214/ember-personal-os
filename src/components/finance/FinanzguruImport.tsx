@@ -129,7 +129,7 @@ export function FinanzguruImport({ open, onClose }: { open: boolean; onClose: ()
           <a href={HELP_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm text-accent hover:underline">
             {t("fin.fg.help")} <ExternalLink size={13} />
           </a>
-          <p className="rounded-xl bg-white/[0.04] p-3 text-xs text-muted">{t("fin.fg.noApi")}</p>
+          <p className="rounded-xl tile p-3 text-xs text-muted">{t("fin.fg.noApi")}</p>
           {error && <p role="alert" className="text-sm text-danger">{error}</p>}
           <Button variant="primary" className="w-full" disabled={busy} onClick={() => input.current?.click()}>
             {busy ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
@@ -145,7 +145,7 @@ export function FinanzguruImport({ open, onClose }: { open: boolean; onClose: ()
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="flex items-center gap-3 rounded-xl bg-white/[0.04] p-3">
+          <div className="flex items-center gap-3 rounded-xl tile p-3">
             <FileSpreadsheet size={22} className="shrink-0 text-success" />
             <div className="min-w-0 text-sm">
               <p className="truncate font-medium">{fileName}</p>
@@ -189,7 +189,7 @@ export function FinanzguruImport({ open, onClose }: { open: boolean; onClose: ()
           </label>
 
           {view.transfers > 0 && (
-            <div className="flex items-center justify-between gap-3 rounded-xl bg-white/[0.03] p-3">
+            <div className="flex items-center justify-between gap-3 rounded-xl tile p-3">
               <div>
                 <p className="text-sm font-medium">{t("fin.fg.skipTransfers")}</p>
                 <p className="text-xs text-muted">{t("fin.fg.skipTransfersHint").replace("{n}", String(view.transfers))}</p>
@@ -199,9 +199,9 @@ export function FinanzguruImport({ open, onClose }: { open: boolean; onClose: ()
           )}
 
           <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="rounded-xl bg-white/[0.04] p-3"><p className="num text-lg font-semibold">{view.fresh.length}</p><p className="text-[11px] text-muted">{t("fin.fg.new")}</p></div>
-            <div className="rounded-xl bg-white/[0.04] p-3"><p className="num text-lg font-semibold text-success">{money(view.income)}</p><p className="text-[11px] text-muted">{t("fin.fg.income")}</p></div>
-            <div className="rounded-xl bg-white/[0.04] p-3"><p className="num text-lg font-semibold">{money(view.expenses)}</p><p className="text-[11px] text-muted">{t("fin.fg.expenses")}</p></div>
+            <div className="rounded-xl tile p-3"><p className="num text-lg font-semibold">{view.fresh.length}</p><p className="text-[11px] text-muted">{t("fin.fg.new")}</p></div>
+            <div className="rounded-xl tile p-3"><p className="num text-lg font-semibold text-success">{money(view.income)}</p><p className="text-[11px] text-muted">{t("fin.fg.income")}</p></div>
+            <div className="rounded-xl tile p-3"><p className="num text-lg font-semibold">{money(view.expenses)}</p><p className="text-[11px] text-muted">{t("fin.fg.expenses")}</p></div>
           </div>
           {view.inScope.length > view.fresh.length && (
             <p className="text-xs text-muted">{t("fin.fg.duplicates").replace("{n}", String(view.inScope.length - view.fresh.length))}</p>

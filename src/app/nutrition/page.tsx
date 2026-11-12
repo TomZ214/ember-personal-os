@@ -259,7 +259,7 @@ function TodayView({ day, onAdd }: { day: string; onAdd: (m: Meal) => void }) {
 
 function Stat({ label, value, warn }: { label: string; value: number; warn?: boolean }) {
   return (
-    <div className="rounded-xl bg-white/[0.04] px-2 py-2.5">
+    <div className="rounded-xl tile px-2 py-2.5">
       <p className={`num text-lg font-semibold ${warn ? "text-warning" : ""}`}>{value}</p>
       <p className="text-[11px] text-muted">{label}</p>
     </div>
@@ -492,7 +492,7 @@ function GoalsView({ onDone }: { onDone: () => void }) {
           </Select>
         </label>
         {field("water", t("nut.waterGoal"), "l")}
-        <div className="flex items-center justify-between gap-3 rounded-xl bg-white/[0.03] p-3">
+        <div className="flex items-center justify-between gap-3 rounded-xl tile p-3">
           <div>
             <p className="text-sm font-medium">{t("nut.manual")}</p>
             <p className="text-xs text-muted">{t("nut.manualHint")}</p>

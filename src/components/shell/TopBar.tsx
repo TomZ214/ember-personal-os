@@ -29,7 +29,9 @@ export function TopBar() {
     // In the desktop shell this header doubles as the frameless title bar, so
     // the whole strip (minus the interactive controls) is a drag region.
     <header
-      className="sticky top-0 z-(--z-sticky) border-b border-white/[0.06] bg-bg-deep/70 pt-[env(safe-area-inset-top)] backdrop-blur-xl"
+      // .topbar: with glass on, globals.css turns the flat strip into a pane
+      // (deeper blur, a lit lower lip instead of the hairline border)
+      className="topbar sticky top-0 z-(--z-sticky) border-b border-white/[0.06] bg-bg-deep/70 pt-[env(safe-area-inset-top)] backdrop-blur-xl"
       {...(desktop ? { "data-tauri-drag-region": true } : {})}
     >
       <div
@@ -46,7 +48,7 @@ export function TopBar() {
         <div className="flex items-center gap-2 sm:gap-4">
           <button
             onClick={() => setPaletteOpen(true)}
-            className="flex h-9 items-center gap-2.5 rounded-[11px] border border-white/[0.08] bg-white/[0.05] px-3 text-sm text-muted transition-colors hover:border-white/[0.14] hover:text-ink"
+            className="tile flex h-9 items-center gap-2.5 rounded-[11px] border border-white/[0.08] px-3 text-sm text-muted transition-colors hover:border-white/[0.14] hover:text-ink"
           >
             <Search size={15} />
             <span className="hidden sm:inline">{t("topbar.search")}</span>

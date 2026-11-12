@@ -232,7 +232,7 @@ export function LocalMail() {
                   {active.attachments?.length ? (
                     <div className="mt-5 flex flex-wrap gap-2 border-t border-white/[0.06] pt-4">
                       {active.attachments.map((a) => (
-                        <span key={a.name} className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-[13px]">
+                        <span key={a.name} className="flex items-center gap-2 rounded-xl border border-white/[0.08] tile px-3 py-2 text-[13px]">
                           <Paperclip size={13} className="text-faint" />
                           {a.name}
                           <span className="text-xs text-faint">{a.size}</span>

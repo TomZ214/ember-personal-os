@@ -15,9 +15,11 @@ const styles: Record<Variant, string> = {
   primary:
     "glow-brand glow-hover bg-[image:var(--grad-sunset)] font-semibold text-(--on-sunset) transition-[filter] hover:brightness-110 disabled:shadow-none",
   subtle:
-    "bg-white/[0.06] text-ink border border-white/[0.08] hover:bg-white/[0.10] hover:border-white/[0.14]",
+    // the inset pair is a bevel: lit top edge, shaded bottom edge
+    "bg-white/[0.06] text-ink border border-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.16)] hover:bg-white/[0.10] hover:border-white/[0.14]",
   ghost: "text-muted hover:text-ink hover:bg-white/[0.06]",
-  danger: "bg-danger/15 text-[oklch(0.78_0.13_25)] border border-danger/25 hover:bg-danger/25",
+  danger:
+    "bg-danger/15 text-[oklch(0.78_0.13_25)] border border-danger/25 shadow-[inset_0_1px_0_rgba(255,255,255,0.07),inset_0_-1px_0_rgba(0,0,0,0.16)] hover:bg-danger/25",
 };
 
 const sizes: Record<Size, string> = {

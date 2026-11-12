@@ -98,7 +98,7 @@ export default function WeatherPage() {
         <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1">
           {wx.hourly.map((h, i) => {
             return (
-              <div key={h.time} className="flex min-w-[58px] flex-col items-center gap-2 rounded-2xl bg-white/[0.03] px-2 py-3">
+              <div key={h.time} className="flex min-w-[58px] flex-col items-center gap-2 rounded-2xl tile px-2 py-3">
                 <span className="text-[11px] text-faint">
                   {i === 0 ? t("wx.now") : new Date(h.time).toLocaleTimeString(lang === "de" ? "de-DE" : "en-GB", { hour: "2-digit" })}
                 </span>

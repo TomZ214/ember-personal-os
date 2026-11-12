@@ -495,7 +495,7 @@ function TaskEditor({ open, task, onClose }: { open: boolean; task?: Task; onClo
           <Label>{t("tasks.fSubtasks")}</Label>
           <div className="flex flex-col gap-1.5">
             {subs.map((s) => (
-              <div key={s.id} className="flex items-center gap-2.5 rounded-lg bg-white/[0.04] px-3 py-2">
+              <div key={s.id} className="flex items-center gap-2.5 rounded-lg tile px-3 py-2">
                 <button
                   onClick={() => setSubs(subs.map((x) => (x.id === s.id ? { ...x, done: !x.done } : x)))}
                   aria-label={t("tasks.complete")}

@@ -315,7 +315,7 @@ function AlertCard({
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.14 + i * 0.07, type: "spring", stiffness: 380, damping: 30 }}
-                  className="flex items-center gap-3 rounded-xl bg-white/[0.04] px-3.5 py-2.5"
+                  className="flex items-center gap-3 rounded-xl tile px-3.5 py-2.5"
                 >
                   <span className="text-[15px] leading-none">{item.emoji}</span>
                   <span className="text-sm leading-snug text-ink">{item.text}</span>

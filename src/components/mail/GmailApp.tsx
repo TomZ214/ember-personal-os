@@ -432,7 +432,7 @@ export function GmailApp({ provider = GMAIL_PROVIDER }: { provider?: MailProvide
                         <a
                           key={a.id}
                           href={a.url ?? "#"}
-                          className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-[13px] transition-colors hover:border-white/[0.16]"
+                          className="flex items-center gap-2 rounded-xl border border-white/[0.08] tile px-3 py-2 text-[13px] transition-colors hover:border-white/[0.16]"
                         >
                           <Paperclip size={13} className="text-faint" />
                           {a.filename}
@@ -650,7 +650,7 @@ function GmailCompose({
                   <button
                     key={i}
                     onClick={() => setBody((b) => r + b.slice(b.indexOf("\n\n---") >= 0 ? b.indexOf("\n\n---") : b.length))}
-                    className="rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-left text-[13px] leading-relaxed text-muted transition-colors hover:border-accent/40 hover:text-ink"
+                    className="rounded-xl border border-white/[0.08] tile px-3 py-2 text-left text-[13px] leading-relaxed text-muted transition-colors hover:border-accent/40 hover:text-ink"
                   >
                     {r}
                   </button>

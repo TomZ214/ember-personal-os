@@ -114,7 +114,7 @@ export function BankPanel({ bank }: { bank: ReturnType<typeof useBank> }) {
           <p className="mb-3 text-[13px] font-medium text-muted">{tr("fin.accounts")} · {bank.status?.account}</p>
           <ul className="flex flex-col gap-2.5">
             {bank.accounts.map((a) => (
-              <li key={a.id} className="flex items-center gap-3 rounded-xl bg-white/[0.03] px-3.5 py-3">
+              <li key={a.id} className="flex items-center gap-3 rounded-xl tile px-3.5 py-3">
                 <span className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-accent/12 text-accent">
                   <Landmark size={15} />
                 </span>
