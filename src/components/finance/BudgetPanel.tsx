@@ -250,7 +250,7 @@ export function BudgetPanel({ txns, blur }: { txns: Movement[]; blur: boolean })
 
 function Stat({ label, value, tone, hint }: { label: string; value: string; tone?: string; hint?: string }) {
   return (
-    <div className="rounded-xl bg-white/[0.03] px-3.5 py-2.5">
+    <div className="rounded-xl tile px-3.5 py-2.5">
       <p className="text-[11px] uppercase tracking-wide text-faint">{label}</p>
       <p className="num mt-0.5 truncate text-[15px] font-semibold" style={tone ? { color: tone } : undefined}>
         {value}

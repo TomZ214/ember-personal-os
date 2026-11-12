@@ -261,7 +261,7 @@ export default function QuickAddPage() {
                       initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0 }}
-                      className="flex items-center gap-2.5 rounded-xl bg-white/[0.03] px-3 py-2.5"
+                      className="flex items-center gap-2.5 rounded-xl tile px-3 py-2.5"
                     >
                       <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${done ? "bg-success/20 text-success" : "text-faint"}`}>
                         {done ? <Check size={12} strokeWidth={3} /> : <CircleDashed size={14} />}

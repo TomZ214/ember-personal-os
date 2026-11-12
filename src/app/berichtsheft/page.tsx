@@ -178,7 +178,7 @@ export default function BerichtsheftPage() {
         <h2 className="font-semibold">Bereits behandelt</h2>
         <p className="mt-1 text-xs text-muted">Nur abgeschlossene Berichte zählen. Bekannte Schreibweisen werden zusammengefasst.</p>
         {index.length ? <div className="mt-4 flex flex-wrap gap-2">{index.map(t =>
-          <span className="rounded-lg bg-white/5 px-3 py-2 text-sm" key={t.key} title={t.records.map(label).join(', ')}>
+          <span className="rounded-lg tile px-3 py-2 text-sm" key={t.key} title={t.records.map(label).join(', ')}>
             {t.name} · {t.records.length}{t.records.length > 1 && <span className="text-warning"> · mehrfach</span>}
           </span>)}</div> : <p className="mt-4 text-sm text-muted">Noch keine abgeschlossenen Berichte.</p>}
         {similar.length > 0 && <p className="mt-4 text-sm text-warning">Ähnliche Schreibweisen prüfen: {similar.map(p => p.join(' / ')).join('; ')}</p>}
@@ -202,7 +202,7 @@ export default function BerichtsheftPage() {
 
     <Modal open={pending !== null} onClose={() => { if (!busy) setPending(null); }} title="Import prüfen" wide>
       <p className="mb-4 text-sm text-muted">{pending?.length === 1 ? '1 neuer Eintrag' : `${pending?.length} neue Einträge`}. Themen vor der Übernahme prüfen; identische Einträge wurden bereits übersprungen.</p>
-      <div className="space-y-3">{pending?.map((d, i) => <div className="rounded-xl bg-white/5 p-3" key={d.report.id}>
+      <div className="space-y-3">{pending?.map((d, i) => <div className="rounded-xl tile p-3" key={d.report.id}>
         <p className="mb-2 text-xs text-muted">{d.report.number ? `Bericht ${d.report.number}` : 'Neuer Bericht'}{period(d.report) && ` · ${period(d.report)}`} · {d.report.attachments.length === 1 ? '1 Anhang' : `${d.report.attachments.length} Anhänge`}</p>
         <Input aria-label={`Themen Eintrag ${i + 1}`} value={d.topics} onChange={e => setPending(p => p?.map((x, j) => (j === i ? { ...x, topics: e.target.value } : x)) ?? null)} />
         <TopicHints topics={d.topics} records={records} excludeId={d.report.id} />
@@ -285,7 +285,7 @@ function ReportForm({ draft, records, busy, error, onChange, onError, onSubmit }
     <label className="block"><Label>Dateiverweis</Label><Input value={r.reference} placeholder="Dateiname, mehrere mit | trennen" onChange={e => set({ reference: e.target.value })} /></label>
     <div>
       <Label>Anhänge (DOCX, DOC, PDF, TXT · maximal 20 MB je Datei)</Label>
-      <div className="space-y-1.5">{r.attachments.map(a => <div className="flex items-center justify-between gap-2 rounded-lg bg-white/5 px-3 py-1.5 text-sm" key={a.id}>
+      <div className="space-y-1.5">{r.attachments.map(a => <div className="flex items-center justify-between gap-2 rounded-lg tile px-3 py-1.5 text-sm" key={a.id}>
         <span className="flex min-w-0 items-center gap-2"><Paperclip size={13} className="shrink-0" /><span className="truncate">{a.name}</span></span>
         <Button type="button" size="sm" variant="ghost" aria-label={`${a.name} entfernen`} onClick={() => set({ attachments: r.attachments.filter(x => x.id !== a.id) })}><Trash2 size={14} /></Button>
       </div>)}</div>

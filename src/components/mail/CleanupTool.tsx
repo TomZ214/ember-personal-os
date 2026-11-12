@@ -218,7 +218,7 @@ export function CleanupTool({ open, onClose, onFinished }: { open: boolean; onCl
               />
             </label>
 
-            <p className="flex items-start gap-2 rounded-xl bg-white/[0.04] px-3.5 py-2.5 text-xs leading-relaxed text-muted">
+            <p className="flex items-start gap-2 rounded-xl tile px-3.5 py-2.5 text-xs leading-relaxed text-muted">
               <Undo2 size={14} className="mt-0.5 shrink-0 text-success" />
               {t("clean.safetyNote")}
             </p>
@@ -238,15 +238,15 @@ export function CleanupTool({ open, onClose, onFinished }: { open: boolean; onCl
         {phase === "confirm" && preview && (
           <motion.div key="confirm" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex flex-col gap-4">
             <div className="grid grid-cols-3 gap-3">
-              <div className="rounded-2xl bg-white/[0.04] p-4 text-center">
+              <div className="rounded-2xl tile p-4 text-center">
                 <p className="num text-2xl font-semibold tracking-tight">{preview.count.toLocaleString(lang === "de" ? "de-DE" : "en")}</p>
                 <p className="mt-0.5 text-[11px] uppercase tracking-wide text-faint">{t("clean.emails")}</p>
               </div>
-              <div className="rounded-2xl bg-white/[0.04] p-4 text-center">
+              <div className="rounded-2xl tile p-4 text-center">
                 <p className="num text-2xl font-semibold tracking-tight">≈ {fmtBytes(preview.count * preview.avgBytes)}</p>
                 <p className="mt-0.5 text-[11px] uppercase tracking-wide text-faint">{t("clean.storageFreed")}</p>
               </div>
-              <div className="rounded-2xl bg-white/[0.04] p-4 text-center">
+              <div className="rounded-2xl tile p-4 text-center">
                 <p className="truncate text-sm font-medium leading-8">{[...include].map((s) => t(`clean.scope.${s}`)).join(" · ")}</p>
                 <p className="mt-0.5 text-[11px] uppercase tracking-wide text-faint">{t("clean.affected")}</p>
               </div>

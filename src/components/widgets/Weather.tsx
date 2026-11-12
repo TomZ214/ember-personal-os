@@ -94,15 +94,19 @@ export function WeatherWidget() {
 
   return (
     <Link href="/weather" className="panel panel-hover relative block h-full overflow-hidden p-5">
-      {/* The blob needs its own rounded clipper. WebKit does not reliably clip
-          a blurred child to the parent's border-radius once that parent also
-          carries a backdrop-filter — the blur escapes and squares off whichever
-          corner it sits in, which on iOS was the top right of this card. An
-          inner element with no filter of its own clips correctly. */}
+      {/* A soft sky-coloured glow in the top-right corner, drawn as a gradient
+          and not as a blurred disc: a CSS `filter: blur()` inside a pane that
+          has a backdrop-filter is what WebKit gets wrong (the blur escaped the
+          rounded corner here, and a composited icon above it showed as a dark
+          box on iPad). A gradient needs no filter and clips reliably; it sits
+          in its own clipper so the glow can run past the card's edge. */}
       <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]">
         <span
-          className="absolute -right-10 -top-12 block h-44 w-44 rounded-full opacity-25 blur-3xl"
-          style={{ background: "var(--c-sky)" }}
+          className="absolute -right-[142px] -top-[150px] block h-[380px] w-[380px] rounded-full"
+          style={{
+            background:
+              "radial-gradient(closest-side, color-mix(in oklch, var(--c-sky) 17%, transparent), color-mix(in oklch, var(--c-sky) 9%, transparent) 42%, color-mix(in oklch, var(--c-sky) 3%, transparent) 72%, transparent)",
+          }}
         />
       </span>
       <div className="flex items-start justify-between">

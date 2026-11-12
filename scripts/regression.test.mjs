@@ -552,3 +552,74 @@ test("route transitions navigate inside the view transition and never hang", asy
   plain.transitionTo(() => direct++);
   assert.equal(direct, 1);
 });
+
+test("lighting: falloff, position and frame-rate independent follow", () => {
+  const l = sourceLoader()("src/lib/lighting.ts");
+  const box = { left: 100, top: 100, right: 300, bottom: 200, width: 200, height: 100 };
+  assert.equal(l.distanceToBox(150, 150, box), 0, "inside");
+  assert.equal(l.distanceToBox(300, 200, box), 0, "on the edge counts as inside");
+  assert.equal(l.distanceToBox(350, 150, box), 50);
+  assert.equal(l.distanceToBox(303, 204, box), 5, "corner distance is diagonal");
+
+  assert.equal(l.litStrength(0, 170), 1);
+  assert.equal(l.litStrength(170, 170), 0);
+  assert.equal(l.litStrength(500, 170), 0);
+  assert.equal(l.litStrength(40, 0), 0, "no reach: only the pane under the pointer");
+  assert.equal(l.litStrength(0, 0), 1);
+  // a neighbour never outshines the pane the pointer is on, and it fades monotonically
+  let prev = 1;
+  for (let d = 1; d <= 170; d += 13) {
+    const s = l.litStrength(d, 170);
+    assert.ok(s < prev && s >= 0 && s <= 0.8, `d=${d} s=${s}`);
+    prev = s;
+  }
+
+  const centre = l.lightPosition(200, 150, box);
+  assert.deepEqual([centre.mx, centre.my], [50, 50]);
+  assert.equal(Math.round(l.lightPosition(200, 50, box).angle), 0, "light above: the ring's bright end points up");
+  assert.equal(Math.round(l.lightPosition(400, 150, box).angle), 90, "light to the right");
+  assert.equal(Math.round(l.lightPosition(200, 300, box).angle), 180, "light below");
+  assert.ok(l.lightPosition(350, 150, box).mx > 100, "outside the pane the position runs past 100%");
+  assert.ok(l.lightPosition(50, 150, box).mx < 0);
+
+  // two 120 Hz frames move the light exactly as far as one 60 Hz frame
+  const full = l.followFactor(1000 / 60, 55);
+  const half = l.followFactor(1000 / 120, 55);
+  assert.ok(Math.abs(1 - (1 - half) ** 2 - full) < 1e-12);
+  assert.equal(l.followFactor(0, 55), 0);
+  assert.ok(full > 0.2 && full < 0.35, "about a quarter of the way per 60 Hz frame");
+
+  // the pressed pane is the innermost one under the point
+  const outer = { left: 0, top: 0, right: 400, bottom: 400, width: 400, height: 400 };
+  const inner = { left: 100, top: 100, right: 200, bottom: 200, width: 100, height: 100 };
+  assert.equal(l.innermostAt(150, 150, [outer, inner]), 1);
+  assert.equal(l.innermostAt(300, 300, [outer, inner]), 0);
+  assert.equal(l.innermostAt(900, 900, [outer, inner]), -1);
+});
+
+test("glass: lighting variables are registered non-inheriting and taken explicitly by the light layers", () => {
+  const css = readFileSync(path.join(root, "src/app/globals.css"), "utf8");
+  for (const name of ["--mx", "--my", "--lit", "--gx", "--gy", "--glow", "--lens-angle", "--lens-ring", "--mag-x", "--mag-y"]) {
+    const rule = css.match(new RegExp(`@property ${name} \\{([^}]*)\\}`));
+    assert.ok(rule, `${name} is registered`);
+    assert.match(rule[1], /inherits:\s*false/, `${name} must not inherit: an inheriting custom property invalidates the whole card every frame`);
+  }
+  // a registered non-inheriting property reaches a pseudo-element only through an explicit `inherit`
+  const block = (selector) => {
+    const start = css.indexOf(selector);
+    assert.ok(start >= 0, selector);
+    return css.slice(start, css.indexOf("\n}", start));
+  };
+  const ring = block('[data-glass="on"] .glass-strong:not(.glass-edge)::before {');
+  const chrome = block('[data-glass="on"] .glass-edge::before {');
+  const glow = block('[data-glass="on"] .glass-strong::after {');
+  for (const [name, text] of [["ring", ring], ["chrome ring", chrome]]) {
+    for (const v of ["--mx", "--my", "--lit", "--lens-ring"]) assert.ok(text.includes(`${v}: inherit;`), `${name} inherits ${v}`);
+  }
+  for (const v of ["--gx", "--gy", "--glow"]) assert.ok(glow.includes(`${v}: inherit;`), `glow inherits ${v}`);
+  // the glow must not depend on the rim's variables: a neighbour updates those every frame
+  assert.ok(!/var\(--(mx|my|lit)\)/.test(glow), "the glow layer must not read --mx/--my/--lit");
+  // the cursor position must never be written on <html> again
+  const provider = readFileSync(path.join(root, "src/components/shell/LightingProvider.tsx"), "utf8");
+  assert.ok(!/documentElement/.test(provider), "LightingProvider must not write on <html>");
+});

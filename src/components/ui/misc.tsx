@@ -120,7 +120,7 @@ export function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center justify-center gap-2 px-6 py-14 text-center">
-      <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.04] text-muted">
+      <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/[0.08] tile text-muted">
         {icon}
       </div>
       <p className="font-medium">{title}</p>
