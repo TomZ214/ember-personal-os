@@ -3,12 +3,14 @@
 import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
+import { swap } from "@/lib/motion";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import {
   ChevronLeft, Eye, FolderPlus, NotebookPen, Pencil, Pin, Plus, Search, Trash2,
 } from "lucide-react";
 import { useEmber, useHydrated } from "@/lib/store";
-import { useT } from "@/lib/i18n";
+import { useLang, useT } from "@/lib/i18n";
+import { dfLocale } from "@/lib/dates";
 import { renderMarkdown } from "@/lib/markdown";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/inputs";
@@ -27,6 +29,7 @@ function Notes() {
   const hydrated = useHydrated();
   const params = useSearchParams();
   const t = useT();
+  const lang = useLang();
   const { notes, folders, addNote, updateNote, deleteNote, addFolder } = useEmber();
   const [folderId, setFolderId] = useState<string | "all">("all");
   const [query, setQuery] = useState("");
@@ -94,7 +97,7 @@ function Notes() {
 
         <div className="panel flex-1 divide-y divide-white/[0.05] overflow-y-auto">
           {filtered.length === 0 && (
-            <EmptyState icon={<NotebookPen size={20} />} title={t("notes.none")} hint={t("notes.noneHint")} />
+            <EmptyState size="sm" icon={<NotebookPen size={20} />} title={t("notes.none")} hint={t("notes.noneHint")} />
           )}
           {filtered.map((n) => (
             <button
@@ -112,7 +115,7 @@ function Notes() {
                 {n.body.replace(/[#*`>\-]/g, "").trim().slice(0, 80) || t("notes.emptyNote")}
               </p>
               <p className="mt-1 text-[11px] text-faint">
-                {formatDistanceToNow(parseISO(n.updatedAt), { addSuffix: true })}
+                {formatDistanceToNow(parseISO(n.updatedAt), { addSuffix: true, locale: dfLocale(lang) })}
               </p>
             </button>
           ))}
@@ -172,10 +175,7 @@ function Notes() {
               {mode === "edit" ? (
                 <motion.textarea
                   key="edit"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.12 }}
+                  {...swap}
                   value={active.body}
                   onChange={(e) => updateNote(active.id, { body: e.target.value })}
                   placeholder={t("notes.writePh") + "\n\n# Heading\n- list item\n**bold** and *italic*\n```\ncode\n```"}
@@ -186,10 +186,7 @@ function Notes() {
               ) : (
                 <motion.div
                   key="preview"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.12 }}
+                  {...swap}
                   className="flex-1 overflow-y-auto p-5"
                   onDoubleClick={() => setMode("edit")}
                 >

@@ -7,7 +7,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEmber } from "@/lib/store";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useT } from "@/lib/i18n";
-import { EASE } from "@/lib/motion";
+import { dialog, rise, scrim } from "@/lib/motion";
+
+const HINT = rise(8);
 import { playCue } from "@/lib/sound";
 import { Kbd } from "@/components/ui/misc";
 import { markNavDirection } from "@/lib/navOrigin";
@@ -152,10 +154,7 @@ function ChordHint({ armed, label }: { armed: boolean; label: string }) {
         <motion.div
           key="chord"
           aria-hidden
-          initial={{ opacity: 0, y: 8, scale: 0.96 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 4, scale: 0.98 }}
-          transition={{ duration: 0.16, ease: EASE.out }}
+          {...HINT}
           className="glass-strong pointer-events-none fixed bottom-24 left-1/2 z-(--z-toast) -translate-x-1/2 rounded-full px-4 py-2 text-[13px] text-muted shadow-[0_12px_40px_-8px_rgba(0,0,0,0.6)]"
         >
           {label}
@@ -201,23 +200,13 @@ function HelpSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
           key="keys-root"
           className="fixed inset-0 z-(--z-modal) flex items-center justify-center p-4"
         >
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.16 }}
-            onClick={onClose}
-            className="absolute inset-0 bg-black/55 backdrop-blur-[6px]"
-          />
+          <motion.div {...scrim} onClick={onClose} className="absolute inset-0 bg-black/55 backdrop-blur-[6px]" />
           <motion.div
             ref={trap}
             role="dialog"
             aria-modal="true"
             aria-label={t("keys.title")}
-            initial={{ opacity: 0, y: 20, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.98 }}
-            transition={{ type: "spring", stiffness: 400, damping: 34 }}
+            {...dialog}
             className="glass-strong glass-edge relative max-h-[80dvh] w-full max-w-sm overflow-y-auto rounded-3xl p-6 shadow-[0_24px_80px_-12px_rgba(0,0,0,0.7)]"
           >
             <h2 className="mb-4 text-lg font-semibold tracking-tight">{t("keys.title")}</h2>

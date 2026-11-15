@@ -1,13 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { SPRING, card } from "@/lib/motion";
+import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { eachDayOfInterval, format, startOfWeek, subDays } from "date-fns";
 import { Flame, Plus, Repeat, Trash2 } from "lucide-react";
 import { useEmber, useHydrated } from "@/lib/store";
-import { dayKey, todayKey } from "@/lib/dates";
+import { dayKey, dfLocale, todayKey } from "@/lib/dates";
+import { tint } from "@/lib/tint";
 import { CATEGORY_VAR, type CategoryColor, type Habit } from "@/lib/types";
-import { useT } from "@/lib/i18n";
+import { useLang, useT } from "@/lib/i18n";
 import { streak } from "@/components/widgets/HabitsToday";
 import { sparkle } from "@/components/ui/celebrate";
 import { playCue } from "@/lib/sound";
@@ -48,21 +51,21 @@ export default function HabitsPage() {
             icon={<Repeat size={20} />}
             title={t("habits.none")}
             hint={t("habits.noneHint")}
-            action={<Button variant="primary" onClick={() => setAdding(true)}>{t("habits.createFirst")}</Button>}
+            action={<Button onClick={() => setAdding(true)}>{t("habits.createFirst")}</Button>}
           />
         </div>
       ) : (
-        <div className="flex flex-col gap-4">
-          {habits.map((h, i) => (
-            <motion.div
-              key={h.id}
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05, type: "spring", stiffness: 300, damping: 28 }}
-            >
-              <HabitRow habit={h} />
-            </motion.div>
-          ))}
+        // .stagger: the rows settle in one after another on a route change.
+        // A habit added or removed later moves by itself, and the others
+        // make room (layout).
+        <div className="stagger flex flex-col gap-4">
+          <AnimatePresence initial={false}>
+            {habits.map((h) => (
+              <motion.div key={h.id} layout {...card} transition={{ layout: SPRING.smooth }}>
+                <HabitRow habit={h} />
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       )}
 
@@ -73,6 +76,7 @@ export default function HabitsPage() {
 
 function HabitRow({ habit }: { habit: Habit }) {
   const t = useT();
+  const lang = useLang();
   const toggleHabit = useEmber((s) => s.toggleHabit);
   const deleteHabit = useEmber((s) => s.deleteHabit);
   const c = CATEGORY_VAR[habit.color];
@@ -108,7 +112,7 @@ function HabitRow({ habit }: { habit: Habit }) {
             <p className="text-xs text-muted">
               {habit.target === 7 ? t("habits.everyDay") : habit.target === 1 ? t("habits.onceWeek") : `${habit.target}× ${t("habits.perWeek")}`} ·{" "}
               <span className="num" style={{ color: weekDone >= habit.target ? c : undefined }}>
-                {weekDone}/{habit.target} this week
+                {weekDone}/{habit.target} {t("habits.thisWeek")}
               </span>
             </p>
           </div>
@@ -132,24 +136,24 @@ function HabitRow({ habit }: { habit: Habit }) {
                   const r = e.currentTarget.getBoundingClientRect();
                   sparkle({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
                 }}
-                aria-label={`${habit.name} on ${format(d, "EEEE")}`}
+                aria-label={`${habit.name}, ${format(d, "EEEE", { locale: dfLocale(lang) })}`}
                 aria-pressed={done}
                 className={`flex h-9 w-9 flex-col items-center justify-center rounded-xl border text-[10px] transition-all ${
                   future ? "cursor-default border-white/[0.04] text-faint/50" :
-                  done ? "border-transparent font-semibold text-white" : "border-white/[0.10] text-faint hover:border-white/25"
+                  done ? "border-transparent font-semibold text-[#fff]" : "border-white/[0.10] text-faint hover:border-white/25"
                 } ${key === today && !done ? "ring-1 ring-accent/50" : ""}`}
                 style={done ? { background: c, boxShadow: `0 2px 12px -2px ${c}` } : undefined}
               >
-                {format(d, "EEEEE")}
+                {format(d, "EEEEE", { locale: dfLocale(lang) })}
               </button>
             );
           })}
         </div>
 
         <div className="flex items-center gap-5 text-center">
-          <Stat label={t("habits.streak")} value={<span className="flex items-center justify-center gap-1" style={{ color: c }}><Flame size={14} className="lit" style={{ "--lit-glow": "5px" } as React.CSSProperties} />{s}</span>} />
-          <Stat label={t("habits.best")} value={best} />
-          <Stat label={t("habits.total")} value={total} />
+          <Stat label={t("habits.streak")} value={<span className="flex items-center justify-center gap-1" style={{ color: c }}><Flame size={14} className="lit" style={{ "--lit-glow": "5px" } as React.CSSProperties} /><AnimatedNumber value={s} /></span>} />
+          <Stat label={t("habits.best")} value={<AnimatedNumber value={best} />} />
+          <Stat label={t("habits.total")} value={<AnimatedNumber value={total} />} />
           <button
             onClick={() => { deleteHabit(habit.id); toast(t("habits.removed"), "info"); }}
             aria-label={`${t("action.delete")} ${habit.name}`}
@@ -160,8 +164,8 @@ function HabitRow({ habit }: { habit: Habit }) {
         </div>
       </div>
 
-      {/* heatmap — last 18 weeks */}
-      <div className="mt-4 overflow-x-auto border-t border-white/[0.06] pt-4">
+      {/* the history, as many weeks as the card is wide */}
+      <div className="mt-4 border-t border-white/[0.06] pt-4">
         <Heatmap habit={habit} />
       </div>
     </div>
@@ -177,30 +181,59 @@ function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
+/** one week is a column this wide at most (cell + gap), in px */
+const WEEK_PX = 20;
+
+/**
+ * The history, one square per day, a column per week, newest on the right.
+ *
+ * It spans the card: as many weeks as fit (a year at most), in squares that
+ * share the width exactly. A fixed 18 weeks used to sit in the left third of
+ * a wide card with the rest left empty.
+ */
 function Heatmap({ habit }: { habit: Habit }) {
+  const t = useT();
+  const lang = useLang();
   const c = CATEGORY_VAR[habit.color];
-  const weeks = 18;
+  const box = useRef<HTMLDivElement>(null);
+  const [weeks, setWeeks] = useState(18);
+
+  // measured before the first paint, so the grid never appears at one size
+  // and jumps to another
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const fit = () => setWeeks(Math.min(53, Math.max(12, Math.round(el.clientWidth / WEEK_PX))));
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const start = startOfWeek(subDays(new Date(), weeks * 7 - 7), { weekStartsOn: 1 });
   const today = todayKey();
 
   return (
-    <div className="flex gap-[3px]" aria-label={`${habit.name} activity heatmap`}>
+    <div
+      ref={box}
+      role="img"
+      aria-label={`${habit.name}: ${t("habits.heatmap")}`}
+      className="grid gap-[3px]"
+      style={{ gridTemplateColumns: `repeat(${weeks}, minmax(0, 1fr))` }}
+    >
       {Array.from({ length: weeks }, (_, w) => (
         <div key={w} className="flex flex-col gap-[3px]">
           {Array.from({ length: 7 }, (_, d) => {
             const day = subDays(start, -(w * 7 + d) * 1);
             const key = dayKey(day);
-            if (key > today) return <span key={d} className="h-[11px] w-[11px]" />;
+            if (key > today) return <span key={d} className="aspect-square w-full" />;
             const done = !!habit.log[key];
             return (
               <span
                 key={d}
-                title={`${format(day, "MMM d")} — ${done ? "done" : "missed"}`}
-                className="h-[11px] w-[11px] rounded-[3px]"
-                style={{
-                  background: done ? c : "oklch(1 0 0 / 0.06)",
-                  opacity: done ? 0.95 : 1,
-                }}
+                title={`${format(day, lang === "de" ? "d. MMM" : "MMM d", { locale: dfLocale(lang) })}: ${done ? t("habits.dayDone") : t("habits.dayOpen")}`}
+                className={`aspect-square w-full rounded-[4px] ${key === today ? "outline outline-1 -outline-offset-1 outline-white/30" : ""}`}
+                style={{ background: done ? c : tint(6) }}
               />
             );
           })}

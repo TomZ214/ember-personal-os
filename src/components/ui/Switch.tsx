@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
+import { DURATION, EASE, SPRING } from "@/lib/motion";
+import { tint } from "@/lib/tint";
 
 /**
  * The iOS switch.
@@ -74,22 +76,22 @@ export function Switch({ checked, onChange, label, hideLabel = true, disabled }:
         className="absolute inset-0 rounded-full"
         initial={false}
         animate={{
-          backgroundColor: checked ? "var(--accent)" : "rgba(255,255,255,0.13)",
+          backgroundColor: checked ? "var(--accent)" : tint(13),
         }}
-        transition={{ duration: reduced ? 0 : 0.22, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: reduced ? 0 : DURATION.base, ease: EASE.out }}
         style={{ opacity: disabled ? 0.4 : 1 }}
       />
       {/* a hairline that keeps the off state visible on a light surface */}
       <span
         aria-hidden
         className="pointer-events-none absolute inset-0 rounded-full"
-        style={{ boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08)" }}
+        style={{ boxShadow: `inset 0 0 0 1px ${tint(8)}` }}
       />
 
       {/* knob */}
       <motion.span
         aria-hidden
-        className="absolute rounded-full bg-white"
+        className="absolute rounded-full bg-[#fff]"
         style={{
           top: PAD,
           height: KNOB,
@@ -104,11 +106,9 @@ export function Switch({ checked, onChange, label, hideLabel = true, disabled }:
         // same reason: start from the resting state rather than from nothing
         initial={false}
         animate={{ x, width: KNOB + grow }}
-        transition={
-          reduced
-            ? { duration: 0 }
-            : { type: "spring", stiffness: 520, damping: 32, mass: 0.6 }
-        }
+        // the control spring: lands with the faintest overshoot, like every
+        // tab pill and press release in the app
+        transition={reduced ? { duration: 0 } : SPRING.snappy}
       />
     </span>
   );

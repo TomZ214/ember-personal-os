@@ -1,15 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { RefreshCw, Sparkles } from "lucide-react";
+import { Newspaper, RefreshCw } from "lucide-react";
 import { useEmber } from "@/lib/store";
 import { useApi } from "@/hooks/useApi";
 import { useCalendarSource, useGmailUnread } from "@/hooks/useIntegrations";
 import { useLang, useT } from "@/lib/i18n";
 import { minutesToLabel, todayKey } from "@/lib/dates";
-import { EASE } from "@/lib/motion";
+import { DURATION, EXIT, SPRING, fade, withFade } from "@/lib/motion";
 import { toast } from "@/components/ui/toast";
 
 /**
@@ -79,51 +78,42 @@ export function BriefingWidget() {
     setBusy(false);
   };
 
+  // Not set up (or not known yet): render nothing. A full-width card whose
+  // only content was "needs an AI key" used to be the first thing on the
+  // dashboard, every day. The feature is offered where it is set up, under
+  // Connections; the dashboard is for what you have.
+  if (!ai.data?.configured) return null;
+
   return (
     <div className="panel flex h-full flex-col p-5">
       <div className="mb-3 flex items-center justify-between">
         <p className="flex items-center gap-2 text-[13px] font-medium text-muted">
-          <Sparkles size={14} /> {t("brief.title")}
+          <Newspaper size={14} /> {t("brief.title")}
         </p>
-        {ai.data?.configured && (
-          <button
-            onClick={run}
-            disabled={busy}
-            aria-label={fresh ? t("brief.regenerate") : t("brief.generate")}
-            className="-mx-1 -my-2 flex items-center gap-1.5 px-1 py-2 text-xs text-faint transition-colors hover:text-accent disabled:cursor-wait"
+        <button
+          onClick={run}
+          disabled={busy}
+          aria-label={fresh ? t("brief.regenerate") : t("brief.generate")}
+          className="-mx-1 -my-2 flex items-center gap-1.5 px-1 py-2 text-xs text-faint transition-colors hover:text-accent disabled:cursor-wait"
+        >
+          <motion.span
+            animate={busy ? { rotate: 360 } : { rotate: 0 }}
+            transition={busy ? { repeat: Infinity, duration: 1, ease: "linear" } : { duration: DURATION.fast }}
+            className="flex"
           >
-            <motion.span
-              animate={busy ? { rotate: 360 } : { rotate: 0 }}
-              transition={busy ? { repeat: Infinity, duration: 1, ease: "linear" } : { duration: 0.2 }}
-              className="flex"
-            >
-              <RefreshCw size={12} />
-            </motion.span>
-            {busy ? t("brief.writing") : fresh ? t("brief.regenerate") : t("brief.generate")}
-          </button>
-        )}
+            <RefreshCw size={12} />
+          </motion.span>
+          {busy ? t("brief.writing") : fresh ? t("brief.regenerate") : t("brief.generate")}
+        </button>
       </div>
 
       <AnimatePresence mode="wait">
-        {!ai.data?.configured ? (
-          <motion.p
-            key="unconfigured"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-[13px] leading-relaxed text-faint"
-          >
-            {t("brief.needsKey")}{" "}
-            <Link href="/settings/connections" className="text-accent underline underline-offset-2">
-              {t("conn.title")}
-            </Link>
-          </motion.p>
-        ) : fresh ? (
+        {fresh ? (
           <motion.p
             key={fresh.createdAt}
             initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.32, ease: EASE.out }}
+            animate={{ opacity: 1, y: 0, transition: withFade(SPRING.smooth) }}
+            exit={{ opacity: 0, transition: EXIT }}
             className="text-[13px] leading-relaxed text-ink/90"
           >
             {fresh.text}
@@ -131,8 +121,7 @@ export function BriefingWidget() {
         ) : (
           <motion.p
             key="empty"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            {...fade}
             className="text-[13px] leading-relaxed text-faint"
           >
             {busy ? t("brief.writingLong") : t("brief.hint")}

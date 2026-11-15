@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
+import { rise } from "@/lib/motion";
 import {
   Apple, ChevronLeft, ChevronRight, Copy, Droplet, Flame, Minus, Plus, Scale, Target, Trash2, Undo2,
 } from "lucide-react";
@@ -17,7 +18,9 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input, Label, Select } from "@/components/ui/inputs";
+import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { EmptyState, PageHeader, ProgressBar, ProgressRing } from "@/components/ui/misc";
+import { Segmented } from "@/components/ui/Segmented";
 import { Switch } from "@/components/ui/Switch";
 import { toast } from "@/components/ui/toast";
 import { AddFoodSheet, fmt, MealPicker, parseNum, toInput } from "@/components/nutrition/AddFoodSheet";
@@ -65,7 +68,6 @@ export default function NutritionPage() {
     <div>
       <PageHeader
         title={t("nut.title")}
-        sub={t("nut.sub")}
         actions={
           <Button variant="primary" onClick={() => { setTab("today"); setAdding(day === todayKey() ? mealForTime(new Date()) : "snack"); }}>
             <Plus size={16} /> {t("nut.add")}
@@ -73,28 +75,30 @@ export default function NutritionPage() {
         }
       />
 
-      <div role="tablist" className="mb-5 flex gap-2">
-        {tabs.map((x) => (
-          <Button key={x.id} role="tab" aria-selected={tab === x.id} variant={tab === x.id ? "primary" : "subtle"} onClick={() => setTab(x.id)}>
-            {x.label}
-          </Button>
-        ))}
+      {/* toolbar row, the same rhythm as Calendar and Tasks: what you are
+          looking at on the left, where in time on the right */}
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <Segmented label={t("nut.title")} value={tab} onChange={setTab} options={tabs} />
+        {tab === "today" && <DayNav day={day} setDay={setDay} t={t} lang={lang} />}
       </div>
 
-      {tab === "today" && (
-        <>
-          {!profile.setupDone && (
-            <div className="panel mb-4 flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
-              <p className="flex items-center gap-2"><Target size={18} className="shrink-0 text-accent" />{t("nut.setupHint")}</p>
-              <Button size="sm" onClick={() => setTab("goals")}>{t("nut.setupCta")}</Button>
-            </div>
-          )}
-          <DayNav day={day} setDay={setDay} t={t} lang={lang} />
-          <TodayView day={day} onAdd={setAdding} />
-        </>
-      )}
-      {tab === "history" && <HistoryView />}
-      {tab === "goals" && <GoalsView onDone={() => setTab("today")} />}
+      {/* keyed by tab: the view that replaces another settles into place
+          (.view-turn, globals.css) */}
+      <div key={tab} className="view-turn">
+        {tab === "today" && (
+          <>
+            {!profile.setupDone && (
+              <div className="panel rise mb-4 flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
+                <p className="flex items-center gap-2"><Target size={18} className="shrink-0 text-accent" />{t("nut.setupHint")}</p>
+                <Button size="sm" onClick={() => setTab("goals")}>{t("nut.setupCta")}</Button>
+              </div>
+            )}
+            <TodayView day={day} onAdd={setAdding} />
+          </>
+        )}
+        {tab === "history" && <HistoryView />}
+        {tab === "goals" && <GoalsView onDone={() => setTab("today")} />}
+      </div>
 
       <AddFoodSheet open={adding !== null} onClose={() => setAdding(null)} day={day} initialMeal={adding ?? "snack"} />
     </div>
@@ -104,9 +108,9 @@ export default function NutritionPage() {
 function DayNav({ day, setDay, t, lang }: { day: string; setDay: (d: string) => void; t: Translator; lang: "en" | "de" }) {
   const today = todayKey();
   return (
-    <div className="mb-4 flex items-center gap-2">
+    <div className="flex items-center gap-1">
       <Button size="sm" variant="ghost" aria-label={t("nut.prevDay")} onClick={() => setDay(shiftDay(day, -1))}><ChevronLeft size={18} /></Button>
-      <p className="min-w-36 text-center font-medium">{friendlyDay(day, lang)}</p>
+      <p className="min-w-32 text-center text-sm font-medium">{friendlyDay(day, lang)}</p>
       <Button size="sm" variant="ghost" aria-label={t("nut.nextDay")} disabled={day >= today} onClick={() => setDay(shiftDay(day, 1))}><ChevronRight size={18} /></Button>
       {day !== today && <Button size="sm" variant="subtle" onClick={() => setDay(today)}>{t("nut.today")}</Button>}
     </div>
@@ -114,6 +118,9 @@ function DayNav({ day, setDay, t, lang }: { day: string; setDay: (d: string) => 
 }
 
 /* ---------------- today ---------------- */
+
+/** the undo bar rising above the dock */
+const UNDO = rise(10);
 
 function TodayView({ day, onAdd }: { day: string; onAdd: (m: Meal) => void }) {
   const t = useT();
@@ -145,12 +152,14 @@ function TodayView({ day, onAdd }: { day: string; onAdd: (m: Meal) => void }) {
   };
 
   return (
-    <div className="space-y-4">
+    // .stagger: on a route change the sections settle in one after another
+    <div className="stagger space-y-4">
       <section className="panel grid gap-6 p-5 sm:grid-cols-[auto_1fr] sm:items-center">
         <div className="flex justify-center">
           <ProgressRing value={goal.kcal ? total.kcal / goal.kcal : 0} size={168} stroke={12} color={over ? "var(--warning)" : "var(--accent)"}>
             <div className="text-center">
-              <p className="num text-3xl font-semibold">{Math.abs(left)}</p>
+              {/* counts with the ring: the same spring fills both */}
+              <p className="num text-3xl font-semibold"><AnimatedNumber value={Math.abs(left)} spring="fill" /></p>
               <p className="text-xs text-muted">{over ? t("nut.kcalOver") : t("nut.kcalLeft")}</p>
             </div>
           </ProgressRing>
@@ -165,7 +174,7 @@ function TodayView({ day, onAdd }: { day: string; onAdd: (m: Meal) => void }) {
             <div key={k}>
               <div className="mb-1.5 flex justify-between text-sm">
                 <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{ background: MACRO_COLORS[k] }} />{t(`nut.macro.${k}`)}</span>
-                <span className="num text-muted">{Math.round(total[k])} / {goal[k]} g</span>
+                <span className="num text-muted"><AnimatedNumber value={total[k]} spring="fill" /> / {goal[k]} g</span>
               </div>
               <ProgressBar value={goal[k] ? total[k] / goal[k] : 0} color={MACRO_COLORS[k]} />
             </div>
@@ -176,7 +185,7 @@ function TodayView({ day, onAdd }: { day: string; onAdd: (m: Meal) => void }) {
       <section className="panel p-5">
         <div className="mb-3 flex items-center justify-between gap-3">
           <h2 className="flex items-center gap-2 font-semibold"><Droplet size={17} className="text-[var(--c-sky)]" />{t("nut.water")}</h2>
-          <span className="num text-sm text-muted">{fmt(water / 1000, lang, 2)} / {fmt(profile.waterGoalMl / 1000, lang, 2)} l</span>
+          <span className="num text-sm text-muted"><AnimatedNumber value={water / 1000} format={(n) => fmt(n, lang, 2)} /> / {fmt(profile.waterGoalMl / 1000, lang, 2)} l</span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button size="sm" variant="ghost" aria-label={t("nut.waterLess")} disabled={!water} onClick={() => setWater(day, water - GLASS_ML)}><Minus size={16} /></Button>
@@ -246,7 +255,7 @@ function TodayView({ day, onAdd }: { day: string; onAdd: (m: Meal) => void }) {
       </div>
 
       {undo && (
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="glass-strong fixed inset-x-0 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-(--z-toast) mx-auto flex w-fit max-w-[92vw] items-center gap-3 rounded-full py-2 pl-4 pr-2 text-sm shadow-[0_12px_40px_-8px_rgba(0,0,0,0.6)] md:bottom-[calc(9rem+env(safe-area-inset-bottom))]">
+        <motion.div initial={UNDO.initial} animate={UNDO.animate} className="glass-strong fixed inset-x-0 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-(--z-toast) mx-auto flex w-fit max-w-[92vw] items-center gap-3 rounded-full py-2 pl-4 pr-2 text-sm shadow-[0_12px_40px_-8px_rgba(0,0,0,0.6)] md:bottom-[calc(9rem+env(safe-area-inset-bottom))]">
           <span className="truncate">{t("nut.deleted").replace("{name}", undo.name)}</span>
           <Button size="sm" onClick={() => { restoreEntry(undo); setUndo(null); clearTimeout(undoTimer.current); }}><Undo2 size={14} />{t("nut.undo")}</Button>
         </motion.div>
@@ -260,7 +269,7 @@ function TodayView({ day, onAdd }: { day: string; onAdd: (m: Meal) => void }) {
 function Stat({ label, value, warn }: { label: string; value: number; warn?: boolean }) {
   return (
     <div className="rounded-xl tile px-2 py-2.5">
-      <p className={`num text-lg font-semibold ${warn ? "text-warning" : ""}`}>{value}</p>
+      <p className={`num text-lg font-semibold transition-colors duration-200 ${warn ? "text-warning" : ""}`}><AnimatedNumber value={value} spring="fill" /></p>
       <p className="text-[11px] text-muted">{label}</p>
     </div>
   );

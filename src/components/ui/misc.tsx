@@ -1,6 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { SPRING } from "@/lib/motion";
+import { tint } from "@/lib/tint";
 import { CATEGORY_VAR, type CategoryColor } from "@/lib/types";
 
 export function Badge({
@@ -68,7 +70,7 @@ export function ProgressRing({
           sliced into a hard square and you see the corners. The parent div
           does not clip, so the glow can spill into it cleanly. */}
       <svg width={size} height={size} className="-rotate-90 overflow-visible">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="oklch(1 0 0 / 0.08)" strokeWidth={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" style={{ stroke: tint(8) }} strokeWidth={stroke} />
         <motion.circle
           cx={size / 2}
           cy={size / 2}
@@ -85,7 +87,9 @@ export function ProgressRing({
           strokeDasharray={circ}
           initial={{ strokeDashoffset: circ }}
           animate={{ strokeDashoffset: circ * (1 - Math.min(1, Math.max(0, value))) }}
-          transition={{ type: "spring", stiffness: 60, damping: 18 }}
+          // data settles on its own, slower spring: a ring that snapped to its
+          // value would read as a state, not a measurement
+          transition={SPRING.fill}
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">{children}</div>
@@ -96,36 +100,56 @@ export function ProgressRing({
 export function ProgressBar({ value, color = "var(--accent)" }: { value: number; color?: string }) {
   return (
     <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.07]">
+      {/* The bar is always full width and slides in from the left, clipped by
+          the track: a transform, so filling it never re-lays-out the row
+          (animating `width` did, every frame). Its rounded end stays round. */}
       <motion.div
-        className="lit h-full rounded-full"
+        className="lit h-full w-full rounded-full"
         style={{ color, background: "currentColor", "--lit-glow": "4px" } as React.CSSProperties}
-        initial={{ width: 0 }}
-        animate={{ width: `${Math.min(100, Math.max(0, value * 100))}%` }}
-        transition={{ type: "spring", stiffness: 60, damping: 20 }}
+        initial={{ x: "-100%" }}
+        animate={{ x: `${Math.min(100, Math.max(0, value * 100)) - 100}%` }}
+        transition={SPRING.fill}
       />
     </div>
   );
 }
 
+/**
+ * What a list or a pane shows when there is nothing in it.
+ *
+ * Deliberately plain: a quiet glyph, one line that says what is the case, at
+ * most one line on what to do about it, and at most one action. No boxed
+ * icon, no slogan. `sm` is for widgets and lists inside a pane, where the
+ * empty state is a remark, not the main event.
+ *
+ * The action here is never the gradient primary button: every page that can
+ * be empty already has that button in its header, and two of them on one
+ * screen is one too many.
+ */
 export function EmptyState({
   icon,
   title,
   hint,
   action,
+  size = "md",
 }: {
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   title: string;
-  hint: string;
+  hint?: string;
   action?: React.ReactNode;
+  size?: "sm" | "md";
 }) {
+  const sm = size === "sm";
   return (
-    <div className="flex flex-col items-center justify-center gap-2 px-6 py-14 text-center">
-      <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/[0.08] tile text-muted">
-        {icon}
-      </div>
-      <p className="font-medium">{title}</p>
-      <p className="max-w-[34ch] text-sm text-muted">{hint}</p>
-      {action && <div className="mt-3">{action}</div>}
+    <div className={`flex flex-col items-center justify-center text-center ${sm ? "gap-1 px-4 py-7" : "gap-1.5 px-6 py-12"}`}>
+      {icon && (
+        <span aria-hidden className={`text-faint ${sm ? "mb-1" : "mb-2"} [&>svg]:h-[22px] [&>svg]:w-[22px] [&>svg]:stroke-[1.5]`}>
+          {icon}
+        </span>
+      )}
+      <p className={sm ? "text-sm font-medium" : "text-[15px] font-medium"}>{title}</p>
+      {hint && <p className="max-w-[38ch] text-[13px] leading-relaxed text-muted">{hint}</p>}
+      {action && <div className={sm ? "mt-2" : "mt-3"}>{action}</div>}
     </div>
   );
 }

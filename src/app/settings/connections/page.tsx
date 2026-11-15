@@ -3,11 +3,10 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { motion } from "framer-motion";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import {
-  ArrowLeft, Bell, BellOff, CalendarDays, ChevronRight, Cloud, Copy, HeartHandshake, Landmark,
-  Loader2, LogOut, Mail, MailCheck, Plus, RefreshCw, Search, ShieldCheck, Sparkles, Trash2, Unplug,
+  ArrowLeft, Bell, BellOff, CalendarDays, ChevronRight, Cloud, Copy, HeartHandshake, KeyRound,
+  Landmark, Loader2, LogOut, Mail, MailCheck, Plus, RefreshCw, Search, ShieldCheck, Trash2, Unplug,
 } from "lucide-react";
 import {
   lastSynced, markSynced, useBank, useGoogleStatus,
@@ -477,12 +476,11 @@ function InstitutionPicker({ open, onClose }: { open: boolean; onClose: () => vo
         {loading && <p className="px-2 py-6 text-center text-sm text-muted">{t("conn.searching")}</p>}
         {error && <p className="px-2 py-6 text-center text-sm text-danger">{error}</p>}
         {data?.institutions.map((inst) => (
-          <motion.button
+          <button
             key={inst.id}
-            whileTap={{ scale: 0.98 }}
             onClick={() => connect(inst)}
             disabled={!!connecting}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-white/[0.05] disabled:opacity-50"
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left [--press-scale:0.985] hover:bg-white/[0.05] disabled:opacity-50"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={inst.logo} alt="" className="h-8 w-8 rounded-lg bg-white/90 object-contain p-0.5" />
@@ -492,7 +490,7 @@ function InstitutionPicker({ open, onClose }: { open: boolean; onClose: () => vo
             ) : (
               <ChevronRight size={15} className="text-faint" />
             )}
-          </motion.button>
+          </button>
         ))}
         {data && data.institutions.length === 0 && (
           <p className="px-2 py-6 text-center text-sm text-muted">{t("conn.noBanks").replace("{q}", debounced)}</p>
@@ -915,7 +913,7 @@ function AiCard() {
     <section className="panel p-5">
       <div className="flex flex-wrap items-center gap-3">
         <span className="flex h-11 w-11 items-center justify-center rounded-[14px] border border-white/[0.08] bg-white/[0.05]">
-          <Sparkles size={18} className="text-muted" />
+          <KeyRound size={18} className="text-muted" />
         </span>
         <div className="min-w-0 flex-1">
           <h2 className="flex items-center gap-2 text-[15px] font-semibold">

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { pop } from "@/lib/motion";
 import { Pause, Play, RotateCcw } from "lucide-react";
 import { useEmber } from "@/lib/store";
 import { toast } from "@/components/ui/toast";
@@ -69,35 +70,36 @@ export function FocusTimer() {
         </div>
       </ProgressRing>
 
-      <div className="flex items-center gap-2">
+      {/* running and idle trade places: the old controls shrink away, the new
+          ones grow in, so starting the timer has a beginning and an end */}
+      <AnimatePresence mode="wait" initial={false}>
         {focus.running ? (
-          <motion.button
-            whileTap={{ scale: 0.92 }}
-            onClick={() => stopFocus(false)}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/[0.1] bg-white/[0.06] text-ink hover:bg-white/[0.1]"
-            aria-label="Pause"
-          >
-            <Pause size={16} />
-          </motion.button>
+          <motion.div key="running" {...pop} className="flex items-center gap-2">
+            <button
+              onClick={() => stopFocus(false)}
+              className="flex h-10 w-10 items-center justify-center rounded-full [--press-scale:0.92] border border-white/[0.1] bg-white/[0.06] text-ink hover:bg-white/[0.1]"
+              aria-label="Pause"
+            >
+              <Pause size={16} />
+            </button>
+          </motion.div>
         ) : (
-          <>
-            <motion.button
-              whileTap={{ scale: 0.92 }}
+          <motion.div key="idle" {...pop} className="flex items-center gap-2">
+            <button
               onClick={() => startFocus("focus")}
-              className="flex h-10 items-center gap-2 rounded-full bg-[image:var(--grad-sunset)] px-4 text-sm font-semibold text-(--on-sunset) shadow-[0_2px_18px_-2px_var(--primary-glow)] transition-[filter] hover:brightness-110"
+              className="flex h-10 items-center gap-2 rounded-full [--press-scale:0.94] bg-[image:var(--grad-sunset)] px-4 text-sm font-semibold text-(--on-sunset) shadow-[0_2px_18px_-2px_var(--primary-glow)] transition-[filter] hover:brightness-110"
             >
               <Play size={14} fill="currentColor" /> {t("w.focus")}
-            </motion.button>
-            <motion.button
-              whileTap={{ scale: 0.92 }}
+            </button>
+            <button
               onClick={() => startFocus("break")}
-              className="flex h-10 items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.06] px-4 text-sm text-muted hover:text-ink"
+              className="flex h-10 items-center gap-2 rounded-full [--press-scale:0.94] border border-white/[0.1] bg-white/[0.06] px-4 text-sm text-muted hover:text-ink"
             >
               <RotateCcw size={14} /> {t("w.break")}
-            </motion.button>
-          </>
+            </button>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
     </div>
   );
 }

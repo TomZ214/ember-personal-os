@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowUpRight, CalendarDays, MapPin } from "lucide-react";
+import { SPRING, staggerDelay, withFade } from "@/lib/motion";
+import { ArrowUpRight, CalendarDays, MapPin, Plus } from "lucide-react";
 import { eventOccursOn, useCalendarSource } from "@/hooks/useIntegrations";
 import { minutesToLabel, todayKey } from "@/lib/dates";
 import { useT } from "@/lib/i18n";
@@ -45,11 +46,19 @@ export function AgendaWidget() {
       </div>
 
       {list.length === 0 ? (
-        <EmptyState
-          icon={<CalendarDays size={20} />}
-          title={t("w.clearDay")}
-          hint={t("w.clearDayHint")}
-        />
+        <div className="flex flex-1 items-center justify-center">
+          <EmptyState
+            size="sm"
+            icon={<CalendarDays size={20} />}
+            title={t("w.clearDay")}
+            hint={t("w.clearDayHint")}
+            action={
+              <Link href="/calendar" className="pressable inline-flex h-8 items-center gap-1.5 rounded-[9px] border border-white/[0.08] bg-white/[0.06] px-3 text-[13px] font-medium hover:bg-white/[0.10]">
+                <Plus size={14} /> {t("w.addEvent")}
+              </Link>
+            }
+          />
+        </div>
       ) : (
         <ol className="relative flex flex-col">
           {list.slice(0, 7).map((e, i) => {
@@ -58,10 +67,14 @@ export function AgendaWidget() {
             return (
               <motion.li
                 key={e.id}
+                // Past events stay dimmed: the dimming is the animation's
+                // target, not a class. A class lost to the inline opacity the
+                // entrance leaves behind, so everything ended up at full
+                // strength.
                 initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05, type: "spring", stiffness: 300, damping: 26 }}
-                className={`relative flex gap-3.5 pb-4 last:pb-0 ${past ? "opacity-45" : ""}`}
+                animate={{ opacity: past ? 0.45 : 1, x: 0 }}
+                transition={withFade(SPRING.smooth, staggerDelay(i))}
+                className="relative flex gap-3.5 pb-4 last:pb-0"
               >
                 <div className="flex w-11 shrink-0 flex-col items-end pt-0.5">
                   {e.allDay ? (

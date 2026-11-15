@@ -1,19 +1,18 @@
 "use client";
 
 import { forwardRef } from "react";
-import { motion, type HTMLMotionProps } from "framer-motion";
 
 type Variant = "primary" | "subtle" | "ghost" | "danger";
 type Size = "sm" | "md";
 
-interface Props extends HTMLMotionProps<"button"> {
+interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   size?: Size;
 }
 
 const styles: Record<Variant, string> = {
   primary:
-    "glow-brand glow-hover bg-[image:var(--grad-sunset)] font-semibold text-(--on-sunset) transition-[filter] hover:brightness-110 disabled:shadow-none",
+    "glow-brand glow-hover bg-[image:var(--grad-sunset)] font-semibold text-(--on-sunset) hover:brightness-110 disabled:shadow-none",
   subtle:
     // the inset pair is a bevel: lit top edge, shaded bottom edge
     "bg-white/[0.06] text-ink border border-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.16)] hover:bg-white/[0.10] hover:border-white/[0.14]",
@@ -27,25 +26,30 @@ const sizes: Record<Size, string> = {
   md: "h-10 px-4 text-sm gap-2 rounded-[11px]",
 };
 
+/**
+ * A plain <button>. Its motion is not here: the press (sinks in, springs
+ * back) and the eased colours are the "controls" recipe in globals.css, which
+ * every button in the app shares — so this one feels exactly like a chip, an
+ * icon button or a tab, and none of the 140 places that render it mounts an
+ * animation component to get there.
+ */
 export const Button = forwardRef<HTMLButtonElement, Props>(function Button(
   { variant = "subtle", size = "md", className = "", children, disabled, ...rest },
   ref,
 ) {
   return (
-    <motion.button
+    <button
       ref={ref}
-      whileTap={disabled ? undefined : { scale: 0.96 }}
-      transition={{ type: "spring", stiffness: 500, damping: 30 }}
       disabled={disabled}
       /* Magnetism is opt-in per element via this attribute — LightingProvider
          picks it up globally, so there is no MagneticButton wrapper to keep in
          sync with this one. Primary actions only: if everything leans toward
          the cursor, nothing reads as important. */
       data-magnetic={variant === "primary" && !disabled ? "" : undefined}
-      className={`inline-flex select-none items-center justify-center font-medium transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 ${styles[variant]} ${sizes[size]} ${className}`}
+      className={`inline-flex select-none items-center justify-center font-medium disabled:cursor-not-allowed disabled:opacity-40 ${styles[variant]} ${sizes[size]} ${className}`}
       {...rest}
     >
       {children}
-    </motion.button>
+    </button>
   );
 });

@@ -86,6 +86,37 @@
   --gy: 0%;
   --glow: 0;
 
+  /* ---- motion ----
+     One vocabulary for everything that moves, shared with src/lib/motion.ts
+     (the springs below are generated from it; a test keeps them in step).
+     Curves for things that only change, springs for things that move. */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --dur-instant: 100ms;
+  --dur-fast: 160ms;
+  --dur-base: 240ms;
+  --dur-slow: 360ms;
+  /* springs: an easing and the time it needs to settle. These are the
+     fallbacks for browsers without linear(); the real curves follow below. */
+  --spring-snappy: var(--ease-out);
+  --spring-snappy-ms: 370ms;
+  --spring-smooth: var(--ease-out);
+  --spring-smooth-ms: 530ms;
+  --spring-gentle: var(--ease-out);
+  --spring-gentle-ms: 770ms;
+  --spring-bouncy: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --spring-bouncy-ms: 690ms;
+  --spring-fill: var(--ease-out);
+  --spring-fill-ms: 1330ms;
+  /* what every control eases when its state changes (see "controls") */
+  --t-control:
+    color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out),
+    filter var(--dur-fast) var(--ease-out);
+
   /* z-scale */
   --z-sticky: 20;
   --z-dropdown: 30;
@@ -94,6 +125,19 @@
   --z-palette: 60;
   --z-toast: 70;
   --z-tooltip: 80;
+}
+
+/* The springs as real spring curves: linear() samples of the same physics
+   Framer Motion runs (src/lib/motion.ts, springCss). Generated, not tuned by
+   hand: change SPRING_SPEC there and the test prints what belongs here. */
+@supports (transition-timing-function: linear(0, 1)) {
+  :root {
+    --spring-snappy: linear(0, 0.0605, 0.1937, 0.3497, 0.5005, 0.6321, 0.7395, 0.823, 0.885, 0.9293, 0.9597, 0.9796, 0.9921, 0.9993, 1.0031, 1.0047, 1.005, 1.0046, 1.0039, 1.0031, 1.0024, 1.0017, 1.0012, 1);
+    --spring-smooth: linear(0, 0.0327, 0.1091, 0.206, 0.3087, 0.4087, 0.5011, 0.5837, 0.6557, 0.7173, 0.7694, 0.813, 0.849, 0.8786, 0.9027, 0.9223, 0.9381, 0.9509, 0.9611, 0.9692, 0.9757, 0.9809, 0.985, 0.9882, 0.9907, 0.9928, 0.9943, 0.9956, 0.9965, 0.9973, 0.9979, 0.9984, 0.9987, 1);
+    --spring-gentle: linear(0, 0.0165, 0.0583, 0.1158, 0.1824, 0.2529, 0.324, 0.3932, 0.459, 0.5204, 0.577, 0.6286, 0.6751, 0.7167, 0.7538, 0.7866, 0.8155, 0.8408, 0.8629, 0.8822, 0.899, 0.9135, 0.926, 0.9368, 0.9461, 0.954, 0.9609, 0.9667, 0.9718, 0.976, 0.9797, 0.9828, 0.9854, 0.9877, 0.9896, 0.9912, 0.9926, 0.9937, 0.9947, 0.9955, 0.9962, 0.9968, 0.9973, 0.9978, 0.9981, 0.9984, 0.9987, 0.9989, 1);
+    --spring-bouncy: linear(0, 0.0257, 0.0916, 0.1828, 0.2879, 0.3976, 0.5054, 0.6065, 0.6979, 0.7779, 0.8459, 0.902, 0.9469, 0.9815, 1.0072, 1.0252, 1.0368, 1.0433, 1.0458, 1.0454, 1.0429, 1.039, 1.0344, 1.0293, 1.0243, 1.0196, 1.0152, 1.0114, 1.008, 1.0053, 1.0031, 1.0013, 1, 0.9991, 0.9985, 0.9981, 0.9979, 0.9979, 0.998, 0.9981, 0.9983, 0.9986, 0.9988, 1);
+    --spring-fill: linear(0, 0.0165, 0.0581, 0.1155, 0.1818, 0.2522, 0.3231, 0.3922, 0.458, 0.5194, 0.5759, 0.6275, 0.674, 0.7157, 0.7528, 0.7857, 0.8146, 0.84, 0.8622, 0.8815, 0.8983, 0.9129, 0.9255, 0.9363, 0.9456, 0.9537, 0.9606, 0.9664, 0.9715, 0.9758, 0.9795, 0.9826, 0.9853, 0.9875, 0.9895, 0.9911, 0.9925, 0.9936, 0.9946, 0.9955, 0.9962, 0.9968, 0.9973, 0.9977, 0.9981, 0.9984, 0.9986, 0.9989, 1);
+  }
 }
 
 /* The lighting variables are registered as NON-inheriting. LightingProvider
@@ -189,6 +233,51 @@
   --glass-spec-strength: 0.44;
 }
 
+/* Moss — pale sage settling into moss green. Quiet, organic, daylight. */
+[data-theme="moss"] {
+  --sunset-from: #e3e9d6;
+  --sunset-to: #5f7a52;
+  --on-sunset: #1b2617; /* dark text: the ramp starts very light */
+
+  /* the ramp's own green is too dim to read on a dark page; one step lighter */
+  --primary: #8ca67c;
+  --primary-bright: #b4c8a6;
+  --primary-glow: rgba(110, 140, 95, 0.45);
+  --accent: oklch(0.84 0.07 130);
+
+  --c-ember: #8ca67c;
+
+  /* clear glass with a green cast, like a pane over leaves */
+  --glass-lens: oklch(0.95 0.03 130 / 0.16);
+  --lens-peak: oklch(0.97 0.03 130 / 0.58);
+  --glass-spec-strength: 0.3;
+  --lens-from: oklch(0.93 0.04 125);
+  --lens-to: var(--primary-bright);
+}
+
+/* Dusk — slate blue falling into deep navy. Cool, calm, late evening. */
+[data-theme="dusk"] {
+  --sunset-from: #8d99ae;
+  --sunset-to: #23253a;
+  --on-sunset: #f2f4fa; /* light text: the ramp ends very dark */
+
+  --primary: #8d99ae;
+  --primary-bright: #b3bdd0;
+  --primary-glow: rgba(141, 153, 174, 0.42);
+  --accent: oklch(0.81 0.06 265);
+
+  --c-ember: #8d99ae;
+
+  /* cool, slightly deeper glass; the ramp ends dark, so the lens hues are
+     re-pointed to light colours (see the note on --lens-from) */
+  --glass-blur: 20px;
+  --glass-lens: oklch(0.93 0.02 265 / 0.16);
+  --lens-peak: oklch(0.96 0.02 265 / 0.58);
+  --glass-spec-strength: 0.3;
+  --lens-from: oklch(0.86 0.04 265);
+  --lens-to: var(--primary-bright);
+}
+
 @theme inline {
   --color-bg: var(--bg);
   --color-bg-deep: var(--bg-deep);
@@ -265,7 +354,7 @@ h1, h2, h3 {
 /* the ring appears instantly but eases out, so tabbing through a row of
    controls reads as one moving highlight rather than a strobe */
 :focus-visible {
-  transition: box-shadow 140ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: box-shadow 140ms var(--ease-out);
 }
 /* A field that IS the whole surface (the command palette's search) is focused
    the moment the surface opens; a box ring around it just draws a rectangle
@@ -490,7 +579,7 @@ h1, h2, h3 {
     linear-gradient(#000 0 0);
   mask-composite: exclude;
   opacity: calc(0.7 + var(--lit) * 0.3);
-  transition: opacity 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 240ms var(--ease-out);
 }
 
 /* layer 4 — reflection. The specular bloom that follows the pointer. */
@@ -521,7 +610,7 @@ h1, h2, h3 {
   );
   opacity: calc(var(--glow) * var(--glass-spec-strength));
   /* opacity only — the gradient position is a paint, not a layout change */
-  transition: opacity 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 200ms var(--ease-out);
 }
 
 /* layer 2 — the blur, plus a translucent tint so the page shows through */
@@ -588,7 +677,7 @@ h1, h2, h3 {
 /* A press flexes the pane: the specular flares at the point of contact and
    settles (LightingProvider sets the attribute; mouse, finger and pen). */
 [data-glass="on"] [data-glass-press]::after {
-  animation: glass-press 520ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: glass-press 520ms var(--ease-out);
 }
 @keyframes glass-press {
   from { opacity: calc(var(--glass-spec-strength) * 2.2); }
@@ -639,8 +728,10 @@ h1, h2, h3 {
   /* the inset line is the gloss: a lit top edge on the coloured pill */
   box-shadow: inset 0 1px 0 0 oklch(1 0 0 / 0.3), 0 2px 20px -4px var(--primary-glow);
 }
-.glow-brand.glow-hover {
-  transition: box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1);
+/* zero specificity: on a button the control recipe (which eases box-shadow
+   too) must win, or the press would lose its spring */
+:where(.glow-brand.glow-hover) {
+  transition: box-shadow var(--dur-base) var(--ease-out);
 }
 @media (hover: hover) {
   [data-glass="on"] .glow-brand.glow-hover:hover {
@@ -672,7 +763,7 @@ h1, h2, h3 {
   /* LightingProvider fades the light out when the pointer leaves the window
      or the window loses focus, so it never hangs where the cursor last was */
   opacity: var(--cursor-visible, 0);
-  transition: opacity 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 240ms var(--ease-out);
   will-change: translate;
 }
 
@@ -682,18 +773,22 @@ h1, h2, h3 {
    composite on the GPU exactly like transform does. */
 [data-magnetic] {
   translate: var(--mag-x, 0px) var(--mag-y, 0px);
+  /* the lean rides a spring; press and colour as on every control */
   transition:
-    translate 380ms cubic-bezier(0.22, 1, 0.36, 1),
-    scale 220ms cubic-bezier(0.22, 1, 0.36, 1);
+    translate var(--spring-smooth-ms) var(--spring-smooth),
+    scale var(--press-ms, var(--spring-snappy-ms)) var(--press-ease, var(--spring-snappy)),
+    var(--t-control);
 }
 @media (hover: hover) {
   [data-glass="on"] [data-magnetic]:hover {
     scale: 1.02;
   }
 }
-[data-magnetic]:active {
-  scale: 0.985;
-  transition-duration: 90ms;
+/* after :hover, so a press wins while the pointer is still over the button */
+[data-magnetic]:not(:disabled):active {
+  --press-ms: 90ms;
+  --press-ease: var(--ease-out);
+  scale: var(--press-scale, 0.97);
 }
 
 /* ---- spatial parallax ----
@@ -702,11 +797,11 @@ h1, h2, h3 {
    deliberately tiny; this should register as depth, not as movement. */
 [data-glass="on"] .parallax-bg {
   translate: calc((var(--cursor-x) - 50vw) * 0.006) calc((var(--cursor-y) - 50vh) * 0.006);
-  transition: translate 600ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: translate 600ms var(--ease-out);
 }
 [data-glass="on"] .parallax-mid {
   translate: calc((var(--cursor-x) - 50vw) * 0.012) calc((var(--cursor-y) - 50vh) * 0.012);
-  transition: translate 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: translate 420ms var(--ease-out);
 }
 
 /* Glass off, reduced effects, or reduced motion: no magnetism, no parallax.
@@ -723,9 +818,11 @@ h1, h2, h3 {
 }
 
 .panel-hover {
-  transition: border-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
-    background-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  /* a card that is a button presses as a card (below), not as a control */
+  --press-scale: 1;
+  transition: border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    transform var(--spring-snappy-ms) var(--spring-snappy);
 }
 /* Hover lifts only where a real pointer hovers: on iPad a tap fires :hover
    and it sticks until the next tap elsewhere, leaving the card raised. */
@@ -742,9 +839,9 @@ h1, h2, h3 {
    under it deepens, and the lens ring brightens because --lit has gone up. */
 [data-glass="on"] .panel-hover {
   transition:
-    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
-    background-color 220ms cubic-bezier(0.22, 1, 0.36, 1);
+    transform var(--spring-snappy-ms) var(--spring-snappy),
+    box-shadow var(--dur-base) var(--ease-out),
+    background-color var(--dur-base) var(--ease-out);
 }
 @media (hover: hover) {
   [data-glass="on"] .panel-hover:hover {
@@ -756,12 +853,14 @@ h1, h2, h3 {
   }
 }
 [data-glass="on"] .panel-hover:active {
-  transform: translate3d(0, 0, 0) scale(0.995);
+  transform: translate3d(0, 0, 0) scale(0.992);
 }
-/* and presses back down when tapped, which is what makes it feel physical */
+/* and presses back down when tapped, which is what makes it feel physical:
+   in quickly, back out on the spring */
 .panel-hover:active {
-  transform: translateY(0) scale(0.995);
+  transform: translateY(0) scale(0.992);
   transition-duration: 90ms;
+  transition-timing-function: var(--ease-out);
 }
 
 /* ---- ambient particles --------------------------------------------------
@@ -829,11 +928,11 @@ h1, h2, h3 {
    they begin with the first paint rather than after JavaScript has loaded.
    Timings match the old Framer version; times count from first paint.      */
 .boot-curtain {
-  animation: boot-curtain 500ms cubic-bezier(0.22, 1, 0.36, 1) 2150ms forwards;
+  animation: boot-curtain 500ms var(--ease-out) 2150ms forwards;
 }
 /* a tap or key skips: a fresh animation (a new name restarts the timeline) */
 .boot-curtain[data-skipped] {
-  animation: boot-curtain 300ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: boot-curtain 300ms var(--ease-out) forwards;
 }
 @keyframes boot-curtain {
   to { opacity: 0; }
@@ -849,7 +948,7 @@ h1, h2, h3 {
 }
 .boot-beam {
   opacity: 0;
-  animation: boot-beam 1.15s cubic-bezier(0.22, 1, 0.36, 1) 1.05s both;
+  animation: boot-beam 1.15s var(--ease-out) 1.05s both;
 }
 @keyframes boot-beam {
   0% { opacity: 0; transform: translateX(-160%); }
@@ -885,7 +984,7 @@ h1, h2, h3 {
   50% { transform: rotate(3deg) scale(1.04); }
 }
 .boot-word {
-  animation: boot-word 280ms cubic-bezier(0.22, 1, 0.36, 1) 280ms both;
+  animation: boot-word 280ms var(--ease-out) 280ms both;
 }
 @keyframes boot-word {
   from { opacity: 0; transform: translateY(6px); }
@@ -895,9 +994,12 @@ h1, h2, h3 {
    Quiet on purpose (template.tsx explains the why):
    • the screen crossfades — the browser's root View Transition, a single
      viewport-sized snapshot of the old screen under the live new one;
-   • the new content settles 14px up into place, transform only, so its
-     glass panels stay frosted the whole way.
-   No page-sized snapshots, no 3D, no overshoot.                             */
+   • the new page arrives in pieces: its blocks settle into place one after
+     another, top to bottom, each on the same critically damped spring.
+     Transform only, so every glass pane stays frosted the whole way, and on
+     the compositor, so a busy main thread (the new route mounting) cannot
+     make it stutter.
+   No page-sized snapshots, no 3D, no overshoot, no fading parents.          */
 ::view-transition-old(root) {
   animation: none;
 }
@@ -909,34 +1011,116 @@ h1, h2, h3 {
 @keyframes route-fade {
   from { opacity: 0; }
 }
-.page-rise {
-  animation: page-rise 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+
+/* What cascades: the direct children of the page (.page-enter is the route
+   template, its child the page), plus the children of any container marked
+   .stagger, plus anything marked .rise. A .stagger container stays put and
+   hands its place in the order on to its children, so a header followed by a
+   grid of cards reads header, card, card, card — not header, grid.
+   The template only carries .page-enter for the length of the entrance:
+   content that mounts later (a view switch, a new row) does not replay it. */
+.page-enter > * > *,
+.page-enter .stagger > *,
+.page-enter .rise {
+  animation: rise var(--spring-smooth-ms) var(--spring-smooth) both;
+  /* tight and capped: the last block starts a third of a second in at most */
+  animation-delay: calc(min(var(--i, 0) + var(--stagger-from, 0), 9) * 34ms);
 }
-@keyframes page-rise {
-  from { transform: translateY(14px); }
+/* the container, and any block that merely wraps it, stay put: only the
+   children move, continuing the count from where the block stood */
+.page-enter .stagger {
+  --stagger-from: var(--i, 0);
+}
+.page-enter .stagger,
+.page-enter > * > :has(.stagger),
+/* something pinned to the viewport (a page backdrop, a floating bar) is not
+   part of the page's flow and must not shift with it */
+.page-enter > * > [class~="fixed"],
+.page-enter .no-rise {
+  animation: none;
+}
+:is(.page-enter > * > *, .stagger > *) { --i: 0; }
+:is(.page-enter > * > *, .stagger > *):nth-child(2) { --i: 1; }
+:is(.page-enter > * > *, .stagger > *):nth-child(3) { --i: 2; }
+:is(.page-enter > * > *, .stagger > *):nth-child(4) { --i: 3; }
+:is(.page-enter > * > *, .stagger > *):nth-child(5) { --i: 4; }
+:is(.page-enter > * > *, .stagger > *):nth-child(6) { --i: 5; }
+:is(.page-enter > * > *, .stagger > *):nth-child(7) { --i: 6; }
+:is(.page-enter > * > *, .stagger > *):nth-child(8) { --i: 7; }
+:is(.page-enter > * > *, .stagger > *):nth-child(9) { --i: 8; }
+:is(.page-enter > * > *, .stagger > *):nth-child(n + 10) { --i: 9; }
+@keyframes rise {
+  from { transform: translateY(16px); }
 }
 /* back: the previous page settles down instead of up */
-html[data-nav="back"] .page-rise {
-  animation-name: page-settle;
+html[data-nav="back"] .page-enter > * > *,
+html[data-nav="back"] .page-enter .stagger > *,
+html[data-nav="back"] .page-enter .rise {
+  animation-name: settle;
 }
-@keyframes page-settle {
-  from { transform: translateY(-10px); }
+@keyframes settle {
+  from { transform: translateY(-12px); }
 }
 /* no View Transitions (older browsers): the content fades itself in */
 @supports not (view-transition-name: none) {
-  .page-rise { animation-name: page-rise-fade; }
+  .page-enter > * > *,
+  .page-enter .stagger > *,
+  .page-enter .rise {
+    animation-name: rise-fade;
+  }
 }
-@keyframes page-rise-fade {
-  from { opacity: 0; transform: translateY(14px); }
+@keyframes rise-fade {
+  from { opacity: 0; transform: translateY(16px); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .page-rise { animation: none; }
+  .page-enter > * > *,
+  .page-enter .stagger > *,
+  .page-enter .rise {
+    animation: none;
+  }
   ::view-transition-new(root) { animation-duration: 150ms; }
+}
+
+/* ---- a view replacing another inside a page ------------------------------
+   Calendar month to month, board to list, one tab's content to the next.
+   The new view is keyed, so it mounts fresh and settles into place: from the
+   side it lies on when the change has a direction (--turn-x: 1 next, -1
+   previous), a short rise otherwise. Transform only, for the usual reason:
+   these wrappers hold glass panes. Not during a route entrance, where the
+   cascade is already moving them. */
+.view-turn {
+  animation: view-turn var(--spring-smooth-ms) var(--spring-smooth) both;
+}
+@keyframes view-turn {
+  from { transform: translate(calc(var(--turn-x, 0) * 22px), calc(var(--turn-y, 1) * 10px)); }
+}
+.page-enter .view-turn {
+  animation: none;
 }
 
 /* asked for less motion: no curtain at all, hidden before it is ever painted */
 @media (prefers-reduced-motion: reduce) {
   .boot-curtain { display: none; }
+}
+
+/* ---- data settling in -------------------------------------------------------
+   Bars grow out of their baseline when a chart appears: a transform on the
+   compositor, staggered by --i. Animating `height` or `width` instead re-laid
+   out the whole chart for every bar, every frame. A value that changes later
+   eases its real size (one bar, rarely), which is what the transition is for. */
+.grow-y,
+.grow-x {
+  animation: grow-y var(--spring-gentle-ms) var(--spring-gentle) both;
+  animation-delay: calc(var(--i, 0) * 26ms + var(--grow-delay, 0ms));
+  transition: height var(--spring-smooth-ms) var(--spring-smooth), width var(--spring-smooth-ms) var(--spring-smooth);
+}
+.grow-y { transform-origin: 50% 100%; }
+.grow-x { transform-origin: 0 50%; animation-name: grow-x; }
+@keyframes grow-y {
+  from { transform: scaleY(0); }
+}
+@keyframes grow-x {
+  from { transform: scaleX(0); }
 }
 
 /* ---- unread mail marker -------------------------------------------------
@@ -974,31 +1158,58 @@ html[data-nav="back"] .page-rise {
   }
 }
 
-/* ---- global micro-interactions ------------------------------------------
-   Press feedback for the controls that aren't the <Button> component (chips,
-   icon buttons, tabs, links-as-buttons). Transform only, and never applied to
-   disabled controls or to anything inside a drag operation.                */
-button:not(:disabled):active,
-[role="button"]:not([aria-disabled="true"]):active {
-  transform: scale(0.97);
-}
+/* ---- controls ------------------------------------------------------------
+   Every button in the app, one recipe:
+   • a press sinks in fast and springs back out (the same snappy spring the
+     toggles and tab pills use), so a tap always has a beginning and an end;
+   • colour, border and shadow ease instead of snapping.
+
+   `scale`, never `transform`: Framer Motion owns `transform` on many of these
+   elements, and a CSS transition on a property it drives every frame smears
+   the animation (each frame restarts the transition). That is also why
+   opacity is not in the list.
+
+   Unlayered on purpose, so it holds whatever transition utility a component
+   happens to carry: before this a `transform`-only rule sat here and silently
+   switched off every colour transition on every button.
+   --press-scale lets a control press deeper (round icon buttons) or not at
+   all (cards, which have their own press).                                 */
 button,
-[role="button"] {
-  transition: transform 120ms cubic-bezier(0.22, 1, 0.36, 1);
+[role="button"],
+.pressable {
+  --press-ms: var(--spring-snappy-ms);
+  --press-ease: var(--spring-snappy);
+  transition: scale var(--press-ms) var(--press-ease), var(--t-control);
+}
+button:not(:disabled):active,
+[role="button"]:not([aria-disabled="true"]):active,
+.pressable:active {
+  /* into the press: quick and eased; the spring is for the way back out */
+  --press-ms: 90ms;
+  --press-ease: var(--ease-out);
+  scale: var(--press-scale, 0.97);
+}
+/* controls that only show on hover (delete, move) fade in. Opacity is added
+   for these alone: none of them is driven by Framer Motion. */
+button[class*="group-hover:opacity-100"] {
+  transition: opacity var(--dur-fast) var(--ease-out), scale var(--press-ms) var(--press-ease), var(--t-control);
 }
 /* the task board's cards are dragged, not pressed — a scale mid-drag fights
    the native drag image */
 [draggable="true"]:active {
-  transform: none;
+  scale: none;
 }
 
 /* Honour the accessibility setting: no movement, just the colour feedback. */
 @media (prefers-reduced-motion: reduce) {
   .panel-hover:hover,
-  .panel-hover:active,
-  button:not(:disabled):active,
-  [role="button"]:active {
+  .panel-hover:active {
     transform: none;
+  }
+  button:not(:disabled):active,
+  [role="button"]:active,
+  .pressable:active {
+    scale: none;
   }
 }
 
@@ -1055,7 +1266,7 @@ button,
     linear-gradient(#000 0 0);
   mask-composite: exclude;
   opacity: calc(0.8 + var(--lit) * 0.2);
-  transition: opacity 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 240ms var(--ease-out);
 }
 [data-appearance="light"][data-glass="on"] .glass-edge {
   --tw-inset-shadow:
@@ -1071,7 +1282,7 @@ button,
 .money-blur {
   filter: blur(9px);
   user-select: none;
-  transition: filter 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: filter 220ms var(--ease-out);
 }
 
 /* ---- date & time fields -------------------------------------------------
@@ -1158,6 +1369,14 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 [data-theme="orchid"] .ambient {
   --glow-a: oklch(0.32 0.15 340 / 0.34);
   --glow-b: oklch(0.34 0.11 215 / 0.24);
+}
+[data-theme="moss"] .ambient {
+  --glow-a: oklch(0.31 0.06 140 / 0.34);
+  --glow-b: oklch(0.34 0.04 115 / 0.22);
+}
+[data-theme="dusk"] .ambient {
+  --glow-a: oklch(0.30 0.05 270 / 0.38);
+  --glow-b: oklch(0.34 0.03 250 / 0.22);
 }
 .ambient::after {
   content: "";
@@ -1250,7 +1469,7 @@ input[type="range"].ios::-webkit-slider-thumb {
   border-radius: 9999px;
   background: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
-  transition: transform 140ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 140ms var(--ease-out);
 }
 input[type="range"].ios::-moz-range-thumb {
   width: 20px;
@@ -1259,7 +1478,7 @@ input[type="range"].ios::-moz-range-thumb {
   border-radius: 9999px;
   background: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
-  transition: transform 140ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 140ms var(--ease-out);
 }
 /* the thumb swells under the finger, the same gesture the switch knob makes */
 input[type="range"].ios:active::-webkit-slider-thumb {
@@ -1402,6 +1621,12 @@ select.glass-input {
   .glass-input:focus-visible { outline-width: 2.5px; outline-offset: 0; }
 }
 
+/* A region that is dark whatever the appearance (a photo, the weather hero):
+   inside it `white/…` means white again. */
+.on-dark {
+  --color-white: #fff;
+}
+
 /* ============================================================
    Light appearance — optional, dark stays the default.
    It re-points the tokens and the few rules above that hard-code a dark
@@ -1411,6 +1636,14 @@ select.glass-input {
    ============================================================ */
 [data-appearance="light"] {
   color-scheme: light;
+  /* Every `white/…` tint in the app — hairlines, fills, dividers, checkbox
+     outlines, close to three hundred of them — was written for the dark page
+     and vanished on a light one, white on white. Tailwind builds all of them
+     from this one variable, so re-pointing it to ink turns each into the same
+     tint of dark instead. Solid white is written as a literal (`#fff`) where
+     it must stay white, and .on-dark restores the variable for a region that
+     is dark in both appearances. */
+  --color-white: oklch(0.3 0.02 27);
   --bg: oklch(0.97 0.003 250);
   --bg-deep: oklch(0.94 0.005 250);
   --ink: oklch(0.23 0.018 27);
@@ -1485,6 +1718,23 @@ select.glass-input {
 [data-appearance="light"][data-theme="orchid"] .ambient {
   --glow-a: oklch(0.84 0.11 340 / 0.42);
   --glow-b: oklch(0.88 0.08 215 / 0.38);
+}
+[data-appearance="light"][data-theme="moss"] .ambient {
+  --glow-a: oklch(0.87 0.06 135 / 0.42);
+  --glow-b: oklch(0.92 0.04 115 / 0.36);
+}
+[data-appearance="light"][data-theme="dusk"] .ambient {
+  --glow-a: oklch(0.86 0.04 265 / 0.42);
+  --glow-b: oklch(0.90 0.03 250 / 0.36);
+}
+/* The light appearance gives every theme one warm accent. These two are cool
+   and green; a rust accent on them reads as a mistake, so they bring their
+   own, dark enough to read on a light page. */
+[data-appearance="light"][data-theme="moss"] {
+  --accent: oklch(0.43 0.08 140);
+}
+[data-appearance="light"][data-theme="dusk"] {
+  --accent: oklch(0.42 0.07 265);
 }
 /* white noise is invisible on a light field; skip the layer */
 [data-appearance="light"] .ambient::after { display: none; }

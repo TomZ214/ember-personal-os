@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  ArrowRight, CalendarPlus, CheckSquare, ListPlus, Mail, NotebookPen, Search, Sparkles,
-  CalendarDays,
+  ArrowRight, CalendarDays, CalendarPlus, CheckSquare, ListPlus, Mail, NotebookPen, Search,
+  SearchX,
 } from "lucide-react";
 import { useEmber } from "@/lib/store";
 import { parseQuickEvent, parseQuickTask } from "@/lib/nlp";
@@ -17,6 +17,10 @@ import { Kbd } from "@/components/ui/misc";
 import { NAV } from "./nav";
 import { markNavDirection } from "@/lib/navOrigin";
 import { transitionTo } from "@/lib/routeTransition";
+import { SPRING, rise, scrim } from "@/lib/motion";
+
+/** drops in from just above where it comes to rest */
+const PALETTE = rise(-12);
 
 interface Result {
   id: string;
@@ -239,18 +243,12 @@ export function CommandPalette() {
           className="fixed inset-0 z-(--z-palette) flex items-start justify-center px-4 pt-[14dvh]"
         >
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.16 }}
+            {...scrim}
             onClick={() => setOpen(false)}
             className="absolute inset-0 bg-black/50 backdrop-blur-[8px]"
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: -12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.97, y: -8 }}
-            transition={{ type: "spring", stiffness: 480, damping: 36 }}
+            {...PALETTE}
             className="glass-strong glass-edge relative w-full max-w-xl overflow-hidden rounded-2xl shadow-[0_32px_90px_-16px_rgba(0,0,0,0.8)]"
             role="dialog"
             aria-label="Command palette"
@@ -270,10 +268,13 @@ export function CommandPalette() {
               <Kbd>esc</Kbd>
             </div>
 
-            <div ref={listRef} className="max-h-[46dvh] overflow-y-auto p-2">
+            {/* layoutScroll: the selection highlight is a shared layout
+                element, and its travel has to account for how far this list
+                is scrolled */}
+            <motion.div ref={listRef} layoutScroll className="max-h-[46dvh] overflow-y-auto p-2">
               {results.length === 0 && (
                 <div className="flex flex-col items-center gap-2 py-10 text-center">
-                  <Sparkles size={20} className="text-faint" />
+                  <SearchX size={20} className="text-faint" />
                   <p className="text-sm text-muted">{tr("cmd.nothingFound").replace("{q}", q)}</p>
                   <p className="text-xs text-faint">{tr("cmd.tryHint")}</p>
                 </div>
@@ -292,19 +293,31 @@ export function CommandPalette() {
                       data-idx={i}
                       onClick={r.run}
                       onMouseMove={() => setSel(i)}
-                      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors ${
-                        selIdx === i ? "bg-white/[0.09] text-ink" : "text-muted"
+                      // no press scale: the highlight is the feedback here,
+                      // and a row that shrinks under the pointer fights it
+                      className={`relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm [--press-scale:1] ${
+                        selIdx === i ? "text-ink" : "text-muted"
                       }`}
                     >
-                      <span className={selIdx === i ? "text-accent" : "text-faint"}>{r.icon}</span>
-                      <span className="flex-1 truncate">{r.title}</span>
-                      {r.hint && <span className="shrink-0 text-xs capitalize text-faint">{r.hint}</span>}
-                      {selIdx === i && <ArrowRight size={14} className="shrink-0 text-faint" />}
+                      {/* one highlight for the whole list: it glides from row
+                          to row instead of blinking off here and on there */}
+                      {selIdx === i && (
+                        <motion.span
+                          layoutId="cmd-sel"
+                          aria-hidden
+                          className="absolute inset-0 rounded-xl bg-white/[0.09]"
+                          transition={SPRING.snappy}
+                        />
+                      )}
+                      <span className={`relative transition-colors duration-150 ${selIdx === i ? "text-accent" : "text-faint"}`}>{r.icon}</span>
+                      <span className="relative flex-1 truncate">{r.title}</span>
+                      {r.hint && <span className="relative shrink-0 text-xs capitalize text-faint">{r.hint}</span>}
+                      {selIdx === i && <ArrowRight size={14} className="relative shrink-0 text-faint" />}
                     </button>
                   </div>
                 );
               })}
-            </div>
+            </motion.div>
 
             {/* Footer: what the selected result can actually do. Shortcuts you
                 cannot see are shortcuts nobody uses — this is where ⌘⏎ stops

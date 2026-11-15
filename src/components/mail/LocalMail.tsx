@@ -4,10 +4,11 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
+import { EXIT, SPRING, withFade } from "@/lib/motion";
 import { format, isToday, parseISO } from "date-fns";
 import {
-  Archive, CheckCheck, ChevronLeft, FileText, Inbox, Mail as MailIcon, Paperclip, PenLine, Search,
-  Send, Sparkles, Star, Trash2,
+  Archive, CheckCheck, ChevronLeft, FileText, Inbox, Mail as MailIcon, Paperclip, PenLine,
+  ScrollText, Search, Send, Star, Trash2,
 } from "lucide-react";
 import { useEmber, useHydrated } from "@/lib/store";
 import { useLang, useT } from "@/lib/i18n";
@@ -131,22 +132,22 @@ export function LocalMail() {
                   hint={t("mail.connectGmailHint")}
                   action={
                     <Link href="/settings/connections">
-                      <Button variant="primary">{t("mail.connectGmail")}</Button>
+                      <Button>{t("mail.connectGmail")}</Button>
                     </Link>
                   }
                 />
               ) : (
-                <EmptyState icon={<MailIcon size={20} />} title={t("mail.nothingHere")} hint={query ? t("mail.noMatch") : t("mail.folderEmpty")} />
+                <EmptyState size="sm" icon={<MailIcon size={20} />} title={t("mail.nothingHere")} hint={query ? t("mail.noMatch") : t("mail.folderEmpty")} />
               ))}
             <AnimatePresence initial={false}>
             {list.map((m) => (
               <motion.button
                 key={m.id}
-                layout
+                // a new mail drops in from the top; one that is archived or
+                // deleted leaves to the right while the list closes over it
                 initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, x: 56, height: 0, paddingTop: 0, paddingBottom: 0 }}
-                transition={{ type: "spring", stiffness: 420, damping: 36 }}
+                animate={{ opacity: 1, y: 0, transition: withFade(SPRING.snappy) }}
+                exit={{ opacity: 0, x: 56, height: 0, paddingTop: 0, paddingBottom: 0, transition: { ...SPRING.smooth, opacity: EXIT } }}
                 onClick={() => openMail(m)}
                 className={`block w-full overflow-hidden px-4 py-3 text-left transition-colors ${
                   activeId === m.id ? "bg-white/[0.06]" : "hover:bg-white/[0.03]"
@@ -182,10 +183,9 @@ export function LocalMail() {
             <AnimatePresence mode="wait">
               <motion.article
                 key={active.id}
-                initial={{ opacity: 0, scale: 0.97, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.985 }}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0, transition: withFade(SPRING.smooth) }}
+                exit={{ opacity: 0, scale: 0.99, transition: EXIT }}
                 className="panel flex flex-1 flex-col overflow-hidden"
               >
                 <div className="flex items-center gap-1.5 border-b border-white/[0.06] px-4 py-2.5">
@@ -277,7 +277,7 @@ function Summary({ body }: { body: string }) {
   return (
     <div className="mb-5 rounded-2xl border border-accent/15 bg-accent/[0.05] p-4">
       <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-accent">
-        <Sparkles size={12} /> {t("mail.quickSummary")}
+        <ScrollText size={12} /> {t("mail.quickSummary")}
       </p>
       <p className="text-[13px] leading-relaxed text-muted">{summary.first}</p>
       {summary.bullets.length > 0 && (

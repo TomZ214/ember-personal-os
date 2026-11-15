@@ -1,6 +1,6 @@
 "use client";
 
-import { Gauge, Sparkles } from "lucide-react";
+import { Gauge, Layers } from "lucide-react";
 import { useEmber } from "@/lib/store";
 import { useT } from "@/lib/i18n";
 import { Switch } from "@/components/ui/Switch";
@@ -24,7 +24,7 @@ export function EffectsSettings() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
           <h2 className="flex items-center gap-2 text-[15px] font-semibold">
-            <Sparkles size={16} /> {t("fx.glassTitle")}
+            <Layers size={16} /> {t("fx.glassTitle")}
           </h2>
           <p className="mt-0.5 max-w-[52ch] text-[13px] text-muted">{t("fx.glassSub")}</p>
         </div>

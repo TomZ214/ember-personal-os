@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { SPRING, pop, withFade } from "@/lib/motion";
 import {
   addDays, addMonths, addWeeks, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameDay,
   isSameMonth, isToday, startOfMonth, startOfWeek, subMonths, subWeeks,
 } from "date-fns";
 import {
-  CalendarDays, ChevronLeft, ChevronRight, Loader2, MapPin, Plus, RefreshCw, Sparkles, Trash2, Users,
+  CalendarDays, ChevronLeft, ChevronRight, Loader2, MapPin, PenLine, Plus, RefreshCw, Trash2,
+  Users,
 } from "lucide-react";
 import { useHydrated } from "@/lib/store";
 import { dayKey, dfLocale, friendlyDay, minutesToLabel, todayKey } from "@/lib/dates";
@@ -37,6 +39,9 @@ export default function CalendarPage() {
   const lang = useLang();
   const [view, setView] = useState<View>("month");
   const [cursor, setCursor] = useState(() => new Date());
+  // which way the last change went: the view that replaces the old one comes
+  // in from that side (1 next, -1 previous), or simply settles (a view switch)
+  const [turn, setTurn] = useState<1 | -1 | 0>(0);
   const [editing, setEditing] = useState<CalEvent | null>(null);
   const [creating, setCreating] = useState<{ date: string; start: number } | null>(null);
   const [nl, setNl] = useState("");
@@ -60,6 +65,7 @@ export default function CalendarPage() {
   };
 
   const shift = (dir: 1 | -1) => {
+    setTurn(dir);
     if (view === "month") setCursor((c) => (dir === 1 ? addMonths(c, 1) : subMonths(c, 1)));
     else if (view === "week") setCursor((c) => (dir === 1 ? addWeeks(c, 1) : subWeeks(c, 1)));
     else setCursor((c) => addDays(c, dir));
@@ -69,6 +75,12 @@ export default function CalendarPage() {
     view === "day" ? format(cursor, lang === "de" ? "EEEE, d. MMMM" : "EEEE, MMMM d", { locale: dfLocale(lang) }) :
     view === "week" ? `${t("cal.weekOf")} ${format(startOfWeek(cursor, { weekStartsOn: 1 }), "d. MMM", { locale: dfLocale(lang) })}` :
     format(cursor, "MMMM yyyy", { locale: dfLocale(lang) });
+
+  // the period on screen: it changes exactly when the view shows other days
+  const periodKey =
+    view === "day" ? dayKey(cursor) :
+    view === "week" ? dayKey(startOfWeek(cursor, { weekStartsOn: 1 })) :
+    format(cursor, "yyyy-MM");
 
   if (!hydrated) return <div className="skeleton h-[70vh]" style={{ borderRadius: 18 }} />;
 
@@ -94,7 +106,7 @@ export default function CalendarPage() {
       {/* natural language quick add */}
       <div className="relative mb-4">
         <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 transition-colors focus-within:border-accent/50">
-          <Sparkles size={16} className="shrink-0 text-accent" />
+          <PenLine size={16} className="shrink-0 text-accent" />
           <input
             value={nl}
             onChange={(e) => setNl(e.target.value)}
@@ -105,8 +117,8 @@ export default function CalendarPage() {
           />
           {nlParsed && (
             <motion.button
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={pop.initial}
+              animate={pop.animate}
               onClick={quickAdd}
               className="num shrink-0 whitespace-nowrap rounded-full bg-accent/15 px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/25"
             >
@@ -147,7 +159,13 @@ export default function CalendarPage() {
           <button onClick={() => shift(-1)} aria-label={t("cal.previous")} className="rounded-lg p-2 text-muted transition-colors hover:bg-white/[0.06] hover:text-ink">
             <ChevronLeft size={17} />
           </button>
-          <button onClick={() => setCursor(new Date())} className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-white/[0.06] hover:text-ink">
+          <button
+            onClick={() => {
+              const now = new Date();
+              setTurn(cursor > now ? -1 : 1);
+              setCursor(now);
+            }}
+            className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-white/[0.06] hover:text-ink">
             {t("cal.today")}
           </button>
           <button onClick={() => shift(1)} aria-label={t("cal.next")} className="rounded-lg p-2 text-muted transition-colors hover:bg-white/[0.06] hover:text-ink">
@@ -159,7 +177,7 @@ export default function CalendarPage() {
           {(["month", "week", "day", "agenda"] as View[]).map((v) => (
             <button
               key={v}
-              onClick={() => setView(v)}
+              onClick={() => { setTurn(0); setView(v); }}
               aria-pressed={view === v}
               className={`relative h-8 rounded-[9px] px-3 text-[13px] font-medium transition-colors ${
                 view === v ? "text-ink" : "text-faint hover:text-muted"
@@ -167,7 +185,7 @@ export default function CalendarPage() {
             >
               {view === v && (
                 <motion.span layoutId="cal-view" className="absolute inset-0 rounded-[9px] bg-white/[0.09]"
-                  transition={{ type: "spring", stiffness: 500, damping: 38 }} />
+                  transition={SPRING.snappy} />
               )}
               <span className="relative">{t(`cal.view.${v}`)}</span>
             </button>
@@ -175,13 +193,21 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      {view === "month" && (
-        <MonthView cal={cal} cursor={cursor} onDay={(d) => { setCursor(d); setView("day"); }} onEdit={setEditing}
-          onCreate={(date) => setCreating({ date, start: 9 * 60 })} />
-      )}
-      {view === "week" && <TimeGrid cal={cal} days={7} cursor={cursor} onEdit={setEditing} onCreate={setCreating} />}
-      {view === "day" && <TimeGrid cal={cal} days={1} cursor={cursor} onEdit={setEditing} onCreate={setCreating} />}
-      {view === "agenda" && <AgendaView cal={cal} cursor={cursor} onEdit={setEditing} />}
+      {/* keyed by view and period: a new month, week or day mounts fresh and
+          settles in from the side it lies on (.view-turn, globals.css) */}
+      <div
+        key={`${view}-${periodKey}`}
+        className="view-turn"
+        style={{ "--turn-x": turn, "--turn-y": turn === 0 ? 1 : 0 } as React.CSSProperties}
+      >
+        {view === "month" && (
+          <MonthView cal={cal} cursor={cursor} onDay={(d) => { setTurn(0); setCursor(d); setView("day"); }} onEdit={setEditing}
+            onCreate={(date) => setCreating({ date, start: 9 * 60 })} />
+        )}
+        {view === "week" && <TimeGrid cal={cal} days={7} cursor={cursor} onEdit={setEditing} onCreate={setCreating} />}
+        {view === "day" && <TimeGrid cal={cal} days={1} cursor={cursor} onEdit={setEditing} onCreate={setCreating} />}
+        {view === "agenda" && <AgendaView cal={cal} cursor={cursor} onEdit={setEditing} />}
+      </div>
 
       <EventEditor cal={cal} open={!!creating} defaults={creating ?? undefined} onClose={() => setCreating(null)} />
       <EventEditor cal={cal} open={!!editing} event={editing ?? undefined} onClose={() => setEditing(null)} />
@@ -398,9 +424,12 @@ function TimeGrid({
                   return (
                     <motion.button
                       key={e.id + key}
+                      // an event appears in place; one that is moved glides to
+                      // its new slot instead of jumping there
                       layout
                       initial={{ opacity: 0, scale: 0.97 }}
-                      animate={{ opacity: 1, scale: 1 }}
+                      animate={{ opacity: 1, scale: 1, transition: withFade(SPRING.snappy) }}
+                      transition={{ layout: SPRING.smooth }}
                       onClick={() => onEdit(e)}
                       className="absolute inset-x-1 z-[5] overflow-hidden rounded-lg border px-2 py-1 text-left backdrop-blur-sm transition-shadow hover:shadow-[0_4px_18px_-4px_rgba(0,0,0,0.6)]"
                       style={{
@@ -454,13 +483,10 @@ function AgendaView({ cal, cursor, onEdit }: { cal: Cal; cursor: Date; onEdit: (
 
   return (
     <div className="flex flex-col gap-5">
-      {groups.map((g, gi) => (
-        <motion.section
-          key={dayKey(g.day)}
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: gi * 0.04, type: "spring", stiffness: 300, damping: 28 }}
-        >
+      {/* no entrance of their own: the view as a whole settles in (.view-turn),
+          and a fade here would sit above the glass list inside each day */}
+      {groups.map((g) => (
+        <section key={dayKey(g.day)}>
           <h3 className={`mb-2 text-sm font-semibold ${isSameDay(g.day, new Date()) ? "text-accent" : ""}`}>
             {friendlyDay(dayKey(g.day))}
             <span className="ml-2 text-xs font-normal text-faint">{format(g.day, lang === "de" ? "d. MMM" : "MMM d", { locale: dfLocale(lang) })}</span>
@@ -494,7 +520,7 @@ function AgendaView({ cal, cursor, onEdit }: { cal: Cal; cursor: Date; onEdit: (
               </button>
             ))}
           </div>
-        </motion.section>
+        </section>
       ))}
     </div>
   );

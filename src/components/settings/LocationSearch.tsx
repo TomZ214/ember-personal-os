@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { motion } from "framer-motion";
+import { pop } from "@/lib/motion";
 import { Loader2, MapPin, Search, X } from "lucide-react";
 import { useEmber } from "@/lib/store";
 import { useLang, useT } from "@/lib/i18n";
@@ -157,9 +158,10 @@ export function LocationSearch() {
           should vanish on select anyway. */}
       {(open && visibleHits.length > 0) || showEmpty || failed ? (
           <motion.div
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.14 }}
+            // grows out of the field it belongs to
+            initial={pop.initial}
+            animate={pop.animate}
+            style={{ transformOrigin: "50% 0%" }}
             className="glass-strong glass-edge absolute left-0 right-0 top-full z-(--z-dropdown) mt-2 overflow-hidden rounded-xl shadow-[0_20px_50px_-16px_rgba(0,0,0,0.7)]"
           >
             {failed ? (

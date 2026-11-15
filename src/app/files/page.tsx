@@ -2,16 +2,18 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { EASE, SPRING, tile } from "@/lib/motion";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import {
-  Download, FileArchive, FileAudio, FileBox, FileCode, FileImage, FileText, FileVideo, File as FileIcon,
+  Download, FileArchive, FileAudio, FileCode, FileImage, FileText, FileVideo, File as FileIcon,
   Trash2, UploadCloud,
 } from "lucide-react";
 import { useEmber, useHydrated } from "@/lib/store";
-import { useT } from "@/lib/i18n";
+import { useLang, useT } from "@/lib/i18n";
+import { dfLocale } from "@/lib/dates";
 import { deleteBlob, getBlob, putBlob } from "@/lib/idb";
 import type { FileMeta } from "@/lib/types";
-import { EmptyState, PageHeader } from "@/components/ui/misc";
+import { PageHeader } from "@/components/ui/misc";
 import { toast } from "@/components/ui/toast";
 
 function iconFor(type: string, name: string) {
@@ -30,6 +32,7 @@ const fmtSize = (b: number) =>
 export default function FilesPage() {
   const hydrated = useHydrated();
   const t = useT();
+  const lang = useLang();
   const files = useEmber((s) => s.files);
   const addFile = useEmber((s) => s.addFile);
   const removeFile = useEmber((s) => s.deleteFile);
@@ -114,7 +117,7 @@ export default function FilesPage() {
           dragOver ? "scale-[1.01] border-accent/60 bg-accent/[0.06]" : "border-white/[0.10] bg-white/[0.02] hover:border-white/[0.2] hover:bg-white/[0.04]"
         }`}
       >
-        <motion.span animate={dragOver ? { y: [-2, 2, -2] } : {}} transition={{ repeat: Infinity, duration: 0.8 }}>
+        <motion.span animate={dragOver ? { y: [-2, 2, -2] } : { y: 0 }} transition={dragOver ? { repeat: Infinity, duration: 0.8, ease: EASE.inOut } : SPRING.snappy}>
           <UploadCloud size={26} className={dragOver ? "text-accent" : "text-muted"} />
         </motion.span>
         <p className="text-sm font-medium">{dragOver ? t("files.dropToUpload") : t("files.dropHere")}</p>
@@ -129,11 +132,9 @@ export default function FilesPage() {
         aria-label={t("files.uploadFiles")}
       />
 
-      {files.length === 0 ? (
-        <div className="panel">
-          <EmptyState icon={<FileBox size={20} />} title={t("files.none")} hint={t("files.noneHint")} />
-        </div>
-      ) : (
+      {/* With no files the drop area above is the whole message: a second
+          pane saying "no files yet, drop some above" only said it twice. */}
+      {files.length > 0 && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           <AnimatePresence initial={false}>
             {files.map((f) => {
@@ -142,11 +143,10 @@ export default function FilesPage() {
               return (
                 <motion.div
                   key={f.id}
+                  // added and removed in place; the others glide to make room
                   layout
-                  initial={{ opacity: 0, scale: 0.92 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  {...tile}
+                  transition={{ layout: SPRING.smooth }}
                   className="panel panel-hover group overflow-hidden"
                 >
                   <div className="flex h-28 items-center justify-center overflow-hidden bg-white/[0.02]">
@@ -160,16 +160,16 @@ export default function FilesPage() {
                   <div className="p-3">
                     <p className="truncate text-[13px] font-medium" title={f.name}>{f.name}</p>
                     <p className="mt-0.5 text-[11px] text-faint">
-                      {fmtSize(f.size)} · {formatDistanceToNow(parseISO(f.addedAt), { addSuffix: true })}
+                      {fmtSize(f.size)} · {formatDistanceToNow(parseISO(f.addedAt), { addSuffix: true, locale: dfLocale(lang) })}
                     </p>
                     <div className="mt-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                      <button onClick={() => download(f)} aria-label={`Download ${f.name}`}
+                      <button onClick={() => download(f)} aria-label={t("vault.downloadMedia").replace("{name}", f.name)}
                         className="flex-1 rounded-lg bg-white/[0.06] py-1.5 text-muted transition-colors hover:text-ink">
                         <Download size={14} className="mx-auto" />
                       </button>
                       <button
                         onClick={async () => { await deleteBlob(f.id); removeFile(f.id); toast(t("files.deleted"), "info"); }}
-                        aria-label={`Delete ${f.name}`}
+                        aria-label={`${t("action.delete")}: ${f.name}`}
                         className="flex-1 rounded-lg bg-white/[0.06] py-1.5 text-muted transition-colors hover:text-danger"
                       >
                         <Trash2 size={14} className="mx-auto" />

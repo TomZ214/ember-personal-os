@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import { DURATION, EASE } from "@/lib/motion";
 import {
   Cloud, Droplets, Eye, Gauge, Sun, Sunrise, Sunset, Umbrella, Wind, WifiOff,
 } from "lucide-react";
@@ -67,12 +68,9 @@ export default function WeatherPage() {
       <PageHeader title={t("wx.title")} sub={place} />
 
       {/* hero */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-        className="relative overflow-hidden rounded-[26px] border border-white/[0.08]"
-      >
+      {/* no entrance of its own: it settles in with the rest of the page */}
+      {/* .on-dark: the hero is a sky in either appearance, and its text is white on it */}
+      <div className="on-dark relative overflow-hidden rounded-[26px] border border-white/[0.08]">
         <WeatherBackground cond={cond} isDay={c.isDay} />
         <div className="relative flex flex-col gap-6 p-6 sm:p-8">
           <div className="flex items-start justify-between gap-4">
@@ -91,7 +89,7 @@ export default function WeatherPage() {
             <WeatherGlyph cond={cond} isDay={c.isDay} size={96} className="-mr-2 -mt-2" />
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* hourly 48h */}
       <Section title={t("wx.next48")}>
@@ -236,7 +234,8 @@ function HourlyChart({ data }: { data: WeatherData["hourly"] }) {
               <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
             </linearGradient>
           </defs>
-          <motion.path d={area} fill="url(#wx-fill)" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }} />
+          {/* the line is drawn first; the fill under it follows */}
+          <motion.path d={area} fill="url(#wx-fill)" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: DURATION.slower, delay: 0.25, ease: EASE.out }} />
           <motion.path
             d={line}
             fill="none"
@@ -247,7 +246,7 @@ function HourlyChart({ data }: { data: WeatherData["hourly"] }) {
             vectorEffect="non-scaling-stroke"
             initial={{ pathLength: 0 }}
             animate={{ pathLength: 1 }}
-            transition={{ duration: 0.9, ease: "easeInOut" }}
+            transition={{ duration: 0.9, ease: EASE.inOut }}
           />
         </svg>
         <div className="pointer-events-none absolute inset-0">

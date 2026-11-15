@@ -13,14 +13,17 @@ let mountedOnce = false;
 // set after the first mount has committed
 const isFirstMount = () => typeof window === "undefined" || !mountedOnce;
 
+/** the cascade is over by now: 9 steps of 34 ms plus the spring's settle */
+const ENTRANCE_MS = 1000;
+
 /**
  * Per-route transition, kept deliberately quiet and cheap:
  *
  *  • The screen crossfades. That is a root View Transition (lib/
  *    routeTransition.ts) — one viewport-sized snapshot of the old screen
  *    under the live new one — released here the moment the page mounts.
- *  • The new content settles up into place (`.page-rise`, a transform-only
- *    CSS animation on the compositor).
+ *  • The new page's blocks settle into place one after another (`.page-enter`,
+ *    transform-only CSS animations on the compositor).
  *
  * Why not animate the page itself as a View Transition: a named element is
  * captured in isolation, so every glass panel on it lost its frosting for
@@ -30,7 +33,7 @@ const isFirstMount = () => typeof window === "undefined" || !mountedOnce;
  * Keyframes: "Route transitions" in globals.css.
  */
 export default function Template({ children }: { children: ReactNode }) {
-  const [first] = useState(isFirstMount);
+  const [entering, setEntering] = useState(() => !isFirstMount());
 
   // the new page is in the DOM: the waiting View Transition may crossfade now
   useLayoutEffect(() => {
@@ -39,14 +42,16 @@ export default function Template({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     mountedOnce = true;
-    // the direction flag NavOriginTracker sets is only good for this transition
+    // The entrance belongs to the route change only. Once it has played, the
+    // class goes, so content that mounts later on this page (a view switch,
+    // a new card) appears in place instead of replaying the cascade. The
+    // direction flag NavOriginTracker sets is spent by then as well.
     const t = setTimeout(() => {
+      setEntering(false);
       delete document.documentElement.dataset.nav;
-    }, 1000);
+    }, ENTRANCE_MS);
     return () => clearTimeout(t);
   }, []);
 
-  return (
-    <div className={first ? "relative" : "page-rise relative"}>{children}</div>
-  );
+  return <div className={entering ? "page-enter relative" : "relative"}>{children}</div>;
 }

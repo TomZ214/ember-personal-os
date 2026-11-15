@@ -7,7 +7,7 @@ import { AlarmClock, BellOff, Moon } from "lucide-react";
 import { useEmber, useHydrated } from "@/lib/store";
 import { todayKey } from "@/lib/dates";
 import { useT } from "@/lib/i18n";
-import { EASE, THEME_PARTICLES } from "@/lib/motion";
+import { DURATION, EASE, THEME_PARTICLES } from "@/lib/motion";
 import { playCue } from "@/lib/sound";
 import { nativeNotify } from "@/lib/desktop";
 import type { Alarm } from "@/lib/types";
@@ -137,7 +137,7 @@ function Ringing({
       className="fixed inset-0 z-(--z-tooltip) flex flex-col items-center justify-center gap-8 bg-bg-deep/95 backdrop-blur-xl"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.25, ease: EASE.out }}
+      transition={{ duration: DURATION.base, ease: EASE.out }}
     >
       {/* theme-coloured pulse behind the clock */}
       <motion.div

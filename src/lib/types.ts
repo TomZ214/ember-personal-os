@@ -229,13 +229,15 @@ export interface Alarm {
 export type Language = "en" | "de";
 
 /** Brand gradient themes. `sunset` is the original ember look and the default. */
-export type Theme = "sunset" | "tide" | "crimson" | "orchid";
+export type Theme = "sunset" | "tide" | "crimson" | "orchid" | "moss" | "dusk";
 
 export const THEMES: { id: Theme; from: string; to: string }[] = [
   { id: "sunset", from: "#ffd59e", to: "#ff6b9d" },
   { id: "tide", from: "#2c3e50", to: "#4ca1af" },
   { id: "crimson", from: "#95122c", to: "#100c08" },
   { id: "orchid", from: "#ff0080", to: "#00e5ff" },
+  { id: "moss", from: "#e3e9d6", to: "#5f7a52" },
+  { id: "dusk", from: "#8d99ae", to: "#23253a" },
 ];
 
 /**

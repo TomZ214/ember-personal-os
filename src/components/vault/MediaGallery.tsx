@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { SPRING, dialog, scrim, tile } from "@/lib/motion";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { Download, Eye, EyeOff, ImageOff, Loader2, Play, Trash2, UploadCloud, X } from "lucide-react";
 import { createPortal } from "react-dom";
@@ -219,11 +220,10 @@ export function MediaGallery({ mediaKey }: { mediaKey: CryptoKey }) {
               return (
                 <motion.div
                   key={m.id}
+                  // added and removed in place; the others glide to make room
                   layout
-                  initial={{ opacity: 0, scale: 0.92 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  {...tile}
+                  transition={{ layout: SPRING.smooth }}
                   className="panel panel-hover group overflow-hidden"
                 >
                   <button onClick={() => openViewer(m)} className="relative flex h-28 w-full items-center justify-center overflow-hidden bg-black/30" aria-label={t("vault.openMedia").replace("{name}", m.name)}>
@@ -255,7 +255,7 @@ export function MediaGallery({ mediaKey }: { mediaKey: CryptoKey }) {
                     )}
                     {isVideo && (
                       <span className="absolute inset-0 flex items-center justify-center">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-[#fff] backdrop-blur-sm">
                           <Play size={16} fill="currentColor" />
                         </span>
                       </span>
@@ -303,12 +303,10 @@ function Lightbox({ viewer, onClose }: { viewer: { meta: MediaMeta; url: string 
   if (!mounted) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-(--z-modal) flex items-center justify-center p-4">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/80 backdrop-blur-[6px]" />
+    <div className="on-dark fixed inset-0 z-(--z-modal) flex items-center justify-center p-4">
+      <motion.div {...scrim} onClick={onClose} className="absolute inset-0 bg-black/80 backdrop-blur-[6px]" />
       <motion.div
-        initial={{ opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: "spring", stiffness: 320, damping: 30 }}
+        {...dialog}
         className="relative flex max-h-[90dvh] max-w-3xl flex-col"
       >
         <button onClick={onClose} aria-label={t("vault.close")} className="absolute -top-2 -right-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/70 text-white transition-colors hover:bg-black">

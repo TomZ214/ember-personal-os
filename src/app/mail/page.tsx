@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { SPRING } from "@/lib/motion";
 import { useGoogleStatus } from "@/hooks/useIntegrations";
 import { useApi } from "@/hooks/useApi";
 import type { ConnectionStatus } from "@/lib/integrations/types";
@@ -75,7 +76,7 @@ function MailSwitch() {
                     <motion.span
                       layoutId="mail-account"
                       className="absolute inset-0 rounded-[9px] bg-white/[0.09]"
-                      transition={{ type: "spring", stiffness: 500, damping: 38 }}
+                      transition={SPRING.snappy}
                     />
                   )}
                   <span className="relative">{label}</span>

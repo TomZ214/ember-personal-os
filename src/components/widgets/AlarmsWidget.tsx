@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { row } from "@/lib/motion";
+import { Switch } from "@/components/ui/Switch";
 import { AlarmClock, Plus, Trash2 } from "lucide-react";
 import { useEmber } from "@/lib/store";
 import { useLang, useT } from "@/lib/i18n";
@@ -46,6 +48,7 @@ export function AlarmsWidget() {
 
       {alarms.length === 0 ? (
         <EmptyState
+          size="sm"
           icon={<AlarmClock size={20} />}
           title={t("alarm.none")}
           hint={t("alarm.noneHint")}
@@ -56,42 +59,46 @@ export function AlarmsWidget() {
             {alarms.map((a) => (
               <motion.li
                 key={a.id}
-                layout
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, x: 40, height: 0 }}
-                transition={{ type: "spring", stiffness: 420, damping: 36 }}
-                className="group flex items-center gap-3 overflow-hidden rounded-xl px-2 py-2 transition-colors hover:bg-white/[0.03]"
+                // opens and closes its own height; the rows below follow.
+                // The padding lives on the row inside, so the height really
+                // starts from nothing.
+                initial={row.initial}
+                animate={row.animate}
+                exit={{ ...row.exit, x: 40 }}
+                className="overflow-hidden"
               >
-                <span className="min-w-0 flex-1">
-                  <span
-                    className={`num block text-lg font-semibold leading-tight ${a.enabled ? "" : "text-faint line-through decoration-white/25"}`}
-                  >
-                    {a.time}
+                <div className="group flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-white/[0.03]">
+                  <span className="min-w-0 flex-1">
+                    <span
+                      className={`num block text-lg font-semibold leading-tight ${a.enabled ? "" : "text-faint line-through decoration-white/25"}`}
+                    >
+                      {a.time}
+                    </span>
+                    <span className="block truncate text-[11px] text-faint">
+                      {a.label || t("alarm.untitled")}
+                      {a.days.length > 0 && (
+                        <> · {WEEK_ORDER.filter((d) => a.days.includes(d)).map((d) => labels[d]).join(" ")}</>
+                      )}
+                      {a.days.length === 0 && <> · {t("alarm.once")}</>}
+                    </span>
                   </span>
-                  <span className="block truncate text-[11px] text-faint">
-                    {a.label || t("alarm.untitled")}
-                    {a.days.length > 0 && (
-                      <> · {WEEK_ORDER.filter((d) => a.days.includes(d)).map((d) => labels[d]).join(" ")}</>
-                    )}
-                    {a.days.length === 0 && <> · {t("alarm.once")}</>}
-                  </span>
-                </span>
 
-                <button
-                  onClick={() => deleteAlarm(a.id)}
-                  aria-label={t("action.delete")}
-                  className="rounded-lg p-1.5 text-faint opacity-0 transition-all hover:text-danger group-hover:opacity-100"
-                >
-                  <Trash2 size={13} />
-                </button>
-                <input
-                  type="checkbox"
-                  checked={a.enabled}
-                  onChange={(e) => updateAlarm(a.id, { enabled: e.target.checked })}
-                  className="h-4 w-4 shrink-0 accent-[var(--accent)]"
-                  aria-label={`${a.time} ${a.enabled ? t("alarm.on") : t("alarm.off")}`}
-                />
+                  <button
+                    onClick={() => deleteAlarm(a.id)}
+                    aria-label={t("action.delete")}
+                    className="rounded-lg p-1.5 text-faint opacity-0 transition-all hover:text-danger group-hover:opacity-100"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                  {/* the app's own switch, not the browser's checkbox: an alarm
+                      is on or off, and everything else here that is on or off
+                      is a switch */}
+                  <Switch
+                    checked={a.enabled}
+                    onChange={(v) => updateAlarm(a.id, { enabled: v })}
+                    label={`${a.time} ${a.enabled ? t("alarm.on") : t("alarm.off")}`}
+                  />
+                </div>
               </motion.li>
             ))}
           </AnimatePresence>

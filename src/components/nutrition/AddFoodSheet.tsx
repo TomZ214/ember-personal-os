@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Camera, Globe, Loader2, Plus, Search, Sparkles, Trash2, X } from "lucide-react";
+import { ArrowLeft, Camera, Globe, Loader2, Plus, ScanText, Search, Trash2, X } from "lucide-react";
 import { useEmber } from "@/lib/store";
 import { useLang, useT, type Translator } from "@/lib/i18n";
 import { Button } from "@/components/ui/Button";
@@ -118,7 +118,7 @@ export function AddFoodSheet({
                   onClick={() => setTab(x.id)}
                   className={`flex min-h-9 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3 text-sm font-medium transition-colors ${tab === x.id ? "bg-white/[0.10] text-ink" : "text-muted hover:text-ink"}`}
                 >
-                  {x.id === "ai" && <Sparkles size={14} />}
+                  {x.id === "ai" && <ScanText size={14} />}
                   {x.label}
                 </button>
               ))}
@@ -479,7 +479,7 @@ function AiTab({ meal, day, onDone }: { meal: Meal; day: string; onDone: () => v
         <div className="relative inline-block">
           {/* eslint-disable-next-line @next/next/no-img-element -- a local data URL preview */}
           <img src={photo.preview} alt={t("nut.photo")} className="max-h-40 rounded-xl" />
-          <button type="button" aria-label={t("nut.removePhoto")} onClick={() => setPhoto(null)} className="absolute right-1.5 top-1.5 rounded-full bg-black/70 p-1.5 text-white"><X size={14} /></button>
+          <button type="button" aria-label={t("nut.removePhoto")} onClick={() => setPhoto(null)} className="absolute right-1.5 top-1.5 rounded-full bg-black/70 p-1.5 text-[#fff]"><X size={14} /></button>
         </div>
       ) : (
         <Button type="button" onClick={() => fileInput.current?.click()} disabled={busy}><Camera size={16} />{t("nut.addPhoto")}</Button>
@@ -498,7 +498,7 @@ function AiTab({ meal, day, onDone }: { meal: Meal; day: string; onDone: () => v
       />
       {error && <p role="alert" className="text-sm text-danger">{error}</p>}
       <Button type="submit" variant="primary" className="w-full" disabled={busy || (!text.trim() && !photo)}>
-        {busy ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+        {busy ? <Loader2 size={16} className="animate-spin" /> : <ScanText size={16} />}
         {busy ? t("nut.aiWorking") : t("nut.aiAnalyse")}
       </Button>
     </form>

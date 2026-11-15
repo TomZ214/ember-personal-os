@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { create } from "zustand";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Check, Sparkles } from "lucide-react";
+import { Check, CheckCheck } from "lucide-react";
 import { useEmber } from "@/lib/store";
 import { todayKey } from "@/lib/dates";
 import { useT } from "@/lib/i18n";
-import { THEME_PARTICLES } from "@/lib/motion";
+import { DURATION, EASE, EXIT, SPRING, THEME_PARTICLES, rise, withFade } from "@/lib/motion";
+
+const PILL = rise(16);
 import { playCue } from "@/lib/sound";
 
 /**
@@ -155,7 +157,7 @@ function SparkBurst({ x, y }: { x: number; y: number }) {
         style={{ borderColor: "var(--success)", width: 26, height: 26, marginLeft: -13, marginTop: -13 }}
         initial={{ scale: 0.5, opacity: 0.9 }}
         animate={{ scale: 2.8, opacity: 0 }}
-        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.55, ease: EASE.out }}
       />
       {/* sparks */}
       {sparks.map((s) => (
@@ -165,7 +167,7 @@ function SparkBurst({ x, y }: { x: number; y: number }) {
           style={{ width: s.size, height: s.size, background: s.color, marginLeft: -s.size / 2, marginTop: -s.size / 2 }}
           initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
           animate={{ x: s.dx, y: s.dy, opacity: 0, scale: 0.4 }}
-          transition={{ duration: 0.7, delay: s.delay, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.7, delay: s.delay, ease: EASE.entrance }}
         />
       ))}
     </div>
@@ -180,17 +182,14 @@ function ProgressPill({ pill }: { pill: Pill }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 8, scale: 0.96 }}
-      transition={{ type: "spring", stiffness: 420, damping: 32 }}
+      {...PILL}
       className="glass-strong pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] z-(--z-toast) mx-auto flex w-fit max-w-[92vw] items-center gap-3 rounded-full py-2 pl-2.5 pr-4 shadow-[0_12px_40px_-8px_rgba(0,0,0,0.6)] md:bottom-24"
     >
       <motion.span
         className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-success/20 text-success"
         initial={{ scale: 0.4 }}
         animate={{ scale: 1 }}
-        transition={{ type: "spring", stiffness: 600, damping: 18 }}
+        transition={SPRING.bouncy}
       >
         <Check size={13} strokeWidth={3.5} />
       </motion.span>
@@ -209,7 +208,7 @@ function ProgressPill({ pill }: { pill: Pill }) {
             initial={{ scaleX: 0 }}
             animate={{ scaleX: pct / 100 }}
             style={{ transformOrigin: "left" }}
-            transition={{ type: "spring", stiffness: 90, damping: 18 }}
+            transition={SPRING.gentle}
           />
         </span>
         <span className="num shrink-0 text-xs text-faint">
@@ -252,14 +251,14 @@ function Milestone() {
               style={{ width: s.size, height: s.size, background: s.color }}
               initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
               animate={{ x: s.dx, y: s.dy, opacity: 0, scale: 0.3 }}
-              transition={{ duration: 1.1, delay: s.delay, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: DURATION.ambient, delay: s.delay, ease: EASE.entrance }}
             />
           ))}
         <motion.div
+          // the one place a card may bounce: it is the reward
           initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.85, y: 10 }}
-          animate={reduced ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          transition={{ type: "spring", stiffness: 300, damping: 24 }}
+          animate={{ opacity: 1, scale: 1, y: 0, transition: withFade(SPRING.bouncy) }}
+          exit={{ opacity: 0, scale: 0.95, transition: EXIT }}
           className="glass-strong glass-edge relative flex flex-col items-center gap-2 rounded-3xl px-8 py-6 text-center shadow-[0_28px_80px_-16px_rgba(0,0,0,0.75)]"
         >
           {!reduced && (
@@ -267,20 +266,22 @@ function Milestone() {
               aria-hidden
               animate={{ opacity: [0.35, 0.65, 0.35], scale: [1, 1.08, 1] }}
               transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-              className="pointer-events-none absolute -inset-5 -z-10 rounded-[2rem]"
+              // a gradient with a long soft tail, not a CSS blur: a filter
+              // inside a glass pane escapes its rounded corner on WebKit
+              className="pointer-events-none absolute -inset-10 -z-10 rounded-[3rem]"
               style={{
-                background: "radial-gradient(60% 60% at 50% 50%, color-mix(in oklch, var(--accent) 42%, transparent), transparent 70%)",
-                filter: "blur(26px)",
+                background:
+                  "radial-gradient(closest-side, color-mix(in oklch, var(--accent) 30%, transparent), color-mix(in oklch, var(--accent) 16%, transparent) 38%, color-mix(in oklch, var(--accent) 5%, transparent) 68%, transparent)",
               }}
             />
           )}
           <motion.span
             initial={{ scale: 0.3, rotate: -18 }}
             animate={{ scale: 1, rotate: 0 }}
-            transition={{ type: "spring", stiffness: 320, damping: 16, delay: 0.06 }}
+            transition={{ ...SPRING.bouncy, delay: 0.06 }}
             className="flex h-12 w-12 items-center justify-center rounded-2xl bg-success/15 text-success shadow-[0_0_26px_-4px_var(--success)]"
           >
-            <Sparkles size={22} />
+            <CheckCheck size={22} />
           </motion.span>
           <p className="text-[17px] font-semibold tracking-tight">{t("celebrate.allDoneTitle")}</p>
           <p className="max-w-[26ch] text-[13px] text-muted">{t("celebrate.allDoneSub")}</p>

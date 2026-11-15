@@ -3,11 +3,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
+import { EXIT, SPRING, item, withFade } from "@/lib/motion";
 import { format, isToday, parseISO } from "date-fns";
 import {
   AlertOctagon, Archive, ArchiveRestore, CheckCheck, ChevronLeft, CornerUpLeft, CornerUpRight,
-  Eraser, FileText, Inbox, Loader2, Mail as MailIcon, MailOpen, Paperclip, PenLine, RefreshCw,
-  Search, Send, Sparkles, Star, Trash2, X,
+  Eraser, FileText, Inbox, Loader2, Mail as MailIcon, MailOpen, MessageSquareReply, Paperclip,
+  PenLine, RefreshCw, ScrollText, Search, Send, Star, Trash2, X,
 } from "lucide-react";
 import { CleanupTool } from "./CleanupTool";
 import { useApi, invalidateApi } from "@/hooks/useApi";
@@ -287,20 +288,20 @@ export function GmailApp({ provider = GMAIL_PROVIDER }: { provider?: MailProvide
               </div>
             )}
             {list.error && list.errorStatus !== 401 && (
-              <EmptyState icon={<MailIcon size={20} />} title={tr("mail.couldntLoad")} hint={list.error} />
+              <EmptyState size="sm" icon={<MailIcon size={20} />} title={tr("mail.couldntLoad")} hint={list.error} />
             )}
             {list.data?.messages.length === 0 && (
-              <EmptyState icon={<MailIcon size={20} />} title={tr("mail.nothingHere")} hint={debounced ? tr("mail.noMatch") : tr("mail.folderEmpty")} />
+              <EmptyState size="sm" icon={<MailIcon size={20} />} title={tr("mail.nothingHere")} hint={debounced ? tr("mail.noMatch") : tr("mail.folderEmpty")} />
             )}
             <AnimatePresence initial={false}>
             {list.data?.messages.map((m) => (
               <motion.button
                 key={m.id}
-                layout
+                // a new mail drops in from the top; one that is archived or
+                // deleted leaves to the right while the list closes over it
                 initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, x: 56, height: 0, paddingTop: 0, paddingBottom: 0 }}
-                transition={{ type: "spring", stiffness: 420, damping: 36 }}
+                animate={{ opacity: 1, y: 0, transition: withFade(SPRING.snappy) }}
+                exit={{ opacity: 0, x: 56, height: 0, paddingTop: 0, paddingBottom: 0, transition: { ...SPRING.smooth, opacity: EXIT } }}
                 onClick={() => openMail(m)}
                 className={`block w-full overflow-hidden px-4 py-3 text-left transition-colors ${
                   activeId === m.id ? "bg-white/[0.06]" : "hover:bg-white/[0.03]"
@@ -340,10 +341,9 @@ export function GmailApp({ provider = GMAIL_PROVIDER }: { provider?: MailProvide
             <AnimatePresence mode="wait">
               <motion.article
                 key={active.id}
-                initial={{ opacity: 0, scale: 0.97, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.985 }}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0, transition: withFade(SPRING.smooth) }}
+                exit={{ opacity: 0, scale: 0.99, transition: EXIT }}
                 className="panel flex flex-1 flex-col overflow-hidden"
               >
                 <div className="flex items-center gap-1 border-b border-white/[0.06] px-3 py-2.5">
@@ -503,10 +503,10 @@ function AiSummary({ mail, enabled }: { mail: GmailDetail; enabled: boolean }) {
 
   if (summary) {
     return (
-      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+      <motion.div {...item(0, 6)}
         className="mb-5 rounded-2xl border border-accent/15 bg-accent/[0.05] p-4">
         <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-accent">
-          <Sparkles size={12} /> {tr("mail.aiSummary")}
+          <ScrollText size={12} /> {tr("mail.aiSummary")}
         </p>
         <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-muted">{summary}</p>
       </motion.div>
@@ -519,7 +519,7 @@ function AiSummary({ mail, enabled }: { mail: GmailDetail; enabled: boolean }) {
       disabled={busy}
       className="mb-5 flex items-center gap-2 rounded-full border border-accent/25 bg-accent/[0.07] px-3.5 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/15 disabled:opacity-60"
     >
-      {busy ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+      {busy ? <Loader2 size={12} className="animate-spin" /> : <ScrollText size={12} />}
       {busy ? tr("mail.summarizing") : tr("mail.summarizeAi")}
     </button>
   );
@@ -641,7 +641,7 @@ function GmailCompose({
                 disabled={loadingReplies}
                 className="flex items-center gap-2 rounded-full border border-accent/25 bg-accent/[0.07] px-3.5 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/15 disabled:opacity-60"
               >
-                {loadingReplies ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                {loadingReplies ? <Loader2 size={12} className="animate-spin" /> : <MessageSquareReply size={12} />}
                 {loadingReplies ? tr("mail.drafting") : tr("mail.smartReplies")}
               </button>
             ) : (

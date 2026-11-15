@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { motion } from "framer-motion";
+import { SPRING, staggerDelay, withFade } from "@/lib/motion";
 import { format, formatDistanceToNow, parseISO, subMonths } from "date-fns";
 import {
   ArrowDownLeft, ArrowUpRight, Landmark, Loader2, RefreshCw, TrendingDown, TrendingUp,
@@ -138,7 +139,7 @@ export function BankPanel({ bank }: { bank: ReturnType<typeof useBank> }) {
                 key={ins.text}
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.06 }}
+                transition={withFade(SPRING.smooth, staggerDelay(i))}
                 className={`flex items-center gap-2.5 text-sm text-muted ${privacy ? "money-blur" : ""}`}
               >
                 {ins.icon === "down" ? (

@@ -1,17 +1,34 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
+import { SPRING, withFade } from "@/lib/motion";
+import { tint } from "@/lib/tint";
 import { eur } from "@/lib/dates";
 import { useT } from "@/lib/i18n";
 
-export function SummaryCard({ label, value, tone, icon, blur }: { label: string; value: string; tone: string; icon?: React.ReactNode; blur?: boolean }) {
+/**
+ * `amount` + `format` instead of a finished `value`: the figure then travels
+ * to its new value when a transaction is added, instead of being swapped.
+ */
+export function SummaryCard({ label, value, amount, format, tone, icon, blur }: {
+  label: string;
+  value?: string;
+  amount?: number;
+  format?: (n: number) => string;
+  tone: string;
+  icon?: React.ReactNode;
+  blur?: boolean;
+}) {
   return (
     <div className="panel p-4">
       <p className="flex items-center gap-1.5 text-xs font-medium text-muted">
         {icon && <span style={{ color: tone }}>{icon}</span>}
         {label}
       </p>
-      <p className={`num mt-1.5 truncate text-xl font-semibold tracking-tight sm:text-2xl ${blur ? "money-blur" : ""}`}>{value}</p>
+      <p className={`num mt-1.5 truncate text-xl font-semibold tracking-tight sm:text-2xl ${blur ? "money-blur" : ""}`}>
+        {amount === undefined ? value : <AnimatedNumber value={amount} format={format} />}
+      </p>
     </div>
   );
 }
@@ -29,13 +46,13 @@ export function MonthBars({ months }: { months: { label: string; income: number;
               { v: m.expenses, c: "var(--c-ember)", n: "expenses" },
             ].map((bar) => (
               <div key={bar.n} className="group relative flex h-full w-full max-w-9 items-end">
-                <motion.div
-                  initial={{ height: 0 }}
-                  animate={{ height: `${(bar.v / max) * 100}%` }}
-                  transition={{ delay: i * 0.07, type: "spring", stiffness: 120, damping: 20 }}
-                  className="lit w-full rounded-t-md"
+                <div
+                  // grows out of the baseline, month by month (.grow-y, globals.css)
+                  className="grow-y lit w-full rounded-t-md"
                   style={
                     {
+                      height: `${(bar.v / max) * 100}%`,
+                      "--i": i * 2,
                       color: `color-mix(in oklch, ${bar.c} 75%, transparent)`,
                       background: "currentColor",
                       "--lit-glow": "4px",
@@ -79,7 +96,7 @@ export function Donut({ categories, total, blur }: { categories: { name: string;
       <div className="relative" style={{ width: size, height: size }}>
         {/* overflow-visible so the segment glow isn't clipped square — see ProgressRing */}
         <svg width={size} height={size} className="-rotate-90 overflow-visible">
-          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="oklch(1 0 0 / 0.06)" strokeWidth={stroke} />
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" style={{ stroke: tint(6) }} strokeWidth={stroke} />
           {segments.map((c, i) => (
             <motion.circle
               key={c.name}
@@ -90,12 +107,12 @@ export function Donut({ categories, total, blur }: { categories: { name: string;
               strokeDasharray={`${Math.max(0, c.frac * circ - 2)} ${circ}`}
               initial={{ strokeDashoffset: -starts[i] * circ + circ * 0.25, opacity: 0 }}
               animate={{ strokeDashoffset: -starts[i] * circ, opacity: 1 }}
-              transition={{ type: "spring", stiffness: 70, damping: 20 }}
+              transition={withFade(SPRING.fill)}
             />
           ))}
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className={`num text-lg font-semibold ${blur ? "money-blur" : ""}`}>{eur(Math.round(total))}</span>
+          <AnimatedNumber value={total} format={(n) => eur(Math.round(n))} className={`num text-lg font-semibold ${blur ? "money-blur" : ""}`} />
           <span className="text-[10px] uppercase tracking-wide text-faint">{t("fin.spent")}</span>
         </div>
       </div>

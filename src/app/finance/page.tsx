@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { SPRING } from "@/lib/motion";
 import { format, parseISO, subMonths } from "date-fns";
 import { ArrowDownLeft, ArrowUpRight, Coins, Eye, EyeOff, Landmark, NotebookPen, Plus, Trash2, Upload } from "lucide-react";
 import { useEmber, useHydrated } from "@/lib/store";
@@ -112,7 +113,7 @@ export default function FinancePage() {
                       <motion.span
                         layoutId="fin-tab"
                         className="absolute inset-0 rounded-[9px] bg-white/[0.09]"
-                        transition={{ type: "spring", stiffness: 500, damping: 38 }}
+                        transition={SPRING.snappy}
                       />
                     )}
                     <span className="relative flex items-center gap-1.5">
@@ -137,111 +138,117 @@ export default function FinancePage() {
         }
       />
 
-      {showBank && <BankPanel bank={bank} />}
+      {/* keyed: bank and manual are two views of this page; the one that
+          replaces the other settles into place (.view-turn) */}
+      <div key={showBank ? "bank" : "manual"} className="view-turn">
+        {showBank && <BankPanel bank={bank} />}
 
-      {!showBank && (
-      <>
-      {/* month summary */}
-      <div className="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <SummaryCard blur={privacy} label={tr("fin.income")} value={eur(income)} tone="var(--success)" icon={<ArrowDownLeft size={15} />} />
-        <SummaryCard blur={privacy} label={tr("fin.expenses")} value={eur(expenses)} tone="var(--c-ember)" icon={<ArrowUpRight size={15} />} />
-        <SummaryCard blur={privacy} label={tr("fin.net")} value={`${income - expenses >= 0 ? "+" : ""}${eur(income - expenses)}`}
-          tone={income - expenses >= 0 ? "var(--success)" : "var(--danger)"} />
-        <SummaryCard blur={privacy} label={tr("fin.subscriptions")} value={`${eur(subsMonthly)}/${tr("fin.moAbbr")}`} tone="var(--c-lilac)" />
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-        {/* 4-month bars */}
-        <div className="panel p-5 lg:col-span-7">
-          <p className="mb-1 text-[13px] font-medium text-muted">{tr("fin.incomeVsExpenses")}</p>
-          <p className="mb-5 text-xs text-faint">{tr("fin.lastFourMonths")}</p>
-          <MonthBars months={months} />
+        {!showBank && (
+        <>
+        {/* month summary */}
+        {/* .stagger: the cards of both grids settle in one after another on a
+            route change; the figures travel when a transaction changes them */}
+        <div className="stagger mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <SummaryCard blur={privacy} label={tr("fin.income")} amount={income} format={eur} tone="var(--success)" icon={<ArrowDownLeft size={15} />} />
+          <SummaryCard blur={privacy} label={tr("fin.expenses")} amount={expenses} format={eur} tone="var(--c-ember)" icon={<ArrowUpRight size={15} />} />
+          <SummaryCard blur={privacy} label={tr("fin.net")} amount={income - expenses} format={(n) => `${n >= 0 ? "+" : ""}${eur(n)}`}
+            tone={income - expenses >= 0 ? "var(--success)" : "var(--danger)"} />
+          <SummaryCard blur={privacy} label={tr("fin.subscriptions")} amount={subsMonthly} format={(n) => `${eur(n)}/${tr("fin.moAbbr")}`} tone="var(--c-lilac)" />
         </div>
 
-        {/* category breakdown */}
-        <div className="panel p-5 lg:col-span-5">
-          <p className="mb-1 text-[13px] font-medium text-muted">{tr("fin.whereItWent")}</p>
-          <p className="mb-4 text-xs text-faint">{tr("fin.spendingByCat")}</p>
-          <Donut categories={categories} total={expenses} blur={privacy} />
-        </div>
+        <div className="stagger grid grid-cols-1 gap-4 lg:grid-cols-12">
+          {/* 4-month bars */}
+          <div className="panel p-5 lg:col-span-7">
+            <p className="mb-1 text-[13px] font-medium text-muted">{tr("fin.incomeVsExpenses")}</p>
+            <p className="mb-5 text-xs text-faint">{tr("fin.lastFourMonths")}</p>
+            <MonthBars months={months} />
+          </div>
 
-        {/* budgets — same analysis, driven by the manually logged spending */}
-        <div className="lg:col-span-12">
-          <BudgetPanel txns={budgetTxns} blur={privacy} />
-        </div>
+          {/* category breakdown */}
+          <div className="panel p-5 lg:col-span-5">
+            <p className="mb-1 text-[13px] font-medium text-muted">{tr("fin.whereItWent")}</p>
+            <p className="mb-4 text-xs text-faint">{tr("fin.spendingByCat")}</p>
+            <Donut categories={categories} total={expenses} blur={privacy} />
+          </div>
 
-        {/* subscriptions */}
-        <div className="panel p-5 lg:col-span-5">
-          <p className="mb-4 text-[13px] font-medium text-muted">{tr("fin.subscriptions")}</p>
-          <ul className="flex flex-col gap-2.5">
-            {subs.map((s) => (
-              <li key={s.id} className="flex items-center gap-3">
-                <span className="flex h-8 w-8 items-center justify-center rounded-[10px] text-[13px] font-semibold"
-                  style={{ background: `color-mix(in oklch, ${CATEGORY_VAR[s.color]} 16%, transparent)`, color: CATEGORY_VAR[s.color] }}>
-                  {s.name[0]}
-                </span>
-                <span className="flex-1 text-sm">{s.name}</span>
-                <span className={`num text-sm text-muted ${privacy ? "money-blur" : ""}`}>
-                  {eur(s.amount)}<span className="text-faint">/{s.cycle === "monthly" ? tr("fin.moAbbr") : tr("fin.yrAbbr")}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-          <p className="num mt-4 border-t border-white/[0.06] pt-3 text-right text-sm text-muted">
-            ≈ {eur(subsMonthly)} {tr("fin.perMonth")}
-          </p>
-        </div>
+          {/* budgets — same analysis, driven by the manually logged spending */}
+          <div className="lg:col-span-12">
+            <BudgetPanel txns={budgetTxns} blur={privacy} />
+          </div>
 
-        {/* recent transactions */}
-        <div className="panel overflow-hidden lg:col-span-7">
-          <p className="px-5 pb-2 pt-5 text-[13px] font-medium text-muted">{tr("fin.recentActivity")}</p>
-          {recent.length === 0 ? (
-            bank.connected ? (
-              <EmptyState icon={<Coins size={20} />} title={tr("fin.noManual")} hint={tr("fin.noManualHint")} />
-            ) : (
-              <EmptyState
-                icon={<Coins size={20} />}
-                title={tr("fin.connectBank")}
-                hint={tr("fin.connectBankHint")}
-                action={
-                  <Link href="/settings/connections">
-                    <Button variant="primary">{tr("fin.connectBankBtn")}</Button>
-                  </Link>
-                }
-              />
-            )
-          ) : (
-            <div className="divide-y divide-white/[0.05]">
-              {recent.map((t) => (
-                <div key={t.id} className="group flex items-center gap-3 px-5 py-2.5">
-                  <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
-                    t.kind === "income" ? "bg-success/15 text-success" : "bg-white/[0.06] text-muted"
-                  }`}>
-                    {t.kind === "income" ? <ArrowDownLeft size={13} /> : <ArrowUpRight size={13} />}
+          {/* subscriptions */}
+          <div className="panel p-5 lg:col-span-5">
+            <p className="mb-4 text-[13px] font-medium text-muted">{tr("fin.subscriptions")}</p>
+            <ul className="flex flex-col gap-2.5">
+              {subs.map((s) => (
+                <li key={s.id} className="flex items-center gap-3">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-[10px] text-[13px] font-semibold"
+                    style={{ background: `color-mix(in oklch, ${CATEGORY_VAR[s.color]} 16%, transparent)`, color: CATEGORY_VAR[s.color] }}>
+                    {s.name[0]}
                   </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm">{t.note || tr(`fin.cat.${t.category}`, t.category)}</p>
-                    <p className="text-[11px] text-faint">{tr(`fin.cat.${t.category}`, t.category)} · {format(parseISO(t.date), lang === "de" ? "d. MMM" : "MMM d", { locale: dfLocale(lang) })}</p>
-                  </div>
-                  <span className={`num text-sm font-medium ${t.kind === "income" ? "text-success" : ""} ${privacy ? "money-blur" : ""}`}>
-                    {t.kind === "income" ? "+" : "-"}{eur(t.amount)}
+                  <span className="flex-1 text-sm">{s.name}</span>
+                  <span className={`num text-sm text-muted ${privacy ? "money-blur" : ""}`}>
+                    {eur(s.amount)}<span className="text-faint">/{s.cycle === "monthly" ? tr("fin.moAbbr") : tr("fin.yrAbbr")}</span>
                   </span>
-                  <button
-                    onClick={() => { deleteTxn(t.id); toast(tr("fin.txnRemoved"), "info"); }}
-                    aria-label={tr("fin.deleteTxn")}
-                    className="rounded p-1 text-faint opacity-0 transition-all hover:text-danger group-hover:opacity-100"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </div>
+                </li>
               ))}
-            </div>
-          )}
-        </div>
-      </div>
+            </ul>
+            <p className="num mt-4 border-t border-white/[0.06] pt-3 text-right text-sm text-muted">
+              ≈ {eur(subsMonthly)} {tr("fin.perMonth")}
+            </p>
+          </div>
 
-      </>
-      )}
+          {/* recent transactions */}
+          <div className="panel overflow-hidden lg:col-span-7">
+            <p className="px-5 pb-2 pt-5 text-[13px] font-medium text-muted">{tr("fin.recentActivity")}</p>
+            {recent.length === 0 ? (
+              bank.connected ? (
+                <EmptyState icon={<Coins size={20} />} title={tr("fin.noManual")} hint={tr("fin.noManualHint")} />
+              ) : (
+                <EmptyState
+                  icon={<Coins size={20} />}
+                  title={tr("fin.connectBank")}
+                  hint={tr("fin.connectBankHint")}
+                  action={
+                    <Link href="/settings/connections">
+                      <Button variant="primary">{tr("fin.connectBankBtn")}</Button>
+                    </Link>
+                  }
+                />
+              )
+            ) : (
+              <div className="divide-y divide-white/[0.05]">
+                {recent.map((t) => (
+                  <div key={t.id} className="group flex items-center gap-3 px-5 py-2.5">
+                    <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
+                      t.kind === "income" ? "bg-success/15 text-success" : "bg-white/[0.06] text-muted"
+                    }`}>
+                      {t.kind === "income" ? <ArrowDownLeft size={13} /> : <ArrowUpRight size={13} />}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm">{t.note || tr(`fin.cat.${t.category}`, t.category)}</p>
+                      <p className="text-[11px] text-faint">{tr(`fin.cat.${t.category}`, t.category)} · {format(parseISO(t.date), lang === "de" ? "d. MMM" : "MMM d", { locale: dfLocale(lang) })}</p>
+                    </div>
+                    <span className={`num text-sm font-medium ${t.kind === "income" ? "text-success" : ""} ${privacy ? "money-blur" : ""}`}>
+                      {t.kind === "income" ? "+" : "-"}{eur(t.amount)}
+                    </span>
+                    <button
+                      onClick={() => { deleteTxn(t.id); toast(tr("fin.txnRemoved"), "info"); }}
+                      aria-label={tr("fin.deleteTxn")}
+                      className="rounded p-1 text-faint opacity-0 transition-all hover:text-danger group-hover:opacity-100"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        </>
+        )}
+      </div>
 
       <AddTxn open={adding} onClose={() => setAdding(false)} />
       <FinanzguruImport open={importing} onClose={() => setImporting(false)} />
@@ -276,7 +283,7 @@ function AddTxn({ open, onClose }: { open: boolean; onClose: () => void }) {
               className={`relative h-9 flex-1 rounded-[9px] text-sm font-medium transition-colors ${kind === k ? "text-ink" : "text-faint"}`}>
               {kind === k && (
                 <motion.span layoutId="txn-kind" className="absolute inset-0 rounded-[9px] bg-white/[0.09]"
-                  transition={{ type: "spring", stiffness: 500, damping: 38 }} />
+                  transition={SPRING.snappy} />
               )}
               <span className="relative">{k === "expense" ? tr("fin.kindExpense") : tr("fin.kindIncome")}</span>
             </button>

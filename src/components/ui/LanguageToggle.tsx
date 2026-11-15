@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { SPRING } from "@/lib/motion";
 import { useEmber } from "@/lib/store";
 import { useLang } from "@/lib/i18n";
 import type { Language } from "@/lib/types";
@@ -33,7 +34,7 @@ export function LanguageToggle() {
               <motion.span
                 layoutId="lang-active"
                 className="absolute inset-0 rounded-[9px] bg-white/[0.10]"
-                transition={{ type: "spring", stiffness: 500, damping: 38 }}
+                transition={SPRING.snappy}
               />
             )}
             <span className="relative">{o.flag}</span>

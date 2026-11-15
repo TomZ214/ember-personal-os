@@ -1,9 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import { ArrowUpRight, Flame } from "lucide-react";
+import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
+import { CheckMark } from "@/components/ui/CheckMark";
 import { sparkle } from "@/components/ui/celebrate";
+import { CHECK_PULSE } from "@/lib/motion";
 import { playCue } from "@/lib/sound";
 import { useEmber } from "@/lib/store";
 import { dayKey, todayKey } from "@/lib/dates";
@@ -27,7 +30,6 @@ export function streak(h: Habit): number {
 export function HabitsTodayWidget() {
   const habits = useEmber((s) => s.habits);
   const toggleHabit = useEmber((s) => s.toggleHabit);
-  const reduced = useReducedMotion();
   const t = useT();
   const today = todayKey();
   const done = habits.filter((h) => h.log[today]).length;
@@ -56,8 +58,7 @@ export function HabitsTodayWidget() {
           const c = CATEGORY_VAR[h.color];
           return (
             <li key={h.id}>
-              <motion.button
-                whileTap={{ scale: 0.98 }}
+              <button
                 onClick={(e) => {
                   toggleHabit(h.id, today);
                   // fireworks on the way in only — un-ticking is a correction,
@@ -71,15 +72,16 @@ export function HabitsTodayWidget() {
                   }
                 }}
                 aria-pressed={checked}
-                className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left transition-all duration-200 ${
+                // a wide row presses less than a small button would
+                className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left [--press-scale:0.985] ${
                   checked
                     ? "border-transparent bg-white/[0.07]"
                     : "border-white/[0.06] bg-transparent hover:bg-white/[0.04]"
                 }`}
               >
                 <motion.span
-                  animate={checked ? { scale: [1, 1.25, 1] } : {}}
-                  transition={{ duration: 0.32 }}
+                  animate={checked ? CHECK_PULSE.animate : { scale: 1 }}
+                  transition={CHECK_PULSE.transition}
                   className="text-lg"
                   aria-hidden
                 >
@@ -90,51 +92,11 @@ export function HabitsTodayWidget() {
                 </span>
                 {s > 1 && (
                   <span className="num flex items-center gap-1 text-xs" style={{ color: c }}>
-                    <Flame size={12} className="lit" style={{ "--lit-glow": "5px" } as React.CSSProperties} /> {s}
+                    <Flame size={12} className="lit" style={{ "--lit-glow": "5px" } as React.CSSProperties} /> <AnimatedNumber value={s} />
                   </span>
                 )}
-                <motion.span
-                  data-check
-                  // the ring fills and gives one small pulse as it takes
-                  animate={checked && !reduced ? { scale: [1, 1.32, 1] } : { scale: 1 }}
-                  transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1], times: [0, 0.4, 1] }}
-                  className={`relative flex h-[18px] w-[18px] items-center justify-center rounded-full border transition-colors duration-200 ${
-                    checked ? "border-transparent" : "border-white/25"
-                  }`}
-                  style={checked ? { background: c, boxShadow: `0 0 14px -2px ${c}` } : undefined}
-                >
-                  <AnimatePresence>
-                    {checked && (
-                      <motion.svg
-                        key="tick"
-                        width="10"
-                        height="10"
-                        viewBox="0 0 10 10"
-                        fill="none"
-                        aria-hidden
-                        exit={{ opacity: 0, transition: { duration: 0.12 } }}
-                      >
-                        {/* pathLength draws the tick on rather than popping it
-                            in — the stroke travels the way a hand would */}
-                        <motion.path
-                          d="M2 5.5L4 7.5L8 3"
-                          stroke="white"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          initial={{ pathLength: 0 }}
-                          animate={{ pathLength: 1 }}
-                          transition={{
-                            duration: reduced ? 0 : 0.3,
-                            delay: reduced ? 0 : 0.06,
-                            ease: [0.65, 0, 0.35, 1],
-                          }}
-                        />
-                      </motion.svg>
-                    )}
-                  </AnimatePresence>
-                </motion.span>
-              </motion.button>
+                <CheckMark checked={checked} color={c} shape="round" />
+              </button>
             </li>
           );
         })}

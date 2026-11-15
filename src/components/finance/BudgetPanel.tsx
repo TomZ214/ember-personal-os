@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import { item } from "@/lib/motion";
 import { format, getDaysInMonth, subMonths } from "date-fns";
 import { AlertTriangle, Check, PiggyBank, Plus, Target, TrendingDown, TrendingUp } from "lucide-react";
 import { useEmber } from "@/lib/store";
@@ -131,7 +132,7 @@ export function BudgetPanel({ txns, blur }: { txns: Movement[]; blur: boolean })
           icon={<PiggyBank size={20} />}
           title={tr("fin.noBudgets")}
           hint={tr("fin.noBudgetsHint")}
-          action={<Button variant="primary" onClick={() => setEditing(true)}>{tr("fin.setupBudgets")}</Button>}
+          action={<Button onClick={() => setEditing(true)}>{tr("fin.setupBudgets")}</Button>}
         />
       ) : (
         <>
@@ -154,12 +155,7 @@ export function BudgetPanel({ txns, blur }: { txns: Movement[]; blur: boolean })
 
           <ul className="flex flex-col gap-3.5">
             {rows.map((r, i) => (
-              <motion.li
-                key={r.category}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.04 }}
-              >
+              <motion.li key={r.category} {...item(i, 6)}>
                 <div className="mb-1.5 flex items-baseline justify-between gap-3">
                   <span className="flex items-center gap-2 text-sm font-medium">
                     {tr(`fin.cat.${r.category}`, r.category)}
@@ -174,12 +170,10 @@ export function BudgetPanel({ txns, blur }: { txns: Movement[]; blur: boolean })
 
                 {/* bar: spend, plus a marker for where the month currently is */}
                 <div className="relative h-2 w-full overflow-hidden rounded-full bg-white/[0.07]">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${Math.min(100, r.pct * 100)}%` }}
-                    transition={{ type: "spring", stiffness: 90, damping: 20, delay: i * 0.04 }}
-                    className="h-full rounded-full"
-                    style={{ background: TONE[r.status].color }}
+                  {/* grows out of the left edge, row after row (.grow-x, globals.css) */}
+                  <div
+                    className="grow-x h-full rounded-full"
+                    style={{ width: `${Math.min(100, r.pct * 100)}%`, background: TONE[r.status].color, "--i": i } as React.CSSProperties}
                   />
                   <span
                     aria-hidden

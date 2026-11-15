@@ -623,3 +623,108 @@ test("glass: lighting variables are registered non-inheriting and taken explicit
   const provider = readFileSync(path.join(root, "src/components/shell/LightingProvider.tsx"), "utf8");
   assert.ok(!/documentElement/.test(provider), "LightingProvider must not write on <html>");
 });
+
+test("motion: springs are described by feel and resolve to sane physics", () => {
+  const m = sourceLoader()("src/lib/motion.ts");
+  const zeta = (s) => s.damping / (2 * Math.sqrt(s.stiffness * s.mass));
+  const peak = (s) => {
+    let top = 0;
+    for (let t = 0; t <= 3; t += 0.001) top = Math.max(top, m.springValue(s, t));
+    return top;
+  };
+  // a spring is [how long it looks, how much it bounces]; 0 bounce is critically damped
+  assert.ok(Math.abs(zeta(m.spring(0.36)) - 1) < 1e-9);
+  assert.ok(Math.abs(zeta(m.spring(0.4, 0.3)) - 0.7) < 1e-9);
+  assert.ok(m.spring(0.2).stiffness > m.spring(0.4).stiffness, "shorter means stiffer");
+  for (const name of Object.keys(m.SPRING_SPEC)) assert.equal(m.SPRING[name].type, "spring");
+
+  // surfaces, heavy things and data never overshoot; controls barely; only `bouncy` visibly, and politely
+  for (const name of ["smooth", "gentle", "fill"]) assert.ok(peak(m.SPRING[name]) <= 1 + 1e-9, `${name} must not overshoot`);
+  assert.ok(peak(m.SPRING.snappy) < 1.01, "snappy overshoots by under 1%");
+  const bounce = peak(m.SPRING.bouncy);
+  assert.ok(bounce > 1.02 && bounce < 1.08, `bouncy overshoots 2-8% (got ${bounce})`);
+
+  // perceived duration: a critically damped spring is within 2% of its target by then
+  assert.ok(m.springValue(m.SPRING.smooth, m.SPRING_SPEC.smooth[0]) > 0.98);
+  assert.equal(m.springValue(m.SPRING.smooth, 0), 0);
+  // the settle time CSS needs really is where the curve has arrived
+  for (const name of Object.keys(m.SPRING_SPEC)) {
+    const ms = m.springSettleMs(m.SPRING[name]);
+    assert.ok(Math.abs(1 - m.springValue(m.SPRING[name], ms / 1000)) <= 0.001, name);
+  }
+
+  // leaving is quicker than arriving
+  assert.ok(m.EXIT.duration < m.DURATION.base);
+  assert.ok(m.scrim.exit.transition.duration < m.scrim.animate.transition.duration);
+  // a cascade is tight and capped: row 50 does not arrive seconds after row 1
+  assert.equal(m.staggerDelay(0), 0);
+  assert.ok(m.staggerDelay(3) > m.staggerDelay(2));
+  assert.equal(m.staggerDelay(50), m.staggerDelay(8));
+  assert.ok(m.staggerDelay(50) <= 0.3);
+  // glass joins by moving: the card preset must not fade in
+  assert.ok(!("opacity" in m.card.initial), "a glass card fading in would sit under a fading wrapper");
+});
+
+test("motion: CSS and Framer Motion run on the same springs", () => {
+  const m = sourceLoader()("src/lib/motion.ts");
+  const css = readFileSync(path.join(root, "src/app/globals.css"), "utf8");
+  for (const name of Object.keys(m.SPRING_SPEC)) {
+    const { ms, easing } = m.springCss(name);
+    assert.ok(easing.startsWith("linear(0, ") && easing.endsWith(", 1)"), name);
+    assert.ok(css.includes(`--spring-${name}: ${easing};`), `globals.css is out of step with SPRING_SPEC.${name}; it should carry\n  --spring-${name}: ${easing};`);
+    assert.ok(css.includes(`--spring-${name}-ms: ${ms}ms;`), `--spring-${name}-ms should be ${ms}ms`);
+  }
+});
+
+test("motion: no component invents its own spring or curve", () => {
+  const { readdirSync, statSync } = require("node:fs");
+  const files = [];
+  const walk = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const full = path.join(dir, name);
+      if (statSync(full).isDirectory()) walk(full);
+      else if (/\.tsx?$/.test(name)) files.push(full);
+    }
+  };
+  walk(path.join(root, "src"));
+  const offenders = [];
+  for (const file of files) {
+    if (file.endsWith(path.join("lib", "motion.ts"))) continue;
+    const text = readFileSync(file, "utf8");
+    // physics and bezier literals belong in src/lib/motion.ts, by name
+    if (/\b(stiffness|damping)\s*:/.test(text)) offenders.push(`${path.relative(root, file)}: raw spring`);
+    if (/ease:\s*\[\s*\d/.test(text)) offenders.push(`${path.relative(root, file)}: raw bezier`);
+    // presses are CSS (globals.css, "controls"): one recipe for every button
+    if (/whileTap=/.test(text)) offenders.push(`${path.relative(root, file)}: whileTap`);
+  }
+  assert.deepEqual(offenders, []);
+  // and the stylesheet names its house curve once
+  const css = readFileSync(path.join(root, "src/app/globals.css"), "utf8");
+  assert.equal(css.split("cubic-bezier(0.22, 1, 0.36, 1)").length - 1, 1, "use var(--ease-out)");
+});
+
+test("motion: entrances move glass, they never fade it, and controls leave transform to Framer", () => {
+  const css = readFileSync(path.join(root, "src/app/globals.css"), "utf8");
+  const keyframes = (name) => {
+    const start = css.indexOf(`@keyframes ${name} {`);
+    assert.ok(start >= 0, `@keyframes ${name}`);
+    return css.slice(start, css.indexOf("\n}", start));
+  };
+  // what carries whole panes: page cascade, view changes, growing bars
+  for (const name of ["rise", "settle", "view-turn", "grow-y", "grow-x"]) {
+    const body = keyframes(name);
+    assert.match(body, /transform:/, name);
+    assert.ok(!/opacity/.test(body), `${name} must be transform only: a fading parent strips the frosting off every pane inside it`);
+  }
+  // the control recipe: scale (not transform, which Framer Motion drives) and no opacity
+  const start = css.indexOf('button,\n[role="button"],\n.pressable {');
+  assert.ok(start >= 0, "the control recipe");
+  const recipe = css.slice(start, css.indexOf("\n}", start));
+  assert.match(recipe, /transition:\s*scale /);
+  assert.ok(!/transform|opacity/.test(recipe), "a CSS transition on a property Framer Motion drives smears its animation");
+  const control = css.match(/--t-control:([^;]*);/);
+  assert.ok(control && !/transform|opacity/.test(control[1]));
+  // the route template drops .page-enter once the entrance has played
+  const template = readFileSync(path.join(root, "src/app/template.tsx"), "utf8");
+  assert.match(template, /setEntering\(false\)/);
+});

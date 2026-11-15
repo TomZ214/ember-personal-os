@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import { row } from "@/lib/motion";
 import type { RepeatEnd, RepeatFreq, RepeatRule } from "@/lib/types";
 import { describeRepeat, type Lang } from "@/lib/recurrence";
 import { Input, Label, Select } from "@/components/ui/inputs";
@@ -238,10 +239,7 @@ export function RepeatPicker({
 function Reveal({ children }: { children: React.ReactNode }) {
   return (
     <motion.div
-      initial={{ opacity: 0, height: 0 }}
-      animate={{ opacity: 1, height: "auto" }}
-      exit={{ opacity: 0, height: 0 }}
-      transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+      {...row}
       className="overflow-hidden"
     >
       <div className="pt-0.5">{children}</div>

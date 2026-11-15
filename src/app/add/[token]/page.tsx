@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
+import { EXIT, SPRING, dialog, item } from "@/lib/motion";
 import { formatDistanceToNow, parseISO } from "date-fns";
+import { de } from "date-fns/locale";
 import { Check, CircleDashed, Flame, Loader2, Plus } from "lucide-react";
 import { listSharedTasks, supabase, type SharedTaskView } from "@/lib/cloud";
 import { defaultRule } from "@/lib/recurrence";
@@ -26,6 +28,9 @@ const URGENCY: { value: Priority; label: string }[] = [
  * Whoever has the link can drop a task into the owner's inbox and
  * nothing else: no data ever flows the other way.
  */
+/** a sent task joining the list */
+const ROW = { ...item(0, 6), exit: { opacity: 0, transition: EXIT } };
+
 export default function QuickAddPage() {
   const { token } = useParams<{ token: string }>();
   const [title, setTitle] = useState("");
@@ -111,13 +116,12 @@ export default function QuickAddPage() {
   return (
     <div className="flex min-h-dvh items-center justify-center px-4 py-10">
       <motion.div
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+        initial={dialog.initial}
+        animate={dialog.animate}
         className="glass-strong glass-edge relative w-full max-w-sm rounded-3xl p-6"
       >
         <div className="mb-5 flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-primary/15 text-primary-bright shadow-[0_0_18px_-2px_var(--primary-glow)]">
+          <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-primary/15 text-primary-bright">
             <Flame size={16} strokeWidth={2.2} />
           </span>
           <div>
@@ -258,9 +262,8 @@ export default function QuickAddPage() {
                     <motion.li
                       key={`${t.title}-${t.created_at}-${i}`}
                       layout
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0 }}
+                      {...ROW}
+                      transition={{ layout: SPRING.smooth }}
                       className="flex items-center gap-2.5 rounded-xl tile px-3 py-2.5"
                     >
                       <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${done ? "bg-success/20 text-success" : "text-faint"}`}>
@@ -271,7 +274,7 @@ export default function QuickAddPage() {
                       </span>
                       <span className={`shrink-0 text-[11px] ${done ? "text-success" : "text-faint"}`}>
                         {done
-                          ? t.done_at ? `erledigt ${formatDistanceToNow(parseISO(t.done_at), { addSuffix: true })}` : "erledigt"
+                          ? t.done_at ? `erledigt ${formatDistanceToNow(parseISO(t.done_at), { addSuffix: true, locale: de })}` : "erledigt"
                           : "offen"}
                       </span>
                     </motion.li>
