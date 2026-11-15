@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { DURATION, EASE, SPRING } from "@/lib/motion";
+import { SPRING } from "@/lib/motion";
 import { tint } from "@/lib/tint";
 
 /**
@@ -70,16 +70,14 @@ export function Switch({ checked, onChange, label, hideLabel = true, disabled }:
         className="absolute inset-0 z-10 m-0 cursor-pointer opacity-0 disabled:cursor-not-allowed"
       />
 
-      {/* track */}
-      <motion.span
+      {/* track: a plain CSS transition. The off colour is a tint of the page
+          (see lib/tint), which the browser can cross-fade with the accent and
+          a JS animation cannot parse. Reduced motion is handled by the global
+          rule in globals.css. */}
+      <span
         aria-hidden
-        className="absolute inset-0 rounded-full"
-        initial={false}
-        animate={{
-          backgroundColor: checked ? "var(--accent)" : tint(13),
-        }}
-        transition={{ duration: reduced ? 0 : DURATION.base, ease: EASE.out }}
-        style={{ opacity: disabled ? 0.4 : 1 }}
+        className="absolute inset-0 rounded-full transition-[background-color] duration-[240ms] ease-(--ease-out)"
+        style={{ backgroundColor: checked ? "var(--accent)" : tint(13), opacity: disabled ? 0.4 : 1 }}
       />
       {/* a hairline that keeps the off state visible on a light surface */}
       <span
