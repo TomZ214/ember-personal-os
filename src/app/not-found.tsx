@@ -4,7 +4,9 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Compass } from "lucide-react";
 import { useT } from "@/lib/i18n";
-import { EASE } from "@/lib/motion";
+import { item } from "@/lib/motion";
+
+const ENTER = item(0, 10);
 
 /**
  * A missing route. Reachable in practice by an old bookmark, a synced link
@@ -19,9 +21,7 @@ export default function NotFound() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: EASE.out }}
+      {...ENTER}
       className="mx-auto flex max-w-md flex-col items-center px-4 py-20 text-center"
     >
       <span className="mb-5 flex h-14 w-14 items-center justify-center rounded-[18px] bg-white/[0.06] text-muted">

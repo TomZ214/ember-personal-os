@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { DURATION, SPRING, row, staggerDelay, stamp, withFade } from "@/lib/motion";
+import { Button } from "@/components/ui/Button";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import {
   AlertCircle, CalendarDays, Check, Cloud, HardDrive, Landmark, Loader2, Mail, RefreshCw,
@@ -147,29 +149,29 @@ export function DataSync() {
               : t("sync.noneConnected")}
           </p>
         </div>
-        <motion.button
-          whileTap={{ scale: 0.96 }}
+        <Button
           onClick={runAll}
-          disabled={running}
-          className="relative flex h-10 items-center gap-2 overflow-hidden rounded-full bg-[image:var(--grad-sunset)] px-5 text-sm font-semibold text-(--on-sunset) shadow-[0_2px_18px_-2px_var(--primary-glow)] transition-[filter] hover:brightness-110 disabled:cursor-wait"
+          disabled={running || connectedCount === 0}
+          // the app's own button, and only a call to action when there is
+          // something to sync: with no service connected it has nothing to do
+          variant={connectedCount > 0 ? "primary" : "subtle"}
+          className="disabled:cursor-default"
         >
           <motion.span
             animate={running ? { rotate: 360 } : { rotate: 0 }}
-            transition={running ? { repeat: Infinity, duration: 1, ease: "linear" } : { duration: 0.2 }}
+            transition={running ? { repeat: Infinity, duration: 1, ease: "linear" } : { duration: DURATION.fast }}
             className="flex"
           >
             <RefreshCw size={15} />
           </motion.span>
           {running ? t("sync.syncing") : t("sync.syncData")}
-        </motion.button>
+        </Button>
       </div>
 
       <AnimatePresence>
         {Object.keys(states).length > 0 && (
           <motion.ul
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
+            {...row}
             className="mt-4 flex flex-col gap-1 overflow-hidden border-t border-white/[0.06] pt-4"
           >
             {active.map((step, i) => {
@@ -181,7 +183,7 @@ export function DataSync() {
                   key={step.id}
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.05 }}
+                  transition={withFade(SPRING.smooth, staggerDelay(i))}
                   className="flex items-center gap-3 rounded-xl px-2 py-1.5"
                 >
                   <Icon size={15} className="shrink-0 text-muted" />
@@ -192,7 +194,7 @@ export function DataSync() {
                     {st === "pending" && <span className="h-1.5 w-1.5 rounded-full bg-white/20" />}
                     {st === "running" && <Loader2 size={15} className="animate-spin text-accent" />}
                     {st === "done" && (
-                      <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 500, damping: 22 }}>
+                      <motion.span {...stamp}>
                         <Check size={15} className="text-success" />
                       </motion.span>
                     )}

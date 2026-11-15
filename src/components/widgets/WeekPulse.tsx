@@ -1,8 +1,8 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { subDays, format } from "date-fns";
 import { useEmber } from "@/lib/store";
+import { tint } from "@/lib/tint";
 import { dayKey, todayKey, dfLocale } from "@/lib/dates";
 import { useLang, useT } from "@/lib/i18n";
 
@@ -48,20 +48,20 @@ export function WeekPulseWidget() {
               <span className="pointer-events-none absolute -top-1 rounded-md bg-black/80 px-1.5 py-0.5 text-[10px] opacity-0 transition-opacity group-hover:opacity-100">
                 {d.total}
               </span>
-              <motion.div
-                initial={{ height: 0 }}
-                animate={{ height: `${Math.max(4, (d.total / max) * 100)}%` }}
-                transition={{ delay: i * 0.03, type: "spring", stiffness: 160, damping: 22 }}
+              <div
+                // grows out of the baseline, left to right (.grow-y, globals.css);
                 // only the coloured bars glow — a grey bar blooming grey just
                 // reads as a smudge
-                className={`w-full rounded-[5px] ${isToday || i >= 7 ? "lit" : ""}`}
+                className={`grow-y w-full rounded-[5px] ${isToday || i >= 7 ? "lit" : ""}`}
                 style={
                   {
+                    height: `${Math.max(4, (d.total / max) * 100)}%`,
+                    "--i": i,
                     color: isToday
                       ? "var(--primary-bright)"
                       : i >= 7
                         ? "color-mix(in oklch, var(--primary) 55%, transparent)"
-                        : "oklch(1 0 0 / 0.10)",
+                        : tint(10),
                     background: "currentColor",
                     "--lit-glow": isToday ? "7px" : "3px",
                   } as React.CSSProperties

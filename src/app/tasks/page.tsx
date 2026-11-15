@@ -2,6 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { SPRING, card, row } from "@/lib/motion";
+import { useTickHold } from "@/hooks/useTickHold";
+import { CheckMark } from "@/components/ui/CheckMark";
 import {
   AlarmClock, Check, CheckSquare, Columns3, GripVertical, List, Loader2, Plus, RefreshCw, Repeat,
   Tag, Trash2,
@@ -83,7 +86,7 @@ export default function TasksPage() {
                 <motion.span
                   layoutId="task-view"
                   className="absolute inset-0 rounded-[9px] bg-white/[0.09]"
-                  transition={{ type: "spring", stiffness: 500, damping: 38 }}
+                  transition={SPRING.snappy}
                 />
               )}
               <span className="relative flex items-center gap-1.5">
@@ -98,7 +101,10 @@ export default function TasksPage() {
         )}
       </div>
 
-      {view === "board" ? <Board onEdit={setEditing} /> : <ListView onEdit={setEditing} />}
+      {/* keyed: the view that replaces the other settles into place (.view-turn) */}
+      <div key={view} className="view-turn">
+        {view === "board" ? <Board onEdit={setEditing} /> : <ListView onEdit={setEditing} />}
+      </div>
 
       <TaskEditor open={creating} onClose={() => setCreating(false)} />
       <TaskEditor open={!!editing} task={editing ?? undefined} onClose={() => setEditing(null)} />
@@ -160,11 +166,15 @@ function Board({ onEdit }: { onEdit: (t: Task) => void }) {
                 {items.map((task) => (
                   <motion.div
                     key={task.id}
+                    // A card joins by growing into place, never by fading in:
+                    // this wrapper holds a glass card, and a fading wrapper
+                    // strips its frosting. Dropped into another column it
+                    // glides there (layout); the ones around it make room.
                     layout
-                    initial={{ opacity: 0, scale: 0.96 }}
-                    animate={{ opacity: dragId === task.id ? 0.35 : 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.96 }}
-                    transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                    initial={card.initial}
+                    animate={{ ...card.animate, opacity: dragId === task.id ? 0.35 : 1 }}
+                    exit={card.exit}
+                    transition={{ layout: SPRING.smooth }}
                   >
                     {over?.status === col.status && over.beforeId === task.id && dragId && (
                       <div className="mb-2 h-0.5 rounded-full bg-accent shadow-[0_0_8px_var(--accent)]" />
@@ -275,6 +285,9 @@ function TaskCard({
 function ListView({ onEdit }: { onEdit: (task: Task) => void }) {
   const tasks = useEmber((s) => s.tasks);
   const updateTask = useEmber((s) => s.updateTask);
+  // a ticked task is held where it stands for the beat its tick takes to
+  // draw; only then does it leave the open ones for the finished
+  const { held: checking, tick } = useTickHold((id) => updateTask(id, { status: "done" }));
   const t = useT();
   const lang = useLang();
   const sorted = useMemo(
@@ -295,33 +308,44 @@ function ListView({ onEdit }: { onEdit: (task: Task) => void }) {
 
   return (
     <div className="panel divide-y divide-white/[0.05] overflow-hidden">
+      <AnimatePresence initial={false}>
       {sorted.map((task) => {
         const done = task.status === "done";
+        const ticked = done || checking.has(task.id);
         const overdue = task.due && task.due < todayKey() && !done;
         return (
-          <div
-            key={task.id}
-            className="flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors hover:bg-white/[0.03]"
+          <motion.div
+            // The list is sorted, open tasks first, so finishing one moves it.
+            // Keyed by state as well: the row closes where it was and opens
+            // among the finished ones. Travelling there instead drags it
+            // across every row in between, text over text.
+            key={`${task.id}:${done ? "done" : "open"}`}
+            initial={row.initial}
+            animate={row.animate}
+            exit={row.exit}
+            className="cursor-pointer overflow-hidden transition-colors hover:bg-white/[0.03]"
             onClick={() => onEdit(task)}
           >
+          <div className="flex items-center gap-3 px-4 py-3">
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                updateTask(task.id, { status: done ? "todo" : "done" });
-                if (!done) {
-                  // burst from the centre of the checkbox that was just ticked
-                  const r = e.currentTarget.getBoundingClientRect();
-                  celebrate(task.title, { x: r.left + r.width / 2, y: r.top + r.height / 2 });
+                if (done) {
+                  updateTask(task.id, { status: "todo" });
+                  return;
                 }
+                if (!tick(task.id)) return;
+                // burst from the centre of the checkbox that was just ticked
+                const r = e.currentTarget.getBoundingClientRect();
+                celebrate(task.title, { x: r.left + r.width / 2, y: r.top + r.height / 2 });
               }}
               aria-label={done ? t("tasks.reopen") : t("tasks.complete")}
-              className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-md border transition-all ${
-                done ? "border-success bg-success/20 text-success" : "border-white/25 text-transparent hover:border-success hover:text-success"
-              }`}
+              // the box is 18px; the hit area reaches ~34px around it
+              className="group/check relative shrink-0 before:absolute before:-inset-2 before:content-['']"
             >
-              <Check size={12} strokeWidth={3} />
+              <CheckMark checked={ticked} className={ticked ? "" : "group-hover/check:border-success group-hover/check:bg-success/15"} />
             </button>
-            <span className={`min-w-0 flex-1 truncate text-sm ${done ? "text-faint line-through" : ""}`}>{task.title}</span>
+            <span className={`min-w-0 flex-1 truncate text-sm transition-colors duration-200 ${ticked ? "text-faint line-through decoration-white/30" : ""}`}>{task.title}</span>
             {task.tags.slice(0, 2).map((tag) => (
               <span key={tag} className="hidden items-center gap-1 rounded-full bg-white/[0.06] px-2 py-0.5 text-[11px] text-faint sm:flex">
                 <Tag size={10} /> {tag}
@@ -338,8 +362,10 @@ function ListView({ onEdit }: { onEdit: (task: Task) => void }) {
               title={t(`priority.${task.priority}`)}
             />
           </div>
+          </motion.div>
         );
       })}
+      </AnimatePresence>
     </div>
   );
 }

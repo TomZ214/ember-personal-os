@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Input, Label, Select, Textarea } from '@/components/ui/inputs';
 import { Badge, EmptyState, PageHeader } from '@/components/ui/misc';
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
+import { Segmented } from '@/components/ui/Segmented';
 import { toast } from '@/components/ui/toast';
 import {
   cleanRecord, compareReports, nextReportDefaults, normalize, numberingIssues, searchable,
@@ -115,7 +117,8 @@ export default function BerichtsheftPage() {
   return <div className="space-y-5">
     <PageHeader
       title="Berichtsheft"
-      sub="Deine Ausbildung. Alle Berichte und Themen an einem Ort."
+      // what is in it, not what it is for
+      sub={records.length ? `${records.length === 1 ? '1 Bericht' : `${records.length} Berichte`} · ${records.length - completed} offen` : undefined}
       actions={<div className="flex flex-wrap gap-2">
         <Button disabled={busy || loading} onClick={() => importInput.current?.click()}><Upload size={16} />Importieren</Button>
         <Button disabled={busy || loading || !records.length} onClick={() => void backup()}><Download size={16} />Backup</Button>
@@ -138,15 +141,18 @@ export default function BerichtsheftPage() {
       <Button size="sm" disabled={busy} onClick={() => void backup()}><Download size={14} />Jetzt sichern</Button>
     </div>}
 
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{stats.map(([name, value, onClick]) =>
-      <button type="button" key={name} disabled={loading} onClick={onClick} className="panel p-4 text-left">
-        <p className="text-xs text-muted">{name}</p><p className="num mt-2 text-3xl font-semibold">{loading ? '–' : value}</p>
-      </button>)}</div>
+    {/* One strip instead of four cards, and only once there is something to
+        count: four panes each showing a zero said nothing four times. Each
+        figure is still the shortcut to its filter. */}
+    {records.length > 0 && <div className="panel grid grid-cols-2 overflow-hidden lg:grid-cols-4">{stats.map(([name, value, onClick]) =>
+      <button type="button" key={name} onClick={onClick}
+        className="border-white/[0.06] px-5 py-4 text-left [--press-scale:1] hover:bg-white/[0.03] even:border-l lg:border-l lg:first:border-l-0 [&:nth-child(n+3)]:border-t lg:[&:nth-child(n+3)]:border-t-0">
+        <p className="num text-2xl font-semibold tracking-tight"><AnimatedNumber value={value} /></p>
+        <p className="mt-0.5 text-xs text-muted">{name}</p>
+      </button>)}</div>}
 
-    <div role="tablist" className="flex gap-2">
-      <Button role="tab" aria-selected={tab === 'reports'} variant={tab === 'reports' ? 'primary' : 'subtle'} onClick={() => setTab('reports')}>Berichte</Button>
-      <Button role="tab" aria-selected={tab === 'topics'} variant={tab === 'topics' ? 'primary' : 'subtle'} onClick={() => setTab('topics')}>Themen & Ideen</Button>
-    </div>
+    <Segmented label="Ansicht" value={tab} onChange={setTab}
+      options={[{ id: 'reports', label: 'Berichte' }, { id: 'topics', label: 'Themen & Ideen' }]} />
 
     {loading ? <div className="skeleton h-64" style={{ borderRadius: 18 }} /> : tab === 'reports' ? <>
       {hasIssues && <section className="panel space-y-1.5 p-4 text-sm">
@@ -169,7 +175,7 @@ export default function BerichtsheftPage() {
 
       {!shown.length ? <div className="panel">{records.length
         ? <EmptyState icon={<Search size={20} />} title="Keine passenden Berichte" hint="Suchbegriff oder Filter anpassen." />
-        : <EmptyState icon={<BookOpen size={20} />} title="Noch keine Berichte" hint="Erfasse deinen ersten Bericht oder importiere dein Sites-Backup." action={<Button variant="primary" onClick={() => startEdit()}><Plus size={16} />Bericht anlegen</Button>} />}
+        : <EmptyState icon={<BookOpen size={20} />} title="Noch keine Berichte" hint="Erfasse deinen ersten Bericht oder importiere dein Sites-Backup." action={<Button onClick={() => startEdit()}><Plus size={16} />Bericht anlegen</Button>} />}
       </div> : <div className="grid gap-3 md:grid-cols-2">{shown.map(r => <ReportCard key={r.id} report={r} busy={busy}
         onEdit={() => startEdit(r)} onRemove={() => setRemove(r)}
         onToggle={() => void run(() => persist([{ ...r, status: r.status === 'completed' ? 'open' : 'completed' }]))} />)}</div>}

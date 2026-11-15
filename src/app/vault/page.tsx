@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { SHAKE, SPRING, tile, withFade } from "@/lib/motion";
 import {
   Copy, CreditCard, Eye, EyeOff, KeyRound, Lock, LockOpen, Plus, ShieldCheck, StickyNote, Trash2,
 } from "lucide-react";
@@ -79,7 +80,7 @@ export default function VaultPage() {
                 icon={<ShieldCheck size={20} />}
                 title={t("vault.empty")}
                 hint={t("vault.emptyHint")}
-                action={<Button variant="primary" onClick={() => setAdding(true)}>{t("vault.addFirst")}</Button>}
+                action={<Button onClick={() => setAdding(true)}>{t("vault.addFirst")}</Button>}
               />
             </div>
           ) : (
@@ -161,13 +162,13 @@ function Gate({ onUnlock }: { onUnlock: (entries: VaultEntry[], pass: string, me
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ type: "spring", stiffness: 260, damping: 24 }}
+        transition={withFade(SPRING.gentle)}
         className="glass glass-edge relative w-full max-w-sm rounded-3xl p-7 text-center"
       >
         <motion.div
-          animate={error ? { x: [0, -8, 8, -5, 5, 0] } : {}}
-          transition={{ duration: 0.4 }}
-          className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/12 text-primary-bright shadow-[0_0_28px_-4px_var(--primary-glow)]"
+          animate={error ? SHAKE.animate : {}}
+          transition={SHAKE.transition}
+          className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/12 text-primary-bright"
         >
           {exists ? <Lock size={22} /> : <LockOpen size={22} />}
         </motion.div>
@@ -220,10 +221,8 @@ function EntryCard({ entry, onDelete }: { entry: VaultEntry; onDelete: () => voi
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.92 }}
-      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+      {...tile}
+      transition={{ layout: SPRING.smooth }}
       className="panel panel-hover group p-4"
     >
       <div className="flex items-start gap-3">

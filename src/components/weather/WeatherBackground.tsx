@@ -75,8 +75,8 @@ export function WeatherBackground({
         page
           ? // z-index -1 matches .ambient; being later in the DOM puts the
             // weather just above it, and page content (auto) above both
-            "pointer-events-none fixed inset-0 z-[-1] overflow-hidden"
-          : "pointer-events-none absolute inset-0 overflow-hidden rounded-[26px]"
+            "on-dark no-rise pointer-events-none fixed inset-0 z-[-1] overflow-hidden"
+          : "on-dark pointer-events-none absolute inset-0 overflow-hidden rounded-[26px]"
       }
       style={page ? { opacity: 0.42 } : undefined}
     >

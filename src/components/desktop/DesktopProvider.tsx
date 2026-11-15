@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { Download, RefreshCw, Sparkles, X } from "lucide-react";
+import { SPRING, rise } from "@/lib/motion";
+import { CircleArrowUp, Download, RefreshCw, X } from "lucide-react";
 import {
   checkForUpdate,
   isDesktop,
@@ -105,6 +106,8 @@ export function DesktopProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+const BANNER = rise(24);
+
 function UpdateBanner({ update, onDismiss }: { update: UpdateInfo; onDismiss: () => void }) {
   const t = useT();
   const [installing, setInstalling] = useState(false);
@@ -123,17 +126,14 @@ function UpdateBanner({ update, onDismiss }: { update: UpdateInfo; onDismiss: ()
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24, scale: 0.96 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 16, scale: 0.97 }}
-      transition={{ type: "spring", stiffness: 320, damping: 28 }}
+      {...BANNER}
       className="glass-strong glass-edge fixed bottom-5 right-5 z-[2147483645] w-[330px] overflow-hidden rounded-2xl p-4 shadow-[0_24px_70px_-18px_rgba(0,0,0,0.7)]"
       role="dialog"
       aria-label={t("desktop.updateTitle")}
     >
       <div className="flex items-start gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-accent/15 text-accent shadow-[0_0_20px_-4px_var(--accent)]">
-          <Sparkles size={16} />
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-accent/15 text-accent">
+          <CircleArrowUp size={16} />
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold">{t("desktop.updateTitle")}</p>
@@ -161,10 +161,13 @@ function UpdateBanner({ update, onDismiss }: { update: UpdateInfo; onDismiss: ()
             <span className="num">{Math.round(progress * 100)}%</span>
           </div>
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.08]">
+            {/* full width, slid in from the left and clipped by the track:
+                a transform, so the download never re-lays-out the card */}
             <motion.div
-              className="h-full rounded-full bg-[image:var(--grad-sunset)]"
-              animate={{ width: `${Math.max(4, progress * 100)}%` }}
-              transition={{ type: "spring", stiffness: 90, damping: 20 }}
+              className="h-full w-full rounded-full bg-[image:var(--grad-sunset)]"
+              initial={{ x: "-96%" }}
+              animate={{ x: `${Math.max(4, progress * 100) - 100}%` }}
+              transition={SPRING.gentle}
             />
           </div>
         </div>

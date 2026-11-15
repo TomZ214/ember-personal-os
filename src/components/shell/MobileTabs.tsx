@@ -6,6 +6,9 @@ import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { CalendarDays, CheckSquare, LayoutGrid, NotebookPen, Grip } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { EASE, SPRING, item, scrim, sheet } from "@/lib/motion";
+
+const TAB_POP = { duration: 0.36, ease: EASE.out, times: [0, 0.4, 1] };
 import { NAV } from "./nav";
 
 const PRIMARY = [
@@ -32,13 +35,13 @@ export function MobileTabs() {
         // up. `max()` keeps the 12px gap on devices without an inset.
         className="glass-strong glass-edge fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-(--z-sticky) flex items-stretch justify-around rounded-3xl shadow-[0_14px_44px_-12px_rgba(0,0,0,0.6)] md:hidden"
       >
-        {PRIMARY.map((item) => {
-          const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
-          const Icon = item.icon;
+        {PRIMARY.map((tab) => {
+          const active = tab.href === "/" ? pathname === "/" : pathname.startsWith(tab.href);
+          const Icon = tab.icon;
           return (
             <Link
-              key={item.href}
-              href={item.href}
+              key={tab.href}
+              href={tab.href}
               aria-current={active ? "page" : undefined}
               className="relative flex min-w-16 flex-1 flex-col items-center gap-1 py-2.5"
             >
@@ -46,16 +49,25 @@ export function MobileTabs() {
                 <motion.span
                   layoutId="tab-glow"
                   className="absolute inset-x-3 top-1 h-9 rounded-2xl bg-white/[0.08]"
-                  transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                  transition={SPRING.snappy}
                 />
               )}
-              <Icon
-                size={21}
-                strokeWidth={active ? 2.2 : 1.8}
-                className={`relative transition-colors ${active ? "text-accent" : "text-muted"}`}
-              />
+              {/* the icon of the tab you land on gives one small bounce: the
+                  pill arriving under it and the icon answering are one beat */}
+              <motion.span
+                className="relative"
+                initial={false}
+                animate={{ scale: active ? [1, 1.16, 1] : 1 }}
+                transition={active ? TAB_POP : { duration: 0 }}
+              >
+                <Icon
+                  size={21}
+                  strokeWidth={active ? 2.2 : 1.8}
+                  className={`transition-colors duration-150 ${active ? "text-accent" : "text-muted"}`}
+                />
+              </motion.span>
               <span className={`relative text-[10px] font-medium ${active ? "text-ink" : "text-faint"}`}>
-                {t(`nav.${item.key}`)}
+                {t(`nav.${tab.key}`)}
               </span>
             </Link>
           );
@@ -69,7 +81,7 @@ export function MobileTabs() {
             <motion.span
               layoutId="tab-glow"
               className="absolute inset-x-3 top-1 h-9 rounded-2xl bg-white/[0.08]"
-              transition={{ type: "spring", stiffness: 420, damping: 34 }}
+              transition={SPRING.snappy}
             />
           )}
           <Grip size={21} strokeWidth={1.8} className={`relative ${inPrimary ? "text-muted" : "text-accent"}`} />
@@ -82,17 +94,12 @@ export function MobileTabs() {
           // keyed motion child so AnimatePresence can track presence properly
           <motion.div key="apps-sheet-root" className="fixed inset-0 z-(--z-modal) md:hidden">
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              {...scrim}
               onClick={() => setAppsOpen(false)}
               className="absolute inset-0 bg-black/55 backdrop-blur-[6px]"
             />
             <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", stiffness: 340, damping: 34 }}
+              {...sheet}
               drag="y"
               dragConstraints={{ top: 0, bottom: 0 }}
               dragElastic={{ top: 0, bottom: 0.6 }}
@@ -104,24 +111,19 @@ export function MobileTabs() {
               <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/20" />
               <p className="mb-4 text-sm font-medium text-muted">{t("nav.allApps")}</p>
               <div className="grid grid-cols-4 gap-2">
-                {NAV.map((item, i) => {
-                  const Icon = item.icon;
+                {NAV.map((nav, i) => {
+                  const Icon = nav.icon;
                   return (
-                    <motion.div
-                      key={item.href}
-                      initial={{ opacity: 0, y: 14 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.03 * i, type: "spring", stiffness: 400, damping: 28 }}
-                    >
+                    <motion.div key={nav.href} {...item(i, 14)}>
                       <Link
-                        href={item.href}
+                        href={nav.href}
                         onClick={() => setAppsOpen(false)}
-                        className="flex flex-col items-center gap-2 rounded-2xl py-3 active:bg-white/[0.07]"
+                        className="pressable flex flex-col items-center gap-2 rounded-2xl py-3 active:bg-white/[0.07]"
                       >
                         <span className="flex h-12 w-12 items-center justify-center rounded-[15px] border border-white/[0.10] bg-white/[0.06]">
                           <Icon size={21} strokeWidth={1.8} />
                         </span>
-                        <span className="text-[11px] text-muted">{t(`nav.${item.key}`)}</span>
+                        <span className="text-[11px] text-muted">{t(`nav.${nav.key}`)}</span>
                       </Link>
                     </motion.div>
                   );

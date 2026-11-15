@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
+import { SPRING } from "@/lib/motion";
+import { tint } from "@/lib/tint";
 
 /**
  * The iOS switch.
@@ -68,28 +70,26 @@ export function Switch({ checked, onChange, label, hideLabel = true, disabled }:
         className="absolute inset-0 z-10 m-0 cursor-pointer opacity-0 disabled:cursor-not-allowed"
       />
 
-      {/* track */}
-      <motion.span
+      {/* track: a plain CSS transition. The off colour is a tint of the page
+          (see lib/tint), which the browser can cross-fade with the accent and
+          a JS animation cannot parse. Reduced motion is handled by the global
+          rule in globals.css. */}
+      <span
         aria-hidden
-        className="absolute inset-0 rounded-full"
-        initial={false}
-        animate={{
-          backgroundColor: checked ? "var(--accent)" : "rgba(255,255,255,0.13)",
-        }}
-        transition={{ duration: reduced ? 0 : 0.22, ease: [0.22, 1, 0.36, 1] }}
-        style={{ opacity: disabled ? 0.4 : 1 }}
+        className="absolute inset-0 rounded-full transition-[background-color] duration-[240ms] ease-(--ease-out)"
+        style={{ backgroundColor: checked ? "var(--accent)" : tint(13), opacity: disabled ? 0.4 : 1 }}
       />
       {/* a hairline that keeps the off state visible on a light surface */}
       <span
         aria-hidden
         className="pointer-events-none absolute inset-0 rounded-full"
-        style={{ boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08)" }}
+        style={{ boxShadow: `inset 0 0 0 1px ${tint(8)}` }}
       />
 
       {/* knob */}
       <motion.span
         aria-hidden
-        className="absolute rounded-full bg-white"
+        className="absolute rounded-full bg-[#fff]"
         style={{
           top: PAD,
           height: KNOB,
@@ -104,11 +104,9 @@ export function Switch({ checked, onChange, label, hideLabel = true, disabled }:
         // same reason: start from the resting state rather than from nothing
         initial={false}
         animate={{ x, width: KNOB + grow }}
-        transition={
-          reduced
-            ? { duration: 0 }
-            : { type: "spring", stiffness: 520, damping: 32, mass: 0.6 }
-        }
+        // the control spring: lands with the faintest overshoot, like every
+        // tab pill and press release in the app
+        transition={reduced ? { duration: 0 } : SPRING.snappy}
       />
     </span>
   );

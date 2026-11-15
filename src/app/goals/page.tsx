@@ -1,15 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { SPRING, card } from "@/lib/motion";
 import { differenceInDays, parseISO } from "date-fns";
-import { Check, Flag, Plus, Trash2 } from "lucide-react";
+import { Flag, Plus, Trash2 } from "lucide-react";
 import { useEmber, useHydrated } from "@/lib/store";
 import { CATEGORY_VAR, type CategoryColor, type Goal } from "@/lib/types";
 import { useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input, Label, Textarea } from "@/components/ui/inputs";
+import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
+import { CheckMark } from "@/components/ui/CheckMark";
 import { EmptyState, PageHeader, ProgressRing } from "@/components/ui/misc";
 import { toast } from "@/components/ui/toast";
 
@@ -44,21 +47,21 @@ export default function GoalsPage() {
             icon={<Flag size={20} />}
             title={t("goals.none")}
             hint={t("goals.noneHint")}
-            action={<Button variant="primary" onClick={() => setAdding(true)}>{t("goals.setFirst")}</Button>}
+            action={<Button onClick={() => setAdding(true)}>{t("goals.setFirst")}</Button>}
           />
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
-          {goals.map((g, i) => (
-            <motion.div
-              key={g.id}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.06, type: "spring", stiffness: 280, damping: 26 }}
-            >
-              <GoalCard goal={g} />
-            </motion.div>
-          ))}
+        // .stagger: the cards settle in one after another on a route change.
+        // A goal added or removed later moves by itself, and the others make
+        // room (layout).
+        <div className="stagger grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
+          <AnimatePresence initial={false}>
+            {goals.map((g) => (
+              <motion.div key={g.id} layout {...card} transition={{ layout: SPRING.smooth }}>
+                <GoalCard goal={g} />
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       )}
 
@@ -84,7 +87,7 @@ function GoalCard({ goal }: { goal: Goal }) {
           <p className="mt-1.5 text-[13px] leading-relaxed text-muted">{goal.why}</p>
         </div>
         <ProgressRing value={pct} size={54} stroke={5} color={c}>
-          <span className="num text-xs font-semibold">{Math.round(pct * 100)}%</span>
+          <AnimatedNumber value={pct * 100} from={0} spring="fill" format={(n) => `${Math.round(n)}%`} className="num text-xs font-semibold" />
         </ProgressRing>
       </div>
 
@@ -96,14 +99,7 @@ function GoalCard({ goal }: { goal: Goal }) {
               aria-pressed={m.done}
               className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-white/[0.04]"
             >
-              <span
-                className={`flex h-[17px] w-[17px] shrink-0 items-center justify-center rounded-full border transition-all ${
-                  m.done ? "border-transparent text-white" : "border-white/25 text-transparent"
-                }`}
-                style={m.done ? { background: c } : undefined}
-              >
-                <Check size={11} strokeWidth={3} />
-              </span>
+              <CheckMark checked={m.done} color={c} shape="round" size={17} />
               <span className={`text-sm ${m.done ? "text-faint line-through decoration-white/25" : ""}`}>{m.title}</span>
             </button>
           </li>

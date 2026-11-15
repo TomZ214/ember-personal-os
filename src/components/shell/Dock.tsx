@@ -7,6 +7,7 @@ import {
   motion, useAnimate, useMotionValue, useReducedMotion, useSpring, useTransform, type MotionValue,
 } from "framer-motion";
 import { useT } from "@/lib/i18n";
+import { SPRING, spring } from "@/lib/motion";
 import { markNavDirection } from "@/lib/navOrigin";
 import { transitionTo } from "@/lib/routeTransition";
 import { NAV, type NavItem } from "./nav";
@@ -30,6 +31,17 @@ const SCRUB_SLOP = 10;
 const RADIUS = 150;
 /** the icon right under the pointer grows by this much */
 const GROWTH = 0.6;
+/** the wave swelling and subsiding: quick, and never past its mark */
+const WAVE = spring(0.3);
+/**
+ * The launch bounce. Gravity, not a tween: each rise decelerates and each
+ * fall accelerates, so the icon is thrown and lands instead of floating
+ * through four waypoints at one easing.
+ */
+const BOUNCE = {
+  y: [0, -18, 0, -6, 0],
+  options: { duration: 0.64, times: [0, 0.3, 0.58, 0.78, 1], ease: ["easeOut", "easeIn", "easeOut", "easeIn"] },
+} as const;
 
 const falloff = (d: number) => (d >= RADIUS ? 0 : 0.5 * (1 + Math.cos((Math.PI * d) / RADIUS)));
 
@@ -77,7 +89,7 @@ export function Dock() {
   const pointer = useMotionValue(0);
   const strengthTarget = useMotionValue(0);
   // the wave rises and falls softly; the pointer itself is followed instantly
-  const strength = useSpring(strengthTarget, { stiffness: 420, damping: 40 });
+  const strength = useSpring(strengthTarget, WAVE);
   const centres = useRef<number[]>([]);
   const barWidth = useRef(1);
   const pathname = usePathname();
@@ -225,13 +237,13 @@ function DockIcon({
   // drawn at peak size, scaled down to `base` at rest
   const scale = useTransform(geometry, (g) => (g.scale * base) / peak);
   const labelY = useTransform(geometry, (g) => -(base * g.scale) - 12);
-  const near = useSpring(useTransform(geometry, (g) => g.near), { stiffness: 520, damping: 36 });
+  const near = useSpring(useTransform(geometry, (g) => g.near), SPRING.snappy);
 
   // the macOS launch bounce — on a click here, and offered to the dock for
   // launches by scrubbing
   const bounce = useCallback(() => {
     if (reduced || !scope.current) return;
-    void animate(scope.current, { y: [0, -18, 0, -6, 0] }, { duration: 0.62, ease: "easeOut", times: [0, 0.32, 0.58, 0.78, 1] });
+    void animate(scope.current, { y: [...BOUNCE.y] }, { ...BOUNCE.options, times: [...BOUNCE.options.times], ease: [...BOUNCE.options.ease] });
   }, [reduced, animate, scope]);
   useEffect(() => {
     register(bounce);

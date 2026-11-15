@@ -14,6 +14,7 @@ import { useGmailUnread } from "@/hooks/useIntegrations";
 import { dayKey, occursOn, todayKey } from "@/lib/dates";
 import { greetingFor, useLang, useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/Button";
+import { DURATION, EXIT, SPRING, fade, rise, scrim, staggerDelay, withFade } from "@/lib/motion";
 import { bootRemaining } from "./BootSequence";
 
 /**
@@ -219,27 +220,19 @@ function AlertCard({
   return (
     <div className="fixed inset-0 z-(--z-modal) flex items-center justify-center p-4">
       {/* 1 — the world softly darkens and blurs behind it */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-        onClick={onClose}
-        className="absolute inset-0 bg-black/50 backdrop-blur-[10px]"
-      />
+      <motion.div {...scrim} onClick={onClose} className="absolute inset-0 bg-black/50 backdrop-blur-[10px]" />
 
       <motion.div
         role="alertdialog"
         aria-label="Welcome summary"
         onMouseEnter={() => playback.current?.stop()}
         onMouseLeave={() => run(progress.get())}
-        // only opacity + transform: both composite on the GPU, so the entrance
-        // stays at 60fps and the card never becomes a backdrop root (which
-        // would kill the glass blur behind it)
-        initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.95, y: 18 }}
-        animate={reduced ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
-        exit={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 8 }}
-        transition={{ type: "spring", stiffness: 260, damping: 26, mass: 0.9 }}
+        // This wrapper only moves. The fade is on the glass card itself
+        // (below): a wrapper with opacity under 1 is a backdrop root, and the
+        // card inside it would arrive unfrosted and snap to glass at the end.
+        initial={reduced ? false : { scale: 0.94, y: 18 }}
+        animate={{ scale: 1, y: 0, transition: SPRING.gentle }}
+        exit={reduced ? undefined : { scale: 0.97, y: 8, transition: EXIT }}
         className="relative w-full max-w-md"
       >
         {/* 4 + 7 — breathing ember halo (its own layer, so the blurred glass never re-rasterizes) */}
@@ -248,16 +241,21 @@ function AlertCard({
             aria-hidden
             animate={{ opacity: [0.35, 0.6, 0.35], scale: [1, 1.035, 1] }}
             transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
-            className="pointer-events-none absolute -inset-6 -z-10 rounded-[2rem]"
+            // a gradient with a long soft tail rather than a CSS blur: the glass
+            // card in front blurs it anyway, and a blurred layer that also
+            // scales is re-filtered every frame
+            className="pointer-events-none absolute -inset-12 -z-10 rounded-[3rem]"
             style={{
               background:
-                "radial-gradient(60% 50% at 50% 40%, color-mix(in oklch, var(--accent) 38%, transparent), transparent 70%)",
-              filter: "blur(28px)",
+                "radial-gradient(closest-side at 50% 44%, color-mix(in oklch, var(--accent) 28%, transparent), color-mix(in oklch, var(--accent) 15%, transparent) 40%, color-mix(in oklch, var(--accent) 5%, transparent) 70%, transparent)",
             }}
           />
         )}
 
-        <div className="glass-strong glass-edge relative overflow-hidden rounded-[26px] p-6 shadow-[0_30px_90px_-20px_rgba(0,0,0,0.75)] sm:p-7">
+        <motion.div
+          {...fade}
+          className="glass-strong glass-edge relative overflow-hidden rounded-[26px] p-6 shadow-[0_30px_90px_-20px_rgba(0,0,0,0.75)] sm:p-7"
+        >
           {/* 5 — embers drifting up behind the content */}
           {!reduced && (
             <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -293,8 +291,8 @@ function AlertCard({
               <motion.span
                 initial={{ scale: 0.6, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                transition={{ type: "spring", stiffness: 400, damping: 20, delay: 0.08 }}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] bg-accent/15 text-accent shadow-[0_0_22px_-4px_var(--accent)]"
+                transition={{ ...SPRING.bouncy, delay: 0.08 }}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] bg-accent/15 text-accent"
               >
                 <Flame size={18} strokeWidth={2.2} />
               </motion.span>
@@ -314,7 +312,7 @@ function AlertCard({
                   key={item.id}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.14 + i * 0.07, type: "spring", stiffness: 380, damping: 30 }}
+                  transition={withFade(SPRING.smooth, 0.12 + staggerDelay(i, 0.06))}
                   className="flex items-center gap-3 rounded-xl tile px-3.5 py-2.5"
                 >
                   <span className="text-[15px] leading-none">{item.emoji}</span>
@@ -326,7 +324,7 @@ function AlertCard({
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.14 + items.length * 0.07 + 0.05 }}
+              transition={{ duration: DURATION.base, delay: 0.16 + staggerDelay(items.length, 0.06) }}
               className="mt-4 text-[13px] text-muted"
             >
               {multiple ? t("wel.controlMany") : t("wel.controlOne")}
@@ -350,7 +348,7 @@ function AlertCard({
             style={{ scaleX: progress, transformOrigin: "left" }}
             className="absolute inset-x-0 bottom-0 h-[2px] bg-[image:var(--grad-sunset)] opacity-70"
           />
-        </div>
+        </motion.div>
       </motion.div>
     </div>
   );
@@ -358,14 +356,14 @@ function AlertCard({
 
 /* ---------------- empty state ---------------- */
 
+/** drops in under the top bar */
+const PILL = rise(-10);
+
 function AllClearPill() {
   const t = useT();
   return (
     <motion.div
-      initial={{ opacity: 0, y: -10, scale: 0.96 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -8, scale: 0.97 }}
-      transition={{ type: "spring", stiffness: 340, damping: 28 }}
+      {...PILL}
       className="glass glass-edge pointer-events-none fixed right-4 top-[calc(env(safe-area-inset-top)+4.25rem)] z-(--z-toast) flex items-center gap-2.5 rounded-full py-2.5 pl-3 pr-4 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.6)] sm:right-6"
     >
       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-success/15 text-success">

@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Check, ImageOff } from "lucide-react";
 import { useEmber } from "@/lib/store";
 import { useT } from "@/lib/i18n";
@@ -29,9 +28,8 @@ export function WallpaperPicker() {
         {WALLPAPERS.map((w) => {
           const on = w.id === current;
           return (
-            <motion.button
+            <button
               key={w.id}
-              whileTap={{ scale: 0.97 }}
               onClick={() => updateSettings({ wallpaper: w.id as WallpaperId })}
               aria-pressed={on}
               className={`group relative aspect-[16/10] overflow-hidden rounded-xl border transition-colors ${
@@ -79,7 +77,7 @@ export function WallpaperPicker() {
                   className="absolute left-1/2 top-[42%] -translate-x-1/2 text-white/40"
                 />
               )}
-            </motion.button>
+            </button>
           );
         })}
       </div>

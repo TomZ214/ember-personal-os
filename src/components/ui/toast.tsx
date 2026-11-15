@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Info, TriangleAlert } from "lucide-react";
+import { SPRING, rise } from "@/lib/motion";
 import { playCue, type Cue } from "@/lib/sound";
 
 type Kind = "success" | "info" | "error";
@@ -61,6 +62,8 @@ const STYLES: Record<Kind, string> = {
   error: "bg-danger/20 text-[oklch(0.78_0.13_25)]",
 };
 
+const TOAST = rise(16);
+
 export function Toaster() {
   const { toasts, remove } = useToasts();
   const hasError = toasts.some((t) => t.kind === "error");
@@ -79,11 +82,10 @@ export function Toaster() {
         {toasts.map((t) => (
           <motion.button
             key={t.id}
+            // rises in, and the ones already up make room on the same spring
             layout
-            initial={{ opacity: 0, y: 16, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 420, damping: 32 }}
+            {...TOAST}
+            transition={{ layout: SPRING.snappy }}
             onClick={() => remove(t.id)}
             className="glass-strong pointer-events-auto flex max-w-[92vw] items-center gap-2.5 rounded-full py-2 pl-3 pr-4 text-left text-sm shadow-[0_12px_40px_-8px_rgba(0,0,0,0.6)]"
           >

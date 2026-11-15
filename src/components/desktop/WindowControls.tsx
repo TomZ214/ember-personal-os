@@ -53,7 +53,7 @@ function Ctl({
       title={label}
       onClick={onClick}
       className={`flex h-8 w-11 items-center justify-center rounded-[9px] text-muted transition-colors ${
-        danger ? "hover:bg-danger/85 hover:text-white" : "hover:bg-white/[0.09] hover:text-ink"
+        danger ? "hover:bg-danger/85 hover:text-[#fff]" : "hover:bg-white/[0.09] hover:text-ink"
       }`}
     >
       {children}

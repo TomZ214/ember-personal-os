@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { riseIn, stagger } from "@/lib/motion";
 import { format } from "date-fns";
 import { Mail } from "lucide-react";
 import { useEmber, useHydrated } from "@/lib/store";
 import { useGmailUnread } from "@/hooks/useIntegrations";
 import { greetingFor, useLang, useT } from "@/lib/i18n";
 import { todayKey, dfLocale } from "@/lib/dates";
+import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { ProgressRing } from "@/components/ui/misc";
 import { AgendaWidget } from "@/components/widgets/Agenda";
 import { AlarmsWidget } from "@/components/widgets/AlarmsWidget";
@@ -34,14 +33,15 @@ function useScore() {
     Math.min(36, tasksDone * 12) +
     (habits.length ? Math.round((habitsDone / habits.length) * 34) : 0) +
     Math.min(30, sessions * 10);
-  return Math.min(100, score);
+  // the parts travel with the number: a score nobody can read is decoration
+  return { score: Math.min(100, score), tasksDone, habitsDone, habits: habits.length, sessions };
 }
 
 export default function Dashboard() {
   const hydrated = useHydrated();
   const settings = useEmber((s) => s.settings);
   const mails = useEmber((s) => s.mails);
-  const score = useScore();
+  const { score, tasksDone, habitsDone, habits, sessions } = useScore();
   const gmail = useGmailUnread();
   const lang = useLang();
   const t = useT();
@@ -71,57 +71,59 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-3.5">
           <ProgressRing value={score / 100} size={72} stroke={6} color="var(--accent)">
-            <span className="num text-lg font-semibold">{score}</span>
+            {/* counts up with the ring, on the same spring */}
+            <AnimatedNumber value={score} from={0} spring="fill" className="num text-lg font-semibold" />
           </ProgressRing>
           <div className="leading-snug">
             <p className="text-sm font-medium">{t("dash.productivity")}</p>
-            <p className="max-w-[18ch] text-xs text-muted">
-              {score >= 70 ? t("dash.onFire") : score >= 35 ? t("dash.momentum") : t("dash.dayYoung")}
+            {/* what the number is made of, instead of a line of encouragement */}
+            <p className="num mt-0.5 text-xs text-muted">
+              {tasksDone} {t("dash.scoreTasks")} · {habits ? `${habitsDone}/${habits}` : 0} {t("dash.scoreHabits")} · {sessions} {t("dash.scoreFocus")}
             </p>
           </div>
         </div>
       </header>
 
-      <motion.div
-        className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-12"
-        initial="initial"
-        animate="animate"
-        variants={stagger(0.045, 0.05)}
-      >
-        <motion.section aria-label="Daily briefing" className="sm:col-span-2 lg:col-span-12" variants={riseIn}>
+      {/* .stagger: on a route change the widgets settle in one after another
+          (globals.css, "Route transitions"). Transform only — a fading
+          wrapper would strip the frosting off every pane inside it. */}
+      <div className="stagger grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-12">
+        {/* empty:hidden: the briefing renders nothing until it is set up, and
+            an empty grid cell would still cost a row gap */}
+        <section aria-label={t("brief.title")} className="empty:hidden sm:col-span-2 lg:col-span-12">
           <BriefingWidget />
-        </motion.section>
-        <motion.section aria-label="Today's agenda" className="lg:col-span-5 lg:row-span-2" variants={riseIn}>
+        </section>
+        <section aria-label={t("w.agenda")} className="lg:col-span-5 lg:row-span-2">
           <AgendaWidget />
-        </motion.section>
-        <motion.section aria-label="Focus timer" className="lg:col-span-3 lg:row-span-2" variants={riseIn}>
+        </section>
+        <section aria-label={t("w.focus")} className="lg:col-span-3 lg:row-span-2">
           <FocusTimer />
-        </motion.section>
-        <motion.section aria-label="Weather" className="lg:col-span-4" variants={riseIn}>
+        </section>
+        <section aria-label={t("nav.weather")} className="lg:col-span-4">
           <WeatherWidget />
-        </motion.section>
-        <motion.section aria-label="Habits" className="lg:col-span-4" variants={riseIn}>
+        </section>
+        <section aria-label={t("w.habits")} className="lg:col-span-4">
           <HabitsTodayWidget />
-        </motion.section>
-        <motion.section aria-label="Tasks" className="lg:col-span-5" variants={riseIn}>
+        </section>
+        <section aria-label={t("w.tasks")} className="lg:col-span-5">
           <TodayTasksWidget />
-        </motion.section>
-        <motion.section aria-label="Activity" className="lg:col-span-7" variants={riseIn}>
+        </section>
+        <section aria-label={t("w.twoWeekPulse")} className="lg:col-span-7">
           <WeekPulseWidget />
-        </motion.section>
-        <motion.section aria-label="Goals" className="lg:col-span-7" variants={riseIn}>
+        </section>
+        <section aria-label={t("w.goals")} className="lg:col-span-7">
           <GoalsGlanceWidget />
-        </motion.section>
-        <motion.section aria-label="Alarms" className="lg:col-span-5" variants={riseIn}>
+        </section>
+        <section aria-label={t("alarm.title")} className="lg:col-span-5">
           <AlarmsWidget />
-        </motion.section>
-        <motion.section aria-label="Quick note" className="lg:col-span-5" variants={riseIn}>
+        </section>
+        <section aria-label={t("w.quickNote")} className="lg:col-span-5">
           <QuickNoteWidget />
-        </motion.section>
-        <motion.section aria-label="Bank" className="sm:col-span-2 lg:col-span-12" variants={riseIn}>
+        </section>
+        <section aria-label={t("nav.finance")} className="sm:col-span-2 lg:col-span-12">
           <BankGlanceWidget />
-        </motion.section>
-      </motion.div>
+        </section>
+      </div>
     </div>
   );
 }

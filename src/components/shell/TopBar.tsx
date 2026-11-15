@@ -2,10 +2,11 @@
 
 import { useSyncExternalStore } from "react";
 import Link from "next/link";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { Flame, Search } from "lucide-react";
 import { useEmber } from "@/lib/store";
-import { useT } from "@/lib/i18n";
+import { useLang, useT } from "@/lib/i18n";
+import { dfLocale } from "@/lib/dates";
 import { useIsDesktop } from "@/lib/desktop";
 import { WindowControls } from "@/components/desktop/WindowControls";
 import { Kbd } from "@/components/ui/misc";
@@ -14,14 +15,17 @@ function subscribeClock(cb: () => void) {
   const t = setInterval(cb, 30_000);
   return () => clearInterval(t);
 }
-const clockSnapshot = () => format(new Date(), "HH:mm|EEE, MMM d");
+// time and day only: the day is written out in render, in the user's language
+const clockSnapshot = () => format(new Date(), "HH:mm|yyyy-MM-dd");
 const clockServerSnapshot = () => "";
 
 export function TopBar() {
   const setPaletteOpen = useEmber((s) => s.setPaletteOpen);
   const clock = useSyncExternalStore(subscribeClock, clockSnapshot, clockServerSnapshot);
-  const [time, date] = clock ? clock.split("|") : ["--:--", ""];
+  const [time, day] = clock ? clock.split("|") : ["--:--", ""];
   const t = useT();
+  const lang = useLang();
+  const date = day ? format(parseISO(day), lang === "de" ? "EEE, d. MMM" : "EEE, MMM d", { locale: dfLocale(lang) }) : "";
   const desktop = useIsDesktop();
 
   return (

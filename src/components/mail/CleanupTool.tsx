@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { EXIT, SPRING, fade, stamp, withFade } from "@/lib/motion";
 import { format, subYears } from "date-fns";
 import { AlertTriangle, Check, Eraser, Loader2, Trash2, Undo2, X } from "lucide-react";
 import { invalidateApi } from "@/hooks/useApi";
@@ -43,6 +44,13 @@ interface Progress {
 }
 
 /** Mail → Tools: bulk-clean old email, safely (Trash, not permanent delete). */
+/** each step of the wizard settles up into the place the last one left */
+const STEP = {
+  initial: { opacity: 0, y: 8 },
+  animate: { opacity: 1, y: 0, transition: withFade(SPRING.smooth) },
+  exit: { opacity: 0, transition: EXIT },
+};
+
 export function CleanupTool({ open, onClose, onFinished }: { open: boolean; onClose: () => void; onFinished: () => void }) {
   const t = useT();
   const lang = useLang();
@@ -150,7 +158,7 @@ export function CleanupTool({ open, onClose, onFinished }: { open: boolean; onCl
     <Modal open={open} onClose={close} title={t("clean.title")} wide>
       <AnimatePresence mode="wait" initial={false}>
         {(phase === "configure" || phase === "previewing") && (
-          <motion.div key="cfg" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-5">
+          <motion.div key="cfg" {...fade} className="flex flex-col gap-5">
             <div>
               <Label>{t("clean.olderThan")}</Label>
               <div className="flex flex-wrap items-center gap-1.5">
@@ -236,7 +244,7 @@ export function CleanupTool({ open, onClose, onFinished }: { open: boolean; onCl
         )}
 
         {phase === "confirm" && preview && (
-          <motion.div key="confirm" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex flex-col gap-4">
+          <motion.div key="confirm" {...STEP} className="flex flex-col gap-4">
             <div className="grid grid-cols-3 gap-3">
               <div className="rounded-2xl tile p-4 text-center">
                 <p className="num text-2xl font-semibold tracking-tight">{preview.count.toLocaleString(lang === "de" ? "de-DE" : "en")}</p>
@@ -267,16 +275,19 @@ export function CleanupTool({ open, onClose, onFinished }: { open: boolean; onCl
         )}
 
         {phase === "running" && progress && (
-          <motion.div key="run" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-4 py-4">
+          <motion.div key="run" {...STEP} className="flex flex-col items-center gap-4 py-4">
             <p className="num text-3xl font-semibold tracking-tight">
               {progress.done.toLocaleString(lang === "de" ? "de-DE" : "en")}
               <span className="text-muted"> / {progress.total.toLocaleString(lang === "de" ? "de-DE" : "en")}</span>
             </p>
             <div className="h-2 w-full overflow-hidden rounded-full bg-white/[0.07]">
+              {/* full width, slid in from the left and clipped by the track:
+                  a transform, so progress never re-lays-out the dialog */}
               <motion.div
-                className="h-full rounded-full bg-[image:var(--grad-sunset)]"
-                animate={{ width: `${pct}%` }}
-                transition={{ type: "spring", stiffness: 60, damping: 20 }}
+                className="h-full w-full rounded-full bg-[image:var(--grad-sunset)]"
+                initial={{ x: "-100%" }}
+                animate={{ x: `${pct - 100}%` }}
+                transition={SPRING.gentle}
               />
             </div>
             <p className="text-xs text-faint">{t("clean.working")}</p>
@@ -293,11 +304,9 @@ export function CleanupTool({ open, onClose, onFinished }: { open: boolean; onCl
         )}
 
         {phase === "done" && progress && (
-          <motion.div key="done" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center gap-4 py-4 text-center">
+          <motion.div key="done" {...STEP} className="flex flex-col items-center gap-4 py-4 text-center">
             <motion.span
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 300, damping: 18 }}
+              {...stamp}
               className={`flex h-14 w-14 items-center justify-center rounded-full ${error ? "bg-danger/15 text-danger" : "bg-success/15 text-success"}`}
             >
               {error ? <AlertTriangle size={24} /> : <Check size={26} strokeWidth={2.5} />}
