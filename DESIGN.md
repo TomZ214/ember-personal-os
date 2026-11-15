@@ -151,6 +151,26 @@ wallpaper. Light mode re-points tokens in one block at the end of
 Rules combine as `[data-appearance][data-glass]` because both attributes sit on
 `<html>`.
 
+White in the light appearance: every `white/…` tint (hairlines, fills,
+dividers, checkbox outlines) is built by Tailwind from `--color-white`, and the
+light block re-points that variable to ink, so the same class reads as a soft
+grey there instead of vanishing. Three consequences:
+
+- A colour set in a `style` or an SVG uses `tint(percent)` from `src/lib/tint.ts`
+  (never a literal `rgba(255,255,255,…)`), so it follows too.
+- White that must stay white (a switch knob, text on a coloured chip) is
+  written as a literal: `text-[#fff]`, `bg-[#fff]`. `text-white` would turn
+  dark on a light page.
+- A region that is dark in both appearances (the weather hero, a photo
+  lightbox) carries `.on-dark`, which restores the variable inside it.
+
+Themes (`THEMES` in `src/lib/types.ts`, one `[data-theme]` block each in
+`globals.css`): sunset, tide, crimson, orchid, moss, dusk. A theme re-points
+the ramp, `--primary`, `--accent`, the glass tint and the ambient wash; a ramp
+that ends dark (tide, crimson, dusk) also re-points `--lens-from` / `--lens-to`
+and takes light text on the gradient (`--on-sunset`). Cool or green themes
+bring their own accent for the light appearance, where the default is warm.
+
 Safety: reduced effects drops the specular, lowers blur and thins particles;
 glass off makes surfaces opaque, including Tailwind `backdrop-blur` utilities
 and the top bar; `prefers-reduced-transparency`, `prefers-contrast` (dark and
