@@ -56,7 +56,7 @@ export default function RootLayout({
             app uses; any failure just leaves the CSS defaults in place. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var s=JSON.parse(localStorage.getItem("ember-os")||"{}")?.state?.settings||{},d=document.documentElement.dataset;if(s.theme&&s.theme!=="sunset")d.theme=s.theme;d.appearance=s.appearance==="system"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):(s.appearance||"dark");d.glass=s.liquidGlass===false?"off":"on";d.fx=s.reducedEffects?"reduced":"full";}catch(e){}`,
+            __html: `try{var s=JSON.parse(localStorage.getItem("ember-os")||"{}")?.state?.settings||{},d=document.documentElement.dataset;if(s.theme&&s.theme!=="sunset")d.theme=s.theme;d.appearance=s.appearance==="system"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):(s.appearance||"dark");d.glass=s.liquidGlass===false?"off":"on";d.fx=s.reducedEffects?"reduced":"full";if(s.language)document.documentElement.lang=s.language;}catch(e){}`,
           }}
         />
       </head>

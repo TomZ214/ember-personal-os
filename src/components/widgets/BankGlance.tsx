@@ -6,7 +6,8 @@ import { format, parseISO } from "date-fns";
 import { ArrowDownLeft, ArrowUpRight, Landmark } from "lucide-react";
 import { useBank } from "@/hooks/useIntegrations";
 import { useEmber } from "@/lib/store";
-import { eur, todayKey, dfLocale } from "@/lib/dates";
+import { todayKey, dfLocale } from "@/lib/dates";
+import { eur } from "@/lib/money";
 import { useLang, useT } from "@/lib/i18n";
 
 /** full-width finance strip: balance · monthly flow · latest movements. */

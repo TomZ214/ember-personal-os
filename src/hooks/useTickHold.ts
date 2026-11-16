@@ -19,37 +19,47 @@ const HOLD_MS = 380;
  */
 export function useTickHold(commit: (id: string) => void) {
   const [held, setHeld] = useState<ReadonlySet<string>>(() => new Set());
-  const pending = useRef(new Set<string>());
-  const timers = useRef<number[]>([]);
+  // id -> the timer that commits it
+  const pending = useRef(new Map<string, number>());
   const latest = useRef(commit);
   const reduced = useReducedMotion();
 
   useEffect(() => {
     latest.current = commit;
   });
-  useEffect(() => () => timers.current.forEach(clearTimeout), []);
+  // Leaving (another page, the widget unmounting) before the beat is over
+  // must not drop the tick: the celebration has already played, so the task
+  // is done. Commit whatever is still waiting.
+  useEffect(() => {
+    const waiting = pending.current;
+    return () => {
+      waiting.forEach((timer, id) => {
+        clearTimeout(timer);
+        latest.current(id);
+      });
+      waiting.clear();
+    };
+  }, []);
 
   const tick = useCallback(
     (id: string) => {
       if (pending.current.has(id)) return false;
-      pending.current.add(id);
       setHeld((prev) => new Set(prev).add(id));
-      timers.current.push(
-        window.setTimeout(
-          () => {
-            latest.current(id);
-            // release the row, or this id would block its own checkbox
-            // forever if the item ever came back
-            pending.current.delete(id);
-            setHeld((prev) => {
-              const next = new Set(prev);
-              next.delete(id);
-              return next;
-            });
-          },
-          reduced ? 0 : HOLD_MS,
-        ),
+      const timer = window.setTimeout(
+        () => {
+          // release the row first, or this id would block its own checkbox
+          // forever if the item ever came back
+          pending.current.delete(id);
+          latest.current(id);
+          setHeld((prev) => {
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+          });
+        },
+        reduced ? 0 : HOLD_MS,
       );
+      pending.current.set(id, timer);
       return true;
     },
     [reduced],

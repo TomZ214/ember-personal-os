@@ -728,3 +728,19 @@ test("motion: entrances move glass, they never fade it, and controls leave trans
   const template = readFileSync(path.join(root, "src/app/template.tsx"), "utf8");
   assert.match(template, /setEntering\(false\)/);
 });
+
+test("money is written the way the interface language writes it", () => {
+  const settings = { language: "de" };
+  const load = sourceLoader({ "./store": { useEmber: { getState: () => ({ settings }) } } });
+  const { eur } = load("src/lib/money.ts");
+  const norm = (s) => s.replace(/ | /g, " ");
+  assert.equal(norm(eur(1850)), "1.850 €");
+  assert.equal(norm(eur(484.2)), "484,20 €");
+  assert.equal(norm(eur(-12.5)), "-12,50 €");
+  settings.language = "en";
+  assert.equal(eur(1850), "€1,850");
+  assert.equal(eur(484.2), "€484.20");
+  // nothing still formats money in English only
+  const dates = readFileSync(path.join(root, "src/lib/dates.ts"), "utf8");
+  assert.ok(!/export const eur/.test(dates), "eur lives in src/lib/money.ts");
+});

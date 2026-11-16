@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { SPRING, withFade } from "@/lib/motion";
 import { tint } from "@/lib/tint";
-import { eur } from "@/lib/dates";
+import { eur } from "@/lib/money";
 import { useT } from "@/lib/i18n";
 
 /**
@@ -59,7 +59,7 @@ export function MonthBars({ months }: { months: { label: string; income: number;
                     } as React.CSSProperties
                   }
                 />
-                <span className="num pointer-events-none absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-black/85 px-1.5 py-0.5 text-[10px] opacity-0 transition-opacity group-hover:opacity-100">
+                <span className="num pointer-events-none absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-black/85 px-1.5 py-0.5 text-[10px] text-[#fff] opacity-0 transition-opacity group-hover:opacity-100">
                   {eur(Math.round(bar.v))}
                 </span>
               </div>

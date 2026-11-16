@@ -8,7 +8,8 @@ import {
   ArrowDownLeft, ArrowUpRight, Landmark, Loader2, RefreshCw, TrendingDown, TrendingUp,
 } from "lucide-react";
 import { useEmber } from "@/lib/store";
-import { eur, todayKey, dfLocale } from "@/lib/dates";
+import { todayKey, dfLocale } from "@/lib/dates";
+import { eur } from "@/lib/money";
 import { useLang, useT } from "@/lib/i18n";
 import type { useBank } from "@/hooks/useIntegrations";
 import { Donut, MonthBars, SummaryCard } from "./charts";
