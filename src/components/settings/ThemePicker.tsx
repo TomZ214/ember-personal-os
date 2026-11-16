@@ -24,7 +24,7 @@ export function ThemePicker() {
       <h2 className="text-[15px] font-semibold">{t("theme.title")}</h2>
       <p className="mt-0.5 text-[13px] text-muted">{t("theme.sub")}</p>
 
-      <div className="mt-4 flex gap-1 rounded-xl bg-black/10 p-1" role="group" aria-label="Appearance">
+      <div className="mt-4 flex gap-1 rounded-xl bg-black/10 p-1" role="group" aria-label={t("theme.title")}>
         {(["dark", "light", "system"] as const).map(mode => <button key={mode} aria-pressed={appearance === mode} onClick={() => updateSettings({ appearance: mode })} className={`flex-1 rounded-lg px-3 py-2 text-sm transition-colors ${appearance === mode ? "glass text-ink" : "text-muted"}`}>{t(`appearance.${mode}`)}</button>)}
       </div>
       {/* six themes: two rows of three */}

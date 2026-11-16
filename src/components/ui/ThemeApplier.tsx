@@ -21,6 +21,11 @@ export function ThemeApplier() {
   // both default ON — the glass look is the product, not an opt-in
   const glass = useEmber((s) => s.settings.liquidGlass ?? true);
   const reduced = useEmber((s) => s.settings.reducedEffects ?? false);
+  const language = useEmber((s) => s.settings.language ?? "en");
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
 
   useEffect(() => {
     const root = document.documentElement;

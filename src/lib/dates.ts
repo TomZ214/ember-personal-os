@@ -28,8 +28,6 @@ export function greeting(name: string): string {
   return `${part}, ${name}`;
 }
 
-export const eur = (n: number) =>
-  new Intl.NumberFormat("en-DE", { style: "currency", currency: "EUR", maximumFractionDigits: n % 1 === 0 ? 0 : 2 }).format(n);
 
 /** does a (possibly recurring) event occur on the given day? */
 export function occursOn(ev: { date: string; recurrence: string }, key: string): boolean {
