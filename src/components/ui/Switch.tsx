@@ -76,7 +76,7 @@ export function Switch({ checked, onChange, label, hideLabel = true, disabled }:
           rule in globals.css. */}
       <span
         aria-hidden
-        className="absolute inset-0 rounded-full transition-[background-color] duration-[240ms] ease-(--ease-out)"
+        className="switch-track absolute inset-0 rounded-full transition-[background-color] duration-[240ms] ease-(--ease-out)"
         style={{ backgroundColor: checked ? "var(--accent)" : tint(13), opacity: disabled ? 0.4 : 1 }}
       />
       {/* a hairline that keeps the off state visible on a light surface */}

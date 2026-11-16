@@ -16,15 +16,18 @@ import { WALLPAPERS, type WallpaperId } from "@/lib/types";
  */
 export function WallpaperPicker() {
   const current = useEmber((s) => s.settings.wallpaper ?? "none");
+  // a picture only shows through glass; the solid styles bring their own field
+  const glass = useEmber((s) => (s.settings.surfaceStyle ?? "glass") === "glass");
   const updateSettings = useEmber((s) => s.updateSettings);
   const t = useT();
 
   return (
     <section className="panel p-5">
       <h2 className="text-[15px] font-semibold">{t("wall.title")}</h2>
-      <p className="mt-0.5 max-w-[56ch] text-[13px] text-muted">{t("wall.sub")}</p>
+      <p className="mt-0.5 max-w-[56ch] text-[13px] text-muted">{glass ? t("wall.sub") : t("wall.onlyGlass")}</p>
 
-      <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+      {/* still choosable: the choice waits for the glass style to come back */}
+      <div className={`mt-4 grid grid-cols-2 gap-2.5 transition-opacity duration-200 sm:grid-cols-3 ${glass ? "" : "opacity-45"}`}>
         {WALLPAPERS.map((w) => {
           const on = w.id === current;
           return (

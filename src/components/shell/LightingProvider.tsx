@@ -76,7 +76,8 @@ const TOUCH_HOLD_MS = 110;
 const TAP_GLOW_MS = 180;
 
 export function LightingProvider() {
-  const glass = useEmber((s) => s.settings.liquidGlass ?? true);
+  // the light is part of Liquid Glass; the solid styles have none
+  const glass = useEmber((s) => (s.settings.liquidGlass ?? true) && (s.settings.surfaceStyle ?? "glass") === "glass");
   const reduced = useEmber((s) => s.settings.reducedEffects ?? false);
   const pane = useRef<HTMLDivElement>(null);
 

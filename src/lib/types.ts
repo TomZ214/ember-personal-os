@@ -229,6 +229,9 @@ export interface Alarm {
 export type Language = "en" | "de";
 
 /** Brand gradient themes. `sunset` is the original ember look and the default. */
+export type SurfaceStyle = "glass" | "neo" | "clay";
+export const SURFACE_STYLES: SurfaceStyle[] = ["glass", "neo", "clay"];
+
 export type Theme = "sunset" | "tide" | "crimson" | "orchid" | "moss" | "dusk";
 
 export const THEMES: { id: Theme; from: string; to: string }[] = [
@@ -284,6 +287,14 @@ export interface Settings {
   sound?: boolean;
   /** 0..1 master volume for UI sounds */
   soundVolume?: number;
+  /**
+   * The material every surface is made of. "glass" is Liquid Glass (and the
+   * liquidGlass switch below still turns it solid); "neo" is neumorphism,
+   * soft extruded surfaces of the page's own colour; "clay" is claymorphism,
+   * puffy pastel surfaces with inner light. The two alternatives are solid by
+   * nature: no blur, no cursor lighting, no wallpaper.
+   */
+  surfaceStyle?: SurfaceStyle;
   /**
    * Liquid Glass: translucent layered surfaces, cursor lighting, refraction,
    * magnetic controls. Off falls back to opaque surfaces — same layout, same

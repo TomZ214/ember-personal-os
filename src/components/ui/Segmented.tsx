@@ -36,7 +36,7 @@ export function Segmented<T extends string>({ value, onChange, options, label, r
     <div
       role={tabs ? "tablist" : "group"}
       aria-label={label}
-      className={`inline-flex rounded-[11px] border border-white/[0.08] bg-white/[0.04] p-0.5 ${className}`}
+      className={`segmented inline-flex rounded-[11px] border border-white/[0.08] bg-white/[0.04] p-0.5 ${className}`}
     >
       {options.map((o) => {
         const on = o.id === value;
@@ -57,7 +57,7 @@ export function Segmented<T extends string>({ value, onChange, options, label, r
               <motion.span
                 layoutId={pill}
                 aria-hidden
-                className="absolute inset-0 rounded-[9px] bg-white/[0.09] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+                className="segmented-pill absolute inset-0 rounded-[9px] bg-white/[0.09] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
                 transition={SPRING.snappy}
               />
             )}

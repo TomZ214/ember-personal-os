@@ -31,7 +31,7 @@ export function Wallpaper() {
   if (!paper?.file) return <div className="ambient parallax-bg" aria-hidden />;
 
   return (
-    <div aria-hidden className="fixed inset-0 -z-10 overflow-hidden">
+    <div aria-hidden className="wallpaper-layer fixed inset-0 -z-10 overflow-hidden">
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: `url(${paper.file})` }}

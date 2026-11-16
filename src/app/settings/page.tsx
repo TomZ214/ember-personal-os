@@ -9,6 +9,7 @@ import { useT } from "@/lib/i18n";
 import { useBankStatus, useGoogleStatus } from "@/hooks/useIntegrations";
 import { DataSync } from "@/components/settings/DataSync";
 import { ThemePicker } from "@/components/settings/ThemePicker";
+import { StylePicker } from "@/components/settings/StylePicker";
 import { WallpaperPicker } from "@/components/settings/WallpaperPicker";
 import { SoundSettings } from "@/components/settings/SoundSettings";
 import { EffectsSettings } from "@/components/settings/EffectsSettings";
@@ -59,6 +60,8 @@ export default function SettingsPage() {
         <ConnectionsLink />
 
         <DataSync />
+
+        <StylePicker />
 
         <ThemePicker />
 

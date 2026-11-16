@@ -15,6 +15,7 @@ import { Switch } from "@/components/ui/Switch";
  */
 export function EffectsSettings() {
   const glass = useEmber((s) => s.settings.liquidGlass ?? true);
+  const style = useEmber((s) => s.settings.surfaceStyle ?? "glass");
   const reduced = useEmber((s) => s.settings.reducedEffects ?? false);
   const updateSettings = useEmber((s) => s.updateSettings);
   const t = useT();
@@ -26,10 +27,15 @@ export function EffectsSettings() {
           <h2 className="flex items-center gap-2 text-[15px] font-semibold">
             <Layers size={16} /> {t("fx.glassTitle")}
           </h2>
-          <p className="mt-0.5 max-w-[52ch] text-[13px] text-muted">{t("fx.glassSub")}</p>
+          <p className="mt-0.5 max-w-[52ch] text-[13px] text-muted">
+            {style === "glass" ? t("fx.glassSub") : t("fx.onlyGlass")}
+          </p>
         </div>
+        {/* the switch keeps its own value; it simply has nothing to switch in
+            the solid styles */}
         <Switch
-          checked={glass}
+          checked={glass && style === "glass"}
+          disabled={style !== "glass"}
           onChange={(v) => updateSettings({ liquidGlass: v })}
           label={t("fx.glassTitle")}
         />
