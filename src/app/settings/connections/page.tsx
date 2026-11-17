@@ -127,7 +127,7 @@ function ICloudCard() {
   return (
     <section className="panel p-5">
       <div className="flex flex-wrap items-center gap-3">
-        <span className="flex h-11 w-11 items-center justify-center rounded-[14px] border border-white/[0.08] bg-white/[0.05]">
+        <span className="icon-tile flex h-11 w-11 items-center justify-center rounded-[14px] border border-white/[0.08] bg-white/[0.05]">
           <Mail size={18} className="text-muted" />
         </span>
         <div className="min-w-0 flex-1">
@@ -300,7 +300,7 @@ function GoogleCard() {
   return (
     <section className="panel p-5">
       <div className="flex flex-wrap items-center gap-3">
-        <span className="flex h-11 w-11 items-center justify-center rounded-[14px] border border-white/[0.08] bg-white/[0.05] text-lg font-semibold">
+        <span className="icon-tile flex h-11 w-11 items-center justify-center rounded-[14px] border border-white/[0.08] bg-white/[0.05] text-lg font-semibold">
           G
         </span>
         <div className="min-w-0 flex-1">
@@ -377,7 +377,7 @@ function BankCard() {
   return (
     <section className="panel p-5">
       <div className="flex flex-wrap items-center gap-3">
-        <span className="flex h-11 w-11 items-center justify-center rounded-[14px] border border-white/[0.08] bg-white/[0.05]">
+        <span className="icon-tile flex h-11 w-11 items-center justify-center rounded-[14px] border border-white/[0.08] bg-white/[0.05]">
           <Landmark size={19} className="text-muted" />
         </span>
         <div className="min-w-0 flex-1">
@@ -541,7 +541,7 @@ function CloudCard() {
   return (
     <section className="panel p-5">
       <div className="flex flex-wrap items-center gap-3">
-        <span className="flex h-11 w-11 items-center justify-center rounded-[14px] border border-white/[0.08] bg-white/[0.05]">
+        <span className="icon-tile flex h-11 w-11 items-center justify-center rounded-[14px] border border-white/[0.08] bg-white/[0.05]">
           <Cloud size={18} className="text-muted" />
         </span>
         <div className="min-w-0 flex-1">
@@ -702,7 +702,7 @@ function NotificationsCard() {
   return (
     <section className="panel p-5">
       <div className="flex flex-wrap items-center gap-3">
-        <span className="flex h-11 w-11 items-center justify-center rounded-[14px] border border-white/[0.08] bg-white/[0.05]">
+        <span className="icon-tile flex h-11 w-11 items-center justify-center rounded-[14px] border border-white/[0.08] bg-white/[0.05]">
           <Bell size={18} className="text-muted" />
         </span>
         <div className="min-w-0 flex-1">
@@ -853,7 +853,7 @@ function FamilyCard() {
   return (
     <section className="panel p-5">
       <div className="flex flex-wrap items-center gap-3">
-        <span className="flex h-11 w-11 items-center justify-center rounded-[14px] border border-white/[0.08] bg-white/[0.05]">
+        <span className="icon-tile flex h-11 w-11 items-center justify-center rounded-[14px] border border-white/[0.08] bg-white/[0.05]">
           <HeartHandshake size={18} className="text-muted" />
         </span>
         <div className="min-w-0 flex-1">
@@ -912,7 +912,7 @@ function AiCard() {
   return (
     <section className="panel p-5">
       <div className="flex flex-wrap items-center gap-3">
-        <span className="flex h-11 w-11 items-center justify-center rounded-[14px] border border-white/[0.08] bg-white/[0.05]">
+        <span className="icon-tile flex h-11 w-11 items-center justify-center rounded-[14px] border border-white/[0.08] bg-white/[0.05]">
           <KeyRound size={18} className="text-muted" />
         </span>
         <div className="min-w-0 flex-1">

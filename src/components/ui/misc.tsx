@@ -64,7 +64,12 @@ export function ProgressRing({
   const r = (size - stroke) / 2;
   const circ = 2 * Math.PI * r;
   return (
-    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
+    // .ring-3d: in the solid styles the ring sits on a raised disc with a
+    // sunken middle (globals.css, "Depth"); --ring-stroke sizes that middle
+    <div
+      className="ring-3d relative inline-flex items-center justify-center"
+      style={{ width: size, height: size, "--ring-stroke": `${stroke}px` } as React.CSSProperties}
+    >
       {/* overflow-visible: the arc's glow extends past the ring, and an SVG
           clips to its own box by default — without this the soft halo is
           sliced into a hard square and you see the corners. The parent div
@@ -99,13 +104,13 @@ export function ProgressRing({
 
 export function ProgressBar({ value, color = "var(--accent)" }: { value: number; color?: string }) {
   return (
-    <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.07]">
+    <div className="bar-track h-1.5 w-full overflow-hidden rounded-full bg-white/[0.07]">
       {/* The bar is always full width and slides in from the left, clipped by
           the track: a transform, so filling it never re-lays-out the row
           (animating `width` did, every frame). Its rounded end stays round. */}
       <motion.div
-        className="lit h-full w-full rounded-full"
-        style={{ color, background: "currentColor", "--lit-glow": "4px" } as React.CSSProperties}
+        className="bar-fill lit h-full w-full rounded-full"
+        style={{ color, backgroundColor: "currentColor", "--lit-glow": "4px" } as React.CSSProperties}
         initial={{ x: "-100%" }}
         animate={{ x: `${Math.min(100, Math.max(0, value * 100)) - 100}%` }}
         transition={SPRING.fill}
@@ -143,7 +148,9 @@ export function EmptyState({
   return (
     <div className={`flex flex-col items-center justify-center text-center ${sm ? "gap-1 px-4 py-7" : "gap-1.5 px-6 py-12"}`}>
       {icon && (
-        <span aria-hidden className={`text-faint ${sm ? "mb-1" : "mb-2"} [&>svg]:h-[22px] [&>svg]:w-[22px] [&>svg]:stroke-[1.5]`}>
+        // .empty-glyph: a plain glyph here; in the solid styles it sits on a
+        // little 3D tile (globals.css, "Depth")
+        <span aria-hidden className={`empty-glyph text-faint ${sm ? "mb-1" : "mb-2"} [&>svg]:h-[22px] [&>svg]:w-[22px] [&>svg]:stroke-[1.5]`}>
           {icon}
         </span>
       )}

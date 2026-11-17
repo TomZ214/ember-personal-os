@@ -791,3 +791,24 @@ test("surface styles: each one is wired end to end, and Liquid Glass stays the d
     for (const part of parts(r)) assert.match(part, /^:root(\[data-style=|:is\(\[data-style=)/, `unscoped rule: ${part}`);
   }
 });
+
+test("depth: 3D tilt only in the solid styles, and cheap to drive", () => {
+  const css = readFileSync(path.join(root, "src/app/globals.css"), "utf8");
+  const provider = readFileSync(path.join(root, "src/components/shell/DepthProvider.tsx"), "utf8");
+  // the tilt variables are written every frame: they must not invalidate the card's contents
+  for (const name of ["--tilt-x", "--tilt-y", "--tilt-sign", "--tilt-z", "--tilt-max"]) {
+    const rule = css.match(new RegExp(`@property ${name} \\{([^}]*)\\}`));
+    assert.ok(rule, `${name} is registered`);
+    assert.match(rule[1], /inherits:\s*false/);
+  }
+  // off in glass, with reduced effects and with reduced motion
+  assert.match(provider, /if \(style === "glass" \|\| reduced\) return;/);
+  assert.match(provider, /prefers-reduced-motion: reduce/);
+  // reading panes never tilt: only interactive cards and opted-in elements
+  assert.match(provider, /const TILTABLE = "\.panel-hover, \[data-tilt\]";/);
+  // a touch must be held before it tilts, so a scroll never does
+  assert.match(provider, /TOUCH_HOLD_MS = \d+/);
+  assert.match(provider, /pointercancel/);
+  // the tilt itself is scoped to the solid styles
+  assert.ok(css.includes(':root:is([data-style="neo"], [data-style="clay"]) [data-tilting] {'));
+});

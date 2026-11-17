@@ -292,7 +292,7 @@ function AlertCard({
                 initial={{ scale: 0.6, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ ...SPRING.bouncy, delay: 0.08 }}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] bg-accent/15 text-accent"
+                className="icon-tile flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] bg-accent/15 text-accent"
               >
                 <Flame size={18} strokeWidth={2.2} />
               </motion.span>

@@ -89,7 +89,7 @@ export function Switch({ checked, onChange, label, hideLabel = true, disabled }:
       {/* knob */}
       <motion.span
         aria-hidden
-        className="absolute rounded-full bg-[#fff]"
+        className="switch-knob absolute rounded-full bg-[#fff]"
         style={{
           top: PAD,
           height: KNOB,

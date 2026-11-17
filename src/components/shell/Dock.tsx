@@ -277,7 +277,7 @@ function DockIcon({
               data-dock-href={item.href}
               draggable={false}
               onClick={() => { if (!active) bounce(); }}
-              className={`relative flex h-full w-full items-center justify-center border outline-offset-4 transition-colors duration-150 ${
+              className={`dock-key relative flex h-full w-full items-center justify-center border outline-offset-4 transition-colors duration-150 ${
                 active ? "glow-brand border-white/[0.14] bg-white/[0.10] text-ink" : "border-transparent text-muted hover:text-ink"
               }`}
               style={{ borderRadius: radius }}
