@@ -744,3 +744,50 @@ test("money is written the way the interface language writes it", () => {
   const dates = readFileSync(path.join(root, "src/lib/dates.ts"), "utf8");
   assert.ok(!/export const eur/.test(dates), "eur lives in src/lib/money.ts");
 });
+
+test("surface styles: each one is wired end to end, and Liquid Glass stays the default", () => {
+  const css = readFileSync(path.join(root, "src/app/globals.css"), "utf8");
+  const types = readFileSync(path.join(root, "src/lib/types.ts"), "utf8");
+  const i18n = readFileSync(path.join(root, "src/lib/i18n.ts"), "utf8");
+  const layout = readFileSync(path.join(root, "src/app/layout.tsx"), "utf8");
+  const applier = readFileSync(path.join(root, "src/components/ui/ThemeApplier.tsx"), "utf8");
+  const lighting = readFileSync(path.join(root, "src/components/shell/LightingProvider.tsx"), "utf8");
+  const styles = JSON.parse(types.match(/SURFACE_STYLES: SurfaceStyle\[\] = (\[[^\]]*\])/)[1].replace(/"/g, '"'));
+  assert.deepEqual(styles, ["glass", "neo", "clay"]);
+  const en = i18n.slice(i18n.indexOf("const en: Dict"), i18n.indexOf("const de: Dict"));
+  const de = i18n.slice(i18n.indexOf("const de: Dict"), i18n.indexOf("const DICT"));
+  for (const id of styles) {
+    for (const dict of [en, de]) {
+      assert.ok(dict.includes(`"style.${id}":`) && dict.includes(`"style.${id}Desc":`), `style.${id} in both languages`);
+    }
+    if (id === "glass") continue;
+    // a material, in both appearances
+    assert.ok(css.includes(`:root[data-style="${id}"] {`), `${id} tokens`);
+    assert.ok(css.includes(`:root[data-style="${id}"][data-appearance="light"] {`), `${id} light tokens`);
+    assert.ok(css.includes(`:root[data-style="${id}"] :is(.panel, .glass, .glass-strong) {`), `${id} surfaces`);
+  }
+  // the default is glass, on first paint and after hydration, and glass effects need the glass style
+  assert.match(layout, /st=s\.surfaceStyle\|\|"glass";d\.style=st;d\.glass=s\.liquidGlass===false\|\|st!=="glass"\?"off":"on"/);
+  assert.match(applier, /surfaceStyle \?\? "glass"\) === "glass"/);
+  assert.match(lighting, /surfaceStyle \?\? "glass"\) === "glass"/);
+  // nothing in the style section mixes colours in a polar space (the build
+  // rewrites oklch() to lab(), and a polar mix then took the theme's hue)
+  const section = css.slice(css.lastIndexOf("/*", css.indexOf("Surface styles — neumorphism and claymorphism")));
+  assert.ok(!/color-mix\(in oklch/.test(section), "mix in oklab in the surface styles");
+  // every rule of the section is scoped to a style, so Liquid Glass is untouched
+  const rules = section.replace(/\/\*[\s\S]*?\*\//g, "").match(/[^{}]+\{/g).map((r) => r.slice(0, -1).trim()).filter((r) => r && !r.startsWith("@"));
+  // split a selector list on its top-level commas (not the ones inside :is())
+  const parts = (sel) => {
+    const out = [];
+    let depth = 0, cur = "";
+    for (const ch of sel) {
+      if (ch === "(") depth++;
+      if (ch === ")") depth--;
+      if (ch === "," && depth === 0) { out.push(cur.trim()); cur = ""; } else cur += ch;
+    }
+    return [...out, cur.trim()].filter(Boolean);
+  };
+  for (const r of rules) {
+    for (const part of parts(r)) assert.match(part, /^:root(\[data-style=|:is\(\[data-style=)/, `unscoped rule: ${part}`);
+  }
+});

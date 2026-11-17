@@ -81,6 +81,29 @@ still win. Segmented tracks and input containers are wells, not tiles.
 The top bar (`.topbar`) is a pane with glass on: denser at the top, clearer
 toward its lower edge, which is a lit lip instead of a hairline border.
 
+## Surface styles
+
+Liquid Glass is the default, and two solid materials sit beside it
+(`settings.surfaceStyle`, `data-style` on `<html>`): neumorphism (`neo`) and
+claymorphism (`clay`). Outside glass, ThemeApplier and the first-paint script
+set `data-glass="off"`, so every glass rule, the cursor light and the magnets
+are gone, and wallpaper, ambient glow and particles are hidden. The materials
+are the last section of `globals.css`:
+
+- Neumorphism: the page and every surface share one cool grey; raised
+  surfaces and buttons, sunken inputs, tracks and switches, the open dock app
+  pressed in.
+- Claymorphism: a pastel field, puffy surfaces with inner light and shade,
+  pill buttons, the open dock app as a piece of coloured clay.
+
+Both have a light and a dark field and take a little of the theme colour.
+Controls are shaped through hooks, not component styles: `data-variant` on
+`Button`, `.segmented` / `.segmented-pill` on every segmented control,
+`.switch-track`. Every rule there starts with `:root[data-style=…]` (a test
+checks it), so Liquid Glass is untouched. Mix colours there in `oklab`: the
+build rewrites `oklch()` values to `lab()`, and a polar mix of one of those
+with the theme colour took the theme's hue at full weight.
+
 ## Motion
 
 One vocabulary, in `src/lib/motion.ts`, shared by Framer Motion and CSS:
