@@ -85,15 +85,25 @@ function Preview({ id }: { id: SurfaceStyle }) {
       <span
         aria-hidden
         className="relative block h-24"
-        style={{ background: "radial-gradient(120% 120% at 0% 0%, oklch(0.94 0.03 300), oklch(0.86 0.06 285))" }}
+        style={{ background: "radial-gradient(70% 90% at 0% 0%, oklch(0.9 0.07 230), transparent), radial-gradient(70% 90% at 100% 0%, oklch(0.9 0.07 340), transparent), oklch(0.84 0.075 290)" }}
       >
         <span className="absolute left-4 top-3.5 h-[68px] w-[48%] rounded-[22px]" style={{ background: "oklch(0.985 0.008 290)", boxShadow: puff }}>
           <span className="absolute left-3 top-3 h-6 w-6 rounded-[9px]" style={{ background: "var(--primary)", boxShadow: "inset 2px 3px 4px -1px oklch(1 0 0 / 0.55), inset -2px -3px 5px -2px oklch(0 0 0 / 0.25)" }} />
           <span className="absolute bottom-3 left-3 right-3 h-2 rounded-full" style={{ background: "oklch(0.9 0.03 290)" }} />
         </span>
+        {/* a row of colourful keys: claymorphism is colour as much as volume */}
+        <span className="absolute right-4 top-5 flex gap-1.5">
+          {["var(--c-sky)", "var(--c-rose)", "var(--c-sage)"].map((c) => (
+            <span
+              key={c}
+              className="h-7 w-7 rounded-[10px]"
+              style={{ background: c, boxShadow: "0 2px 0 0 oklch(0 0 0 / 0.18), inset 2px 3px 5px -2px oklch(1 0 0 / 0.55), inset -2px -3px 5px -2px oklch(0 0 0 / 0.2)" }}
+            />
+          ))}
+        </span>
         <span
-          className="absolute right-4 top-6 h-11 w-[30%] rounded-full"
-          style={{ background: "var(--grad-sunset)", boxShadow: "0 10px 16px -10px var(--primary-glow), inset 2px 4px 6px -2px oklch(1 0 0 / 0.55), inset -3px -4px 7px -3px oklch(0 0 0 / 0.25)" }}
+          className="absolute bottom-3.5 right-4 h-6 w-[30%] rounded-full"
+          style={{ background: "var(--grad-sunset)", boxShadow: "0 3px 0 0 color-mix(in oklab, var(--primary) 70%, black), inset 2px 3px 5px -2px oklch(1 0 0 / 0.55)" }}
         />
       </span>
     );

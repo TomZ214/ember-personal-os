@@ -1105,6 +1105,7 @@ html[data-nav="back"] .page-enter .rise {
 
 /* a checked tick glows in its own colour (CheckMark) */
 [data-check][data-checked] {
+  background-color: var(--check-color);
   box-shadow: 0 0 14px -2px var(--check-color);
 }
 
@@ -1800,9 +1801,12 @@ select.glass-input {
 }
 
 /* ---- Neumorphism ------------------------------------------------------
-   One colour for the page and everything on it; shape comes only from light
-   (top left) and shade (bottom right). Raised = can be pressed or holds
-   content, sunken = takes input or shows a level.                          */
+   Monochrome and quiet: one colour for the page and everything on it, shape
+   only from light (top left) and shade (bottom right), never a coloured
+   surface. Colour is kept for meaning: text and icons of the main action,
+   the selection, a level. Raised = can be pressed or holds content, sunken =
+   takes input, is selected, or shows a level. The opposite of claymorphism,
+   which is all colour and volume.                                          */
 :root[data-style="neo"] {
   /* a trace of the theme only: neumorphism is a cool, quiet grey */
   --neo-bg: color-mix(in oklab, var(--primary) 2.5%, oklch(0.255 0.012 265));
@@ -1813,10 +1817,11 @@ select.glass-input {
   --glass-bg: var(--neo-bg);
   --glass-bg-strong: var(--neo-bg);
   --glass-bg-nested: var(--neo-bg);
-  --neo-out: 7px 7px 16px var(--neo-lo), -6px -6px 14px var(--neo-hi);
-  --neo-out-hover: 9px 9px 20px var(--neo-lo), -8px -8px 18px var(--neo-hi);
-  --neo-out-sm: 4px 4px 9px var(--neo-lo), -3px -3px 8px var(--neo-hi);
-  --neo-in: inset 3px 3px 7px var(--neo-lo), inset -3px -3px 7px var(--neo-hi);
+  /* the classic pair: equal and opposite, light and shade the same size */
+  --neo-out: 10px 10px 22px var(--neo-lo), -10px -10px 22px var(--neo-hi);
+  --neo-out-hover: 13px 13px 28px var(--neo-lo), -13px -13px 28px var(--neo-hi);
+  --neo-out-sm: 5px 5px 11px var(--neo-lo), -5px -5px 11px var(--neo-hi);
+  --neo-in: inset 4px 4px 9px var(--neo-lo), inset -4px -4px 9px var(--neo-hi);
   --well-bg: var(--neo-bg);
   --well-shadow: var(--neo-in);
 }
@@ -1877,11 +1882,23 @@ select.glass-input {
 :root[data-style="neo"] :is([data-variant], .glow-brand):not(:disabled):active {
   box-shadow: var(--neo-in);
 }
-/* the open app in the dock is pressed in */
+/* the open app in the dock is pressed in, its icon in the accent */
 :root[data-style="neo"] [data-dock-href][aria-current="page"] {
   background: var(--neo-bg);
   border-color: transparent;
   box-shadow: var(--neo-in);
+  color: var(--accent);
+}
+/* No coloured surfaces, the main action included: it is a raised key of the
+   page colour whose label carries the accent. Every gradient button counts
+   (the Button component and the few hand-made ones). */
+:root[data-style="neo"] :is([data-variant="primary"], button[class*="grad-sunset"], a[class*="grad-sunset"]) {
+  background: var(--neo-bg);
+  color: var(--accent);
+  box-shadow: var(--neo-out-sm);
+}
+:root[data-style="neo"] .segmented > :is([aria-selected="true"], [aria-pressed="true"]) {
+  color: var(--accent);
 }
 
 /* inputs, tracks and switches are sunken */
@@ -1902,22 +1919,28 @@ select.glass-input {
 }
 
 /* ---- Claymorphism -----------------------------------------------------
-   Puffy, rounded surfaces on a soft pastel field: an outer shadow lifts each
-   one off the page, and two inner shadows (light top left, shade bottom
-   right) make it look inflated rather than flat. Controls are pills; the
-   open app is a piece of coloured clay.                                    */
+   Colour and volume, the opposite of neumorphism: a bright, multi-colour
+   field; chunky, very round surfaces that look inflated (light inside the
+   top-left edge, shade inside the bottom right) and stand on a solid lip of
+   their own colour, with a coloured shadow under them; colourful keys and
+   tiles; a rounded typeface. Controls are pills; the selection and the main
+   action are pieces of coloured clay.                                      */
 :root[data-style="clay"] {
-  --clay-field: color-mix(in oklab, var(--primary) 13%, oklch(0.235 0.045 285));
-  --clay-surface: color-mix(in oklab, var(--primary) 10%, oklch(0.305 0.045 285));
+  /* dark: deep violet, and the surfaces are coloured too, never grey */
+  --clay-field: color-mix(in oklab, var(--primary) 12%, oklch(0.27 0.09 290));
+  --clay-surface: color-mix(in oklab, var(--primary) 8%, oklch(0.355 0.085 290));
+  --clay-lip: color-mix(in oklab, var(--clay-surface) 55%, black);
   --clay-raise:
-    0 20px 36px -18px oklch(0 0 0 / 0.7),
-    inset 0 1px 1px 0 oklch(1 0 0 / 0.1),
-    inset 7px 9px 16px -8px oklch(1 0 0 / 0.11),
-    inset -9px -11px 18px -8px oklch(0 0 0 / 0.42);
+    0 5px 0 0 var(--clay-lip),
+    0 26px 40px -16px oklch(0 0 0 / 0.65),
+    inset 0 2px 1px 0 oklch(1 0 0 / 0.14),
+    inset 10px 12px 20px -10px oklch(1 0 0 / 0.14),
+    inset -12px -14px 22px -10px oklch(0 0 0 / 0.38);
   --clay-raise-sm:
-    0 9px 16px -9px oklch(0 0 0 / 0.65),
-    inset 3px 4px 8px -3px oklch(1 0 0 / 0.12),
-    inset -4px -5px 9px -4px oklch(0 0 0 / 0.38);
+    0 3px 0 0 var(--clay-lip),
+    0 12px 18px -10px oklch(0 0 0 / 0.6),
+    inset 3px 4px 8px -3px oklch(1 0 0 / 0.16),
+    inset -4px -5px 9px -4px oklch(0 0 0 / 0.36);
   --clay-press:
     inset 4px 5px 10px -3px oklch(0 0 0 / 0.45),
     inset -3px -3px 8px -4px oklch(1 0 0 / 0.08);
@@ -1928,37 +1951,56 @@ select.glass-input {
   --glass-bg-nested: var(--clay-surface);
   --well-bg: color-mix(in oklab, var(--clay-field) 80%, black);
   --well-shadow: var(--clay-press);
+  /* the four clay colours keys and tiles cycle through */
+  --clay-1: var(--c-sky);
+  --clay-2: var(--c-rose);
+  --clay-3: var(--c-sage);
+  --clay-4: var(--c-amber);
+  --clay-5: var(--c-lilac);
+  --clay-6: var(--primary);
 }
 :root[data-style="clay"][data-appearance="light"] {
-  --clay-field: color-mix(in oklab, var(--primary) 13%, oklch(0.9 0.04 290));
-  --clay-surface: color-mix(in oklab, var(--primary) 5%, oklch(0.985 0.008 290));
-  --clay-shade: color-mix(in oklab, var(--primary) 35%, oklch(0.45 0.12 285));
+  --clay-field: color-mix(in oklab, var(--primary) 10%, oklch(0.84 0.075 290));
+  --clay-surface: oklch(0.992 0.006 300);
+  --clay-shade: color-mix(in oklab, var(--primary) 25%, oklch(0.42 0.16 285));
+  --clay-lip: color-mix(in oklab, var(--clay-shade) 22%, oklch(0.9 0.03 290));
   --clay-raise:
-    0 22px 38px -20px color-mix(in oklab, var(--clay-shade) 70%, transparent),
-    inset 0 2px 1px 0 oklch(1 0 0 / 0.9),
-    inset 8px 10px 18px -8px oklch(1 0 0 / 0.95),
-    inset -10px -12px 22px -10px color-mix(in oklab, var(--clay-shade) 30%, transparent);
+    0 5px 0 0 var(--clay-lip),
+    0 28px 40px -18px color-mix(in oklab, var(--clay-shade) 62%, transparent),
+    inset 0 3px 2px 0 oklch(1 0 0 / 1),
+    inset 10px 12px 20px -10px oklch(1 0 0 / 1),
+    inset -12px -14px 24px -12px color-mix(in oklab, var(--clay-shade) 30%, transparent);
   --clay-raise-sm:
-    0 10px 18px -10px color-mix(in oklab, var(--clay-shade) 65%, transparent),
+    0 3px 0 0 var(--clay-lip),
+    0 12px 18px -10px color-mix(in oklab, var(--clay-shade) 58%, transparent),
     inset 3px 4px 8px -2px oklch(1 0 0 / 0.95),
-    inset -5px -6px 10px -5px color-mix(in oklab, var(--clay-shade) 32%, transparent);
+    inset -5px -6px 10px -5px color-mix(in oklab, var(--clay-shade) 30%, transparent);
   --clay-press:
     inset 4px 5px 10px -3px color-mix(in oklab, var(--clay-shade) 32%, transparent),
     inset -3px -3px 8px -3px oklch(1 0 0 / 0.9);
-  --well-bg: color-mix(in oklab, var(--clay-field) 45%, white);
+  --well-bg: color-mix(in oklab, var(--clay-field) 40%, white);
 }
-/* the field: soft light from the top left, a little theme colour below */
+/* the field: three soft colour clouds, one of them the theme */
 :root[data-style="clay"] body {
   background:
-    radial-gradient(60rem 40rem at 8% -10%, color-mix(in oklab, var(--clay-field) 65%, white 35%), transparent 70%),
-    radial-gradient(52rem 38rem at 100% 105%, color-mix(in oklab, var(--clay-field) 75%, var(--primary) 25%), transparent 70%),
+    radial-gradient(56rem 40rem at -5% -10%, oklch(0.9 0.07 230), transparent 68%),
+    radial-gradient(48rem 36rem at 105% 5%, color-mix(in oklab, var(--primary) 45%, oklch(0.9 0.06 330)), transparent 68%),
+    radial-gradient(60rem 42rem at 55% 115%, oklch(0.86 0.09 300), transparent 70%),
     var(--clay-field);
 }
 :root[data-style="clay"][data-appearance="dark"] body {
   background:
-    radial-gradient(60rem 40rem at 8% -10%, color-mix(in oklab, var(--clay-field) 80%, white 20%), transparent 70%),
-    radial-gradient(52rem 38rem at 100% 105%, color-mix(in oklab, var(--clay-field) 70%, var(--primary) 30%), transparent 70%),
+    radial-gradient(56rem 40rem at -5% -10%, oklch(0.36 0.1 255), transparent 68%),
+    radial-gradient(48rem 36rem at 105% 5%, color-mix(in oklab, var(--primary) 40%, oklch(0.32 0.1 320)), transparent 68%),
+    radial-gradient(60rem 42rem at 55% 115%, oklch(0.33 0.12 295), transparent 70%),
     var(--clay-field);
+}
+/* a rounded face: SF Pro Rounded on Apple devices, the app font elsewhere */
+:root[data-style="clay"] body {
+  font-family: ui-rounded, "SF Pro Rounded", var(--font-sans), system-ui, sans-serif;
+}
+:root[data-style="clay"] :is(h1, h2) {
+  font-weight: 700;
 }
 
 :root[data-style="clay"] :is(.panel, .glass, .glass-strong) {
@@ -1968,7 +2010,7 @@ select.glass-input {
   backdrop-filter: none;
 }
 :root[data-style="clay"] .panel {
-  border-radius: 1.75rem;
+  border-radius: 2rem;
 }
 @media (hover: hover) {
   :root[data-style="clay"] .panel-hover:hover {
@@ -1976,12 +2018,17 @@ select.glass-input {
     border-color: transparent;
   }
 }
+/* tiles are coloured clay, a different colour for each in a row */
 :root[data-style="clay"] .tile {
-  background: color-mix(in oklab, var(--clay-surface) 70%, var(--clay-field));
+  --tile-hue: var(--clay-1);
+  background: color-mix(in oklab, var(--tile-hue) 22%, var(--clay-surface));
   border-color: transparent;
-  border-radius: 1rem;
+  border-radius: 1.25rem;
   box-shadow: var(--clay-raise-sm);
 }
+:root[data-style="clay"] .tile:nth-child(4n + 2) { --tile-hue: var(--clay-2); }
+:root[data-style="clay"] .tile:nth-child(4n + 3) { --tile-hue: var(--clay-3); }
+:root[data-style="clay"] .tile:nth-child(4n + 4) { --tile-hue: var(--clay-4); }
 :root[data-style="clay"] .topbar {
   background: color-mix(in oklab, var(--clay-field) 88%, transparent);
   border-bottom-color: transparent;
@@ -1999,20 +2046,26 @@ select.glass-input {
 :root[data-style="clay"] [data-variant="danger"] {
   color: var(--danger);
 }
+/* the main action stands on a lip of its own colour, like a toy key */
 :root[data-style="clay"] .glow-brand {
   box-shadow:
-    0 10px 18px -10px var(--primary-glow),
-    inset 2px 4px 7px -2px oklch(1 0 0 / 0.5),
-    inset -3px -5px 9px -4px oklch(0 0 0 / 0.28);
+    0 4px 0 0 color-mix(in oklab, var(--primary) 70%, black),
+    0 14px 20px -10px var(--primary-glow),
+    inset 2px 4px 7px -2px oklch(1 0 0 / 0.55),
+    inset -3px -5px 9px -4px oklch(0 0 0 / 0.25);
 }
+/* pressed: the key goes down onto its lip */
 :root[data-style="clay"] :is([data-variant], .glow-brand):not(:disabled):active {
   box-shadow: var(--clay-press);
+  translate: 0 3px;
 }
 /* the open app in the dock is a piece of coloured clay */
 :root[data-style="clay"] [data-dock-href][aria-current="page"] {
   background: var(--grad-sunset);
   color: var(--on-sunset);
   border-color: transparent;
+  outline: 3px solid var(--clay-surface);
+  outline-offset: 0;
 }
 :root[data-style="clay"] .glass-input {
   border-color: transparent;
@@ -2024,10 +2077,17 @@ select.glass-input {
   border-radius: 9999px;
   box-shadow: var(--clay-press);
 }
+/* the selection is a coloured bead */
 :root[data-style="clay"] .segmented-pill {
-  background: var(--clay-surface);
+  background: var(--grad-sunset);
   border-radius: 9999px;
-  box-shadow: var(--clay-raise-sm);
+  box-shadow:
+    0 6px 10px -6px var(--primary-glow),
+    inset 2px 3px 5px -2px oklch(1 0 0 / 0.55),
+    inset -2px -3px 6px -3px oklch(0 0 0 / 0.25);
+}
+:root[data-style="clay"] .segmented > :is([aria-selected="true"], [aria-pressed="true"]) {
+  color: var(--on-sunset);
 }
 :root[data-style="clay"] .segmented > button {
   border-radius: 9999px;
@@ -2111,15 +2171,26 @@ select.glass-input {
   border-color: transparent;
   box-shadow: var(--neo-in-xs);
 }
+/* a ticked box is pressed in, the tick drawn in its colour */
 :root[data-style="neo"] [data-check][data-checked] {
-  box-shadow: var(--neo-out-xs);
+  background-color: var(--neo-bg);
+  box-shadow: var(--neo-in-xs);
+}
+:root[data-style="neo"] [data-check][data-checked] path {
+  stroke: var(--check-color);
 }
 
 /* ---- claymorphism ---- */
+/* icon tiles are coloured clay with a white glyph */
 :root[data-style="clay"] :is(.icon-tile, .empty-glyph) {
-  background: color-mix(in oklab, var(--primary) 16%, var(--clay-surface));
+  background: var(--grad-sunset);
+  color: var(--on-sunset);
   border-color: transparent;
-  box-shadow: var(--clay-raise-sm);
+  box-shadow:
+    0 3px 0 0 color-mix(in oklab, var(--primary) 70%, black),
+    0 12px 18px -10px var(--primary-glow),
+    inset 2px 4px 7px -2px oklch(1 0 0 / 0.55),
+    inset -3px -5px 9px -4px oklch(0 0 0 / 0.22);
 }
 :root[data-style="clay"] .empty-glyph {
   display: flex;
@@ -2129,11 +2200,23 @@ select.glass-input {
   justify-content: center;
   border-radius: 1.1rem;
 }
+/* the dock is a row of colourful app keys, like a toy phone */
 :root[data-style="clay"] .dock-key {
-  background: var(--clay-surface);
+  --key: var(--clay-1);
+  background: var(--key);
+  color: #fff;
   border-color: transparent;
-  box-shadow: var(--clay-raise-sm);
+  box-shadow:
+    0 3px 0 0 color-mix(in oklab, var(--key) 65%, black),
+    0 10px 14px -8px color-mix(in oklab, var(--key) 60%, transparent),
+    inset 2px 3px 6px -2px oklch(1 0 0 / 0.5),
+    inset -3px -4px 7px -3px oklch(0 0 0 / 0.22);
 }
+:root[data-style="clay"] [data-dock-slot]:nth-of-type(6n + 2) .dock-key { --key: var(--clay-2); }
+:root[data-style="clay"] [data-dock-slot]:nth-of-type(6n + 3) .dock-key { --key: var(--clay-3); }
+:root[data-style="clay"] [data-dock-slot]:nth-of-type(6n + 4) .dock-key { --key: var(--clay-4); }
+:root[data-style="clay"] [data-dock-slot]:nth-of-type(6n + 5) .dock-key { --key: var(--clay-5); }
+:root[data-style="clay"] [data-dock-slot]:nth-of-type(6n + 6) .dock-key { --key: var(--clay-6); }
 :root[data-style="clay"] .ring-3d {
   border-radius: 9999px;
   background: var(--clay-surface);
@@ -2164,7 +2247,7 @@ select.glass-input {
   background: radial-gradient(circle at 34% 28%, #fff 0 18%, #eef0f5 48%, #c9cdd8 100%);
 }
 /* a ticked box is a glossy bead of its colour */
-:root:is([data-style="neo"], [data-style="clay"]) [data-check][data-checked] {
+:root[data-style="clay"] [data-check][data-checked] {
   background-image:
     radial-gradient(circle at 32% 26%, oklch(1 0 0 / 0.65), oklch(1 0 0 / 0) 52%),
     linear-gradient(165deg, oklch(1 0 0 / 0.12), oklch(0 0 0 / 0.22));
