@@ -41,6 +41,8 @@ export const Button = forwardRef<HTMLButtonElement, Props>(function Button(
     <button
       ref={ref}
       disabled={disabled}
+      // the surface styles (neumorphism, claymorphism) shape buttons by variant
+      data-variant={variant}
       /* Magnetism is opt-in per element via this attribute — LightingProvider
          picks it up globally, so there is no MagneticButton wrapper to keep in
          sync with this one. Primary actions only: if everything leans toward

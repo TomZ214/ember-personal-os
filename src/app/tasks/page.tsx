@@ -72,7 +72,7 @@ export default function TasksPage() {
 
       {/* toolbar row — mirrors the Calendar page's layout rhythm */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex rounded-[11px] border border-white/[0.08] bg-white/[0.04] p-0.5">
+        <div className="segmented flex rounded-[11px] border border-white/[0.08] bg-white/[0.04] p-0.5">
           {(["board", "list"] as const).map((v) => (
             <button
               key={v}
@@ -85,7 +85,7 @@ export default function TasksPage() {
               {view === v && (
                 <motion.span
                   layoutId="task-view"
-                  className="absolute inset-0 rounded-[9px] bg-white/[0.09]"
+                  className="segmented-pill absolute inset-0 rounded-[9px] bg-white/[0.09]"
                   transition={SPRING.snappy}
                 />
               )}

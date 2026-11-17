@@ -173,7 +173,7 @@ export default function CalendarPage() {
           </button>
           <h2 className="ml-2 text-base font-semibold tracking-tight sm:text-lg">{title}</h2>
         </div>
-        <div className="flex rounded-[11px] border border-white/[0.08] bg-white/[0.04] p-0.5">
+        <div className="segmented flex rounded-[11px] border border-white/[0.08] bg-white/[0.04] p-0.5">
           {(["month", "week", "day", "agenda"] as View[]).map((v) => (
             <button
               key={v}
@@ -184,7 +184,7 @@ export default function CalendarPage() {
               }`}
             >
               {view === v && (
-                <motion.span layoutId="cal-view" className="absolute inset-0 rounded-[9px] bg-white/[0.09]"
+                <motion.span layoutId="cal-view" className="segmented-pill absolute inset-0 rounded-[9px] bg-white/[0.09]"
                   transition={SPRING.snappy} />
               )}
               <span className="relative">{t(`cal.view.${v}`)}</span>

@@ -57,7 +57,7 @@ function MailSwitch() {
     <div>
       {accounts.length > 1 && (
         <div className="mb-4 flex items-center gap-2">
-          <div className="flex rounded-[11px] border border-white/[0.08] bg-white/[0.04] p-0.5">
+          <div className="segmented flex rounded-[11px] border border-white/[0.08] bg-white/[0.04] p-0.5">
             {accounts.map((a) => {
               const on = active === a;
               const label = a === "gmail" ? "Gmail" : "iCloud";
@@ -75,7 +75,7 @@ function MailSwitch() {
                   {on && (
                     <motion.span
                       layoutId="mail-account"
-                      className="absolute inset-0 rounded-[9px] bg-white/[0.09]"
+                      className="segmented-pill absolute inset-0 rounded-[9px] bg-white/[0.09]"
                       transition={SPRING.snappy}
                     />
                   )}

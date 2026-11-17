@@ -100,7 +100,7 @@ export default function FinancePage() {
               {privacy ? <EyeOff size={15} /> : <Eye size={15} />}
             </Button>
             {bank.connected && (
-              <div className="flex rounded-[11px] border border-white/[0.08] bg-white/[0.04] p-0.5">
+              <div className="segmented flex rounded-[11px] border border-white/[0.08] bg-white/[0.04] p-0.5">
                 {(["bank", "manual"] as const).map((v) => (
                   <button
                     key={v}
@@ -113,7 +113,7 @@ export default function FinancePage() {
                     {tab === v && (
                       <motion.span
                         layoutId="fin-tab"
-                        className="absolute inset-0 rounded-[9px] bg-white/[0.09]"
+                        className="segmented-pill absolute inset-0 rounded-[9px] bg-white/[0.09]"
                         transition={SPRING.snappy}
                       />
                     )}
@@ -278,12 +278,12 @@ function AddTxn({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
     <Modal open={open} onClose={onClose} title={tr("fin.addTxn")}>
       <div className="flex flex-col gap-4">
-        <div className="flex rounded-[11px] border border-white/[0.08] bg-white/[0.04] p-0.5">
+        <div className="segmented flex rounded-[11px] border border-white/[0.08] bg-white/[0.04] p-0.5">
           {(["expense", "income"] as const).map((k) => (
             <button key={k} onClick={() => setKind(k)} aria-pressed={kind === k}
               className={`relative h-9 flex-1 rounded-[9px] text-sm font-medium transition-colors ${kind === k ? "text-ink" : "text-faint"}`}>
               {kind === k && (
-                <motion.span layoutId="txn-kind" className="absolute inset-0 rounded-[9px] bg-white/[0.09]"
+                <motion.span layoutId="txn-kind" className="segmented-pill absolute inset-0 rounded-[9px] bg-white/[0.09]"
                   transition={SPRING.snappy} />
               )}
               <span className="relative">{k === "expense" ? tr("fin.kindExpense") : tr("fin.kindIncome")}</span>

@@ -17,7 +17,7 @@ export function LanguageToggle() {
   const updateSettings = useEmber((s) => s.updateSettings);
 
   return (
-    <div className="inline-flex rounded-[12px] border border-white/[0.08] bg-white/[0.04] p-1">
+    <div className="segmented inline-flex rounded-[12px] border border-white/[0.08] bg-white/[0.04] p-1">
       {OPTIONS.map((o) => {
         const active = lang === o.value;
         return (
@@ -33,7 +33,7 @@ export function LanguageToggle() {
             {active && (
               <motion.span
                 layoutId="lang-active"
-                className="absolute inset-0 rounded-[9px] bg-white/[0.10]"
+                className="segmented-pill absolute inset-0 rounded-[9px] bg-white/[0.10]"
                 transition={SPRING.snappy}
               />
             )}

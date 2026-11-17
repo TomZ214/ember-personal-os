@@ -8,7 +8,9 @@ import { useEmber } from "@/lib/store";
  * globals.css keys off:
  *
  *   data-theme  sunset (absent) | tide | crimson | orchid | moss | dusk
- *   data-glass  on | off        — the Liquid Glass material system
+ *   data-style  glass | neo | clay — the surface material
+ *   data-glass  on | off        — the Liquid Glass material system; off
+ *                                 whenever the style is not glass
  *   data-fx     full | reduced  — the performance ceiling for effects
  *
  * The inline script in layout.tsx sets all three before first paint so the app
@@ -19,7 +21,10 @@ export function ThemeApplier() {
   const appearance = useEmber((s) => s.settings.appearance ?? "dark");
   const theme = useEmber((s) => s.settings.theme ?? "sunset");
   // both default ON — the glass look is the product, not an opt-in
-  const glass = useEmber((s) => s.settings.liquidGlass ?? true);
+  const style = useEmber((s) => s.settings.surfaceStyle ?? "glass");
+  // glass effects only exist in the glass style: neumorphism and claymorphism
+  // build on the solid surfaces, and every glass rule is gated on this
+  const glass = useEmber((s) => (s.settings.liquidGlass ?? true) && (s.settings.surfaceStyle ?? "glass") === "glass");
   const reduced = useEmber((s) => s.settings.reducedEffects ?? false);
   const language = useEmber((s) => s.settings.language ?? "en");
 
@@ -36,6 +41,10 @@ export function ThemeApplier() {
   useEffect(() => {
     document.documentElement.dataset.glass = glass ? "on" : "off";
   }, [glass]);
+
+  useEffect(() => {
+    document.documentElement.dataset.style = style;
+  }, [style]);
 
   useEffect(() => {
     document.documentElement.dataset.fx = reduced ? "reduced" : "full";

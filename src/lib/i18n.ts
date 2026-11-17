@@ -1072,6 +1072,16 @@ const en: Dict = {
 
   // appearance / gradient themes
   "theme.title": "Appearance",
+  "style.title": "Style",
+  "style.sub": "The material every surface is made of. Theme and light or dark apply to every style.",
+  "style.glass": "Liquid Glass",
+  "style.glassDesc": "Translucent, with light and depth",
+  "style.neo": "Neumorphism",
+  "style.neoDesc": "Soft, pressed from one surface",
+  "style.clay": "Claymorphism",
+  "style.clayDesc": "Playful, round and puffy",
+  "wall.onlyGlass": "Wallpapers show only in the Liquid Glass style. Neumorphism and claymorphism bring their own background.",
+  "fx.onlyGlass": "Only in the Liquid Glass style.",
   "theme.sub": "Pick the gradient EmberOS is built around. It changes buttons, highlights and the ambient glow everywhere.",
   "wall.title": "Wallpaper",
   "wall.sub":
@@ -2222,6 +2232,16 @@ const de: Dict = {
 
   // appearance / gradient themes
   "theme.title": "Erscheinungsbild",
+  "style.title": "Stil",
+  "style.sub": "Das Material aller Oberflächen. Farbverlauf sowie Hell und Dunkel gelten für jeden Stil.",
+  "style.glass": "Liquid Glass",
+  "style.glassDesc": "Durchscheinend, mit Licht und Tiefe",
+  "style.neo": "Neumorphismus",
+  "style.neoDesc": "Weich, aus einer Fläche geprägt",
+  "style.clay": "Claymorphismus",
+  "style.clayDesc": "Verspielt, rund und plastisch",
+  "wall.onlyGlass": "Hintergrundbilder gibt es nur im Stil Liquid Glass. Neumorphismus und Claymorphismus bringen ihren eigenen Hintergrund mit.",
+  "fx.onlyGlass": "Nur im Stil Liquid Glass.",
   "theme.sub": "Wähle den Farbverlauf, um den EmberOS gebaut ist. Er verändert Buttons, Akzente und das Hintergrundleuchten überall.",
   "wall.title": "Hintergrundbild",
   "wall.sub":

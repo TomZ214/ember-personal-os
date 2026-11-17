@@ -1761,3 +1761,279 @@ select.glass-input {
     border-color: oklch(0.3 0.02 27 / 0.30);
   }
 }
+
+/* ============================================================
+   Surface styles — neumorphism and claymorphism
+   (settings.surfaceStyle → data-style on <html>)
+
+   Both are solid materials, so they build on the glass-off surfaces:
+   ThemeApplier sets data-glass="off" whenever the style is not glass, and
+   with it every blur, lens ring, specular, cursor light and magnet is gone.
+   What is left here is the material itself: the page colour, the surfaces,
+   and the few controls whose shape tells you what they do (raised buttons,
+   sunken wells and tracks, the pressed state).
+
+   The theme still counts: both materials take a breath of --primary, and
+   the accent, the gradient buttons and the charts keep the theme colours.
+   Light and dark each get their own field.
+
+   Colours are mixed in oklab, never in oklch: the build rewrites oklch()
+   values to lab(), and mixing one of those with the theme colour in a polar
+   space came out with the theme's hue at full weight (a grey with 3% pink
+   rendered pink). oklab has no hue to interpolate.
+
+   Selectors start with :root[data-style] so they outrank the appearance and
+   glass-off rules above (up to 0,3,0) and, being last, win the ties.
+   ============================================================ */
+
+/* things that only make sense through glass */
+:root:is([data-style="neo"], [data-style="clay"]) :is(.ambient, .wallpaper-layer, .ambient-particles, .cursor-light) {
+  display: none;
+}
+:root:is([data-style="neo"], [data-style="clay"]) .glass-edge::before {
+  display: none;
+}
+
+/* ---- Neumorphism ------------------------------------------------------
+   One colour for the page and everything on it; shape comes only from light
+   (top left) and shade (bottom right). Raised = can be pressed or holds
+   content, sunken = takes input or shows a level.                          */
+:root[data-style="neo"] {
+  /* a trace of the theme only: neumorphism is a cool, quiet grey */
+  --neo-bg: color-mix(in oklab, var(--primary) 2.5%, oklch(0.255 0.012 265));
+  --neo-hi: oklch(1 0 0 / 0.085);
+  --neo-lo: oklch(0 0 0 / 0.55);
+  --bg: var(--neo-bg);
+  --bg-deep: var(--neo-bg);
+  --glass-bg: var(--neo-bg);
+  --glass-bg-strong: var(--neo-bg);
+  --glass-bg-nested: var(--neo-bg);
+  --neo-out: 7px 7px 16px var(--neo-lo), -6px -6px 14px var(--neo-hi);
+  --neo-out-hover: 9px 9px 20px var(--neo-lo), -8px -8px 18px var(--neo-hi);
+  --neo-out-sm: 4px 4px 9px var(--neo-lo), -3px -3px 8px var(--neo-hi);
+  --neo-in: inset 3px 3px 7px var(--neo-lo), inset -3px -3px 7px var(--neo-hi);
+  --well-bg: var(--neo-bg);
+  --well-shadow: var(--neo-in);
+}
+:root[data-style="neo"][data-appearance="light"] {
+  --neo-bg: color-mix(in oklab, var(--primary) 3%, oklch(0.925 0.016 255));
+  --neo-hi: oklch(1 0 0 / 0.9);
+  --neo-lo: oklch(0.55 0.05 260 / 0.38);
+}
+
+:root[data-style="neo"] :is(.panel, .glass, .glass-strong) {
+  background: var(--neo-bg);
+  border-color: transparent;
+  box-shadow: var(--neo-out);
+  backdrop-filter: none;
+}
+:root[data-style="neo"] .panel-hover {
+  transition: transform var(--spring-snappy-ms) var(--spring-snappy), box-shadow var(--dur-base) var(--ease-out);
+}
+@media (hover: hover) {
+  :root[data-style="neo"] .panel-hover:hover {
+    background-color: var(--neo-bg);
+    border-color: transparent;
+    box-shadow: var(--neo-out-hover);
+  }
+}
+/* a card that is pressed sinks into the page */
+:root[data-style="neo"] .panel-hover:active {
+  box-shadow: var(--neo-in);
+}
+:root[data-style="neo"] .tile {
+  background: var(--neo-bg);
+  border-color: transparent;
+  box-shadow: var(--neo-out-sm);
+}
+:root[data-style="neo"] .topbar {
+  border-bottom-color: transparent;
+  box-shadow: 0 8px 16px -12px var(--neo-lo);
+}
+
+/* controls: raised until pressed */
+:root[data-style="neo"] :is([data-variant="subtle"], [data-variant="danger"]) {
+  background: var(--neo-bg);
+  border-color: transparent;
+  box-shadow: var(--neo-out-sm);
+}
+:root[data-style="neo"] [data-variant="danger"] {
+  color: var(--danger);
+}
+@media (hover: hover) {
+  :root[data-style="neo"] :is([data-variant="subtle"], [data-variant="danger"]):hover {
+    background: var(--neo-bg);
+    box-shadow: 5px 5px 11px var(--neo-lo), -4px -4px 10px var(--neo-hi);
+  }
+}
+:root[data-style="neo"] .glow-brand {
+  box-shadow: var(--neo-out-sm);
+}
+:root[data-style="neo"] :is([data-variant], .glow-brand):not(:disabled):active {
+  box-shadow: var(--neo-in);
+}
+/* the open app in the dock is pressed in */
+:root[data-style="neo"] [data-dock-href][aria-current="page"] {
+  background: var(--neo-bg);
+  border-color: transparent;
+  box-shadow: var(--neo-in);
+}
+
+/* inputs, tracks and switches are sunken */
+:root[data-style="neo"] .glass-input {
+  border-color: transparent;
+}
+:root[data-style="neo"] .segmented {
+  background: var(--neo-bg);
+  border-color: transparent;
+  box-shadow: var(--neo-in);
+}
+:root[data-style="neo"] .segmented-pill {
+  background: var(--neo-bg);
+  box-shadow: var(--neo-out-sm);
+}
+:root[data-style="neo"] .switch-track {
+  box-shadow: var(--neo-in);
+}
+
+/* ---- Claymorphism -----------------------------------------------------
+   Puffy, rounded surfaces on a soft pastel field: an outer shadow lifts each
+   one off the page, and two inner shadows (light top left, shade bottom
+   right) make it look inflated rather than flat. Controls are pills; the
+   open app is a piece of coloured clay.                                    */
+:root[data-style="clay"] {
+  --clay-field: color-mix(in oklab, var(--primary) 13%, oklch(0.235 0.045 285));
+  --clay-surface: color-mix(in oklab, var(--primary) 10%, oklch(0.305 0.045 285));
+  --clay-raise:
+    0 20px 36px -18px oklch(0 0 0 / 0.7),
+    inset 0 1px 1px 0 oklch(1 0 0 / 0.1),
+    inset 7px 9px 16px -8px oklch(1 0 0 / 0.11),
+    inset -9px -11px 18px -8px oklch(0 0 0 / 0.42);
+  --clay-raise-sm:
+    0 9px 16px -9px oklch(0 0 0 / 0.65),
+    inset 3px 4px 8px -3px oklch(1 0 0 / 0.12),
+    inset -4px -5px 9px -4px oklch(0 0 0 / 0.38);
+  --clay-press:
+    inset 4px 5px 10px -3px oklch(0 0 0 / 0.45),
+    inset -3px -3px 8px -4px oklch(1 0 0 / 0.08);
+  --bg: var(--clay-field);
+  --bg-deep: var(--clay-field);
+  --glass-bg: var(--clay-surface);
+  --glass-bg-strong: var(--clay-surface);
+  --glass-bg-nested: var(--clay-surface);
+  --well-bg: color-mix(in oklab, var(--clay-field) 80%, black);
+  --well-shadow: var(--clay-press);
+}
+:root[data-style="clay"][data-appearance="light"] {
+  --clay-field: color-mix(in oklab, var(--primary) 13%, oklch(0.9 0.04 290));
+  --clay-surface: color-mix(in oklab, var(--primary) 5%, oklch(0.985 0.008 290));
+  --clay-shade: color-mix(in oklab, var(--primary) 35%, oklch(0.45 0.12 285));
+  --clay-raise:
+    0 22px 38px -20px color-mix(in oklab, var(--clay-shade) 70%, transparent),
+    inset 0 2px 1px 0 oklch(1 0 0 / 0.9),
+    inset 8px 10px 18px -8px oklch(1 0 0 / 0.95),
+    inset -10px -12px 22px -10px color-mix(in oklab, var(--clay-shade) 30%, transparent);
+  --clay-raise-sm:
+    0 10px 18px -10px color-mix(in oklab, var(--clay-shade) 65%, transparent),
+    inset 3px 4px 8px -2px oklch(1 0 0 / 0.95),
+    inset -5px -6px 10px -5px color-mix(in oklab, var(--clay-shade) 32%, transparent);
+  --clay-press:
+    inset 4px 5px 10px -3px color-mix(in oklab, var(--clay-shade) 32%, transparent),
+    inset -3px -3px 8px -3px oklch(1 0 0 / 0.9);
+  --well-bg: color-mix(in oklab, var(--clay-field) 45%, white);
+}
+/* the field: soft light from the top left, a little theme colour below */
+:root[data-style="clay"] body {
+  background:
+    radial-gradient(60rem 40rem at 8% -10%, color-mix(in oklab, var(--clay-field) 65%, white 35%), transparent 70%),
+    radial-gradient(52rem 38rem at 100% 105%, color-mix(in oklab, var(--clay-field) 75%, var(--primary) 25%), transparent 70%),
+    var(--clay-field);
+}
+:root[data-style="clay"][data-appearance="dark"] body {
+  background:
+    radial-gradient(60rem 40rem at 8% -10%, color-mix(in oklab, var(--clay-field) 80%, white 20%), transparent 70%),
+    radial-gradient(52rem 38rem at 100% 105%, color-mix(in oklab, var(--clay-field) 70%, var(--primary) 30%), transparent 70%),
+    var(--clay-field);
+}
+
+:root[data-style="clay"] :is(.panel, .glass, .glass-strong) {
+  background: var(--clay-surface);
+  border-color: transparent;
+  box-shadow: var(--clay-raise);
+  backdrop-filter: none;
+}
+:root[data-style="clay"] .panel {
+  border-radius: 1.75rem;
+}
+@media (hover: hover) {
+  :root[data-style="clay"] .panel-hover:hover {
+    background-color: var(--clay-surface);
+    border-color: transparent;
+  }
+}
+:root[data-style="clay"] .tile {
+  background: color-mix(in oklab, var(--clay-surface) 70%, var(--clay-field));
+  border-color: transparent;
+  border-radius: 1rem;
+  box-shadow: var(--clay-raise-sm);
+}
+:root[data-style="clay"] .topbar {
+  background: color-mix(in oklab, var(--clay-field) 88%, transparent);
+  border-bottom-color: transparent;
+}
+
+/* controls are pills of clay */
+:root[data-style="clay"] [data-variant] {
+  border-radius: 9999px;
+}
+:root[data-style="clay"] :is([data-variant="subtle"], [data-variant="danger"]) {
+  background: var(--clay-surface);
+  border-color: transparent;
+  box-shadow: var(--clay-raise-sm);
+}
+:root[data-style="clay"] [data-variant="danger"] {
+  color: var(--danger);
+}
+:root[data-style="clay"] .glow-brand {
+  box-shadow:
+    0 10px 18px -10px var(--primary-glow),
+    inset 2px 4px 7px -2px oklch(1 0 0 / 0.5),
+    inset -3px -5px 9px -4px oklch(0 0 0 / 0.28);
+}
+:root[data-style="clay"] :is([data-variant], .glow-brand):not(:disabled):active {
+  box-shadow: var(--clay-press);
+}
+/* the open app in the dock is a piece of coloured clay */
+:root[data-style="clay"] [data-dock-href][aria-current="page"] {
+  background: var(--grad-sunset);
+  color: var(--on-sunset);
+  border-color: transparent;
+}
+:root[data-style="clay"] .glass-input {
+  border-color: transparent;
+  border-radius: 0.9rem;
+}
+:root[data-style="clay"] .segmented {
+  background: var(--well-bg);
+  border-color: transparent;
+  border-radius: 9999px;
+  box-shadow: var(--clay-press);
+}
+:root[data-style="clay"] .segmented-pill {
+  background: var(--clay-surface);
+  border-radius: 9999px;
+  box-shadow: var(--clay-raise-sm);
+}
+:root[data-style="clay"] .segmented > button {
+  border-radius: 9999px;
+}
+:root[data-style="clay"] .switch-track {
+  box-shadow: var(--clay-press);
+}
+
+/* High contrast: an outline on every surface, whatever the style. */
+@media (prefers-contrast: more) {
+  :root:is([data-style="neo"], [data-style="clay"]) :is(.panel, .glass, .glass-strong, .tile, .glass-input) {
+    border-color: color-mix(in oklab, var(--ink) 40%, transparent);
+  }
+}
