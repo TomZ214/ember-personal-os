@@ -287,6 +287,8 @@ export interface Settings {
   sound?: boolean;
   /** 0..1 master volume for UI sounds */
   soundVolume?: number;
+  /** the cat's meows and purring; off unless switched on (volume follows soundVolume) */
+  petSounds?: boolean;
   /**
    * The material every surface is made of. "glass" is Liquid Glass (and the
    * liquidGlass switch below still turns it solid); "neo" is neumorphism,

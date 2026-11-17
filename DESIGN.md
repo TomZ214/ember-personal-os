@@ -173,6 +173,22 @@ with opacity below 1 is a backdrop root, exactly like one with a filter, so
 every pane inside loses its frosting until the fade ends. Entrances of panes
 are transforms; only floating chrome fades, and then on its own element.
 
+## The cat
+
+The pet (`/pet`, and a widget on the dashboard) is the one place with real
+3D: three.js through @react-three/fiber, loaded on demand. Its look follows
+the rest of the app rather than a game: soft plush materials (sheen), a
+neutral tone map so the colours stay true, a rug and toys tinted with the
+theme's `--primary`, and the canvas transparent over the pane, so the
+surface style shows through. UI over the scene (the status chip, the action
+bar) is ordinary chrome.
+
+It is gentle by design: values fall to floors and never past them, nothing
+is ever taken away, finishing tasks and habits fills a treat jar, and the
+note about a treat appears at most once every hour and a half. Sounds are
+off unless switched on. Rendering stops when the view is off screen or the
+tab hidden, and halves while the cat sleeps.
+
 ## Rules that are easy to break
 
 - Anything with a `filter` other than `none` is a backdrop root: every card

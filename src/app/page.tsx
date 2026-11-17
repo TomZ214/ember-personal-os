@@ -16,6 +16,7 @@ import { BriefingWidget } from "@/components/widgets/Briefing";
 import { FocusTimer } from "@/components/widgets/FocusTimer";
 import { GoalsGlanceWidget } from "@/components/widgets/GoalsGlance";
 import { HabitsTodayWidget } from "@/components/widgets/HabitsToday";
+import { PetWidget } from "@/components/widgets/PetWidget";
 import { QuickNoteWidget } from "@/components/widgets/QuickNote";
 import { TodayTasksWidget } from "@/components/widgets/TodayTasks";
 import { WeatherWidget } from "@/components/widgets/Weather";
@@ -119,6 +120,9 @@ export default function Dashboard() {
         </section>
         <section aria-label={t("w.quickNote")} className="lg:col-span-5">
           <QuickNoteWidget />
+        </section>
+        <section aria-label={t("nav.pet")} className="lg:col-span-7">
+          <PetWidget />
         </section>
         <section aria-label={t("nav.finance")} className="sm:col-span-2 lg:col-span-12">
           <BankGlanceWidget />

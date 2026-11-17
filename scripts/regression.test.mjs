@@ -812,3 +812,154 @@ test("depth: 3D tilt only in the solid styles, and cheap to drive", () => {
   // the tilt itself is scoped to the solid styles
   assert.ok(css.includes(':root:is([data-style="neo"], [data-style="clay"]) [data-tilting] {'));
 });
+
+/* ---- the cat ------------------------------------------------------------ */
+
+test("pet: time is kind — values fall to their floors and never past them", () => {
+  const pet = sourceLoader()("src/lib/pet.ts");
+  const t0 = Date.UTC(2026, 10, 1, 12);
+  const p = pet.newPet(t0);
+  // a month away: hungry, a bit lonely and low, but there, and rested
+  const later = pet.tickPet(p, t0 + 30 * 86_400_000);
+  assert.equal(later.fullness, pet.FLOOR.fullness);
+  assert.ok(later.mood >= pet.FLOOR.mood && later.affection >= pet.FLOOR.affection);
+  assert.equal(later.energy, 100);
+  // a few hours: a little hungrier, nothing dramatic
+  const hours = pet.tickPet(p, t0 + 3 * 3_600_000);
+  assert.ok(hours.fullness < p.fullness && hours.fullness > 50);
+  // a clock that went backwards changes nothing
+  assert.equal(pet.tickPet(p, t0 - 3_600_000), p);
+  // one meal and a stroke and things are looking up
+  const fed = pet.actOnPet(later, { kind: "feed" }, later.updatedAt);
+  assert.ok(fed.fullness >= 40 && fed.mood > later.mood);
+  const stroked = pet.actOnPet(fed, { kind: "stroke", seconds: 10 }, fed.updatedAt);
+  assert.ok(stroked.affection > fed.affection);
+  // a full cat leaves most of the bowl
+  assert.ok(pet.actOnPet({ ...fed, fullness: 95 }, { kind: "feed" }, fed.updatedAt).fullness <= 100);
+  // playing tires; it never takes energy below its floor
+  let tired = fed;
+  for (let i = 0; i < 20; i++) tired = pet.actOnPet(tired, { kind: "play", seconds: 30 }, fed.updatedAt);
+  assert.equal(tired.energy, pet.FLOOR.energy);
+  // no treat to give, nothing changes
+  const none = { ...fed, treats: 0 };
+  assert.equal(pet.actOnPet(none, { kind: "treat" }, fed.updatedAt), none);
+});
+
+test("pet: stored records are cleaned, whatever they hold", () => {
+  const pet = sourceLoader()("src/lib/pet.ts");
+  const clean = pet.withPetDefaults({ name: "  " + "x".repeat(60), coat: "dragon", fullness: Number.NaN, mood: 500, energy: -9, treats: 999, rewarded: ["t:1", 7] });
+  assert.equal(clean.name.length, 24);
+  assert.equal(clean.coat, "tabby");
+  assert.equal(clean.mood, 100);
+  assert.equal(clean.energy, pet.FLOOR.energy);
+  assert.equal(clean.treats, pet.MAX_TREATS);
+  assert.deepEqual([...clean.rewarded], ["t:1"]);
+  assert.ok(Number.isFinite(clean.fullness));
+  assert.equal(pet.withPetDefaults(undefined).name, "Mochi");
+});
+
+test("pet: finishing things earns treats, once each, and never costs one", () => {
+  const { useEmber } = sourceLoader({}, { window: {} })("src/lib/store.ts");
+  const { todayKey } = sourceLoader()("src/lib/dates.ts");
+  const s = () => useEmber.getState();
+  const start = s().pet.treats;
+  s().addTask({ title: "Write report" });
+  const id = s().tasks[0].id;
+  s().updateTask(id, { status: "done" });
+  assert.equal(s().pet.treats, start + 1);
+  // unticked and ticked again: no second treat, and the first one stays
+  s().updateTask(id, { status: "todo" });
+  assert.equal(s().pet.treats, start + 1);
+  s().updateTask(id, { status: "done" });
+  assert.equal(s().pet.treats, start + 1);
+  // dragged into Done on the board counts too
+  s().addTask({ title: "Second" });
+  s().moveTask(s().tasks[0].id, "done");
+  assert.equal(s().pet.treats, start + 2);
+  // a habit kept today earns one; back-filling an old day does not
+  s().addHabit({ name: "Read", color: "sky", icon: "book" });
+  const h = s().habits[0].id;
+  s().toggleHabit(h, "2020-01-01");
+  assert.equal(s().pet.treats, start + 2);
+  s().toggleHabit(h, todayKey());
+  s().toggleHabit(h, todayKey());
+  s().toggleHabit(h, todayKey());
+  assert.equal(s().pet.treats, start + 3);
+  // giving a treat takes it from the jar
+  s().petAct({ kind: "treat" });
+  assert.equal(s().pet.treats, start + 2);
+  // the jar has a lid
+  for (let i = 0; i < 60; i++) {
+    s().addTask({ title: `t${i}` });
+    s().updateTask(s().tasks[0].id, { status: "done" });
+  }
+  assert.equal(s().pet.treats, 30);
+  // a snapshot from another device brings its cat along, cleaned
+  s().applyCloudState({ pet: { name: "Luna", coat: "calico", treats: 4 } });
+  assert.equal(s().pet.name, "Luna");
+  assert.equal(s().pet.coat, "calico");
+  assert.equal(s().pet.fullness, 75);
+  // and one from an older version without a cat leaves this one alone
+  s().applyCloudState({ tasks: s().tasks });
+  assert.equal(s().pet.name, "Luna");
+  // name and coat are checked on the way in
+  s().updatePet({ name: "", coat: "unicorn" });
+  assert.equal(s().pet.name, "Luna");
+  assert.equal(s().pet.coat, "calico");
+});
+
+test("pet: the cat syncs, its sounds start off, and three.js loads only on demand", () => {
+  const cloud = readFileSync(path.join(root, "src/lib/cloud.ts"), "utf8");
+  assert.match(cloud, /pet: s\.pet,/);
+  const store = readFileSync(path.join(root, "src/lib/store.ts"), "utf8");
+  assert.match(store, /pet: withPetDefaults\(p\.pet\)/, "older saves get a cat");
+  assert.ok(!/petSounds:\s*true/.test(store), "cat sounds are off unless switched on");
+  assert.match(readFileSync(path.join(root, "src/components/pet/catSounds.ts"), "utf8"), /settings\.petSounds/);
+
+  // three.js and the 3D modules are reachable only through the lazy, client-only import
+  const lazy = readFileSync(path.join(root, "src/components/pet/LazyPetScene.tsx"), "utf8");
+  assert.match(lazy, /dynamic\(\(\) => import\("\.\/PetScene"\), \{ ssr: false/);
+  const { readdirSync, statSync } = require("node:fs");
+  const files = [];
+  const walk = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const full = path.join(dir, name);
+      if (statSync(full).isDirectory()) walk(full);
+      else if (/\.tsx?$/.test(name)) files.push(full);
+    }
+  };
+  walk(path.join(root, "src"));
+  const threeInside = new Set(["PetScene.tsx", "room.ts", "rig.ts", "brain.ts", "coats.ts"].map((f) => path.join(root, "src/components/pet", f)));
+  const offenders = [];
+  for (const file of files) {
+    const text = readFileSync(file, "utf8");
+    if (/from "(three|@react-three\/[\w-]+)"/.test(text) && !threeInside.has(file)) offenders.push(path.relative(root, file));
+    // anything else may only take types from the 3D modules
+    if (!threeInside.has(file) && /^import (?!type )[^;]*from "(@\/components\/pet|\.)\/(PetScene|room|rig|brain|coats)"/m.test(text)) offenders.push(`${path.relative(root, file)} imports a 3D module`);
+  }
+  // (coats.ts paints with three.js: the coat picker takes its colours from palettes.ts instead)
+  assert.deepEqual(offenders, []);
+});
+
+test("pet: every text exists in English and German", () => {
+  const files = ["src/app/pet/page.tsx", "src/components/pet/PetUI.tsx", "src/components/widgets/PetWidget.tsx", "src/components/pet/PetRewardNote.tsx"];
+  const src = files.map((f) => readFileSync(path.join(root, f), "utf8")).join("\n");
+  const keys = new Set([...src.matchAll(/(?:t|say)\("((?:pet|w)\.[\w.]+)"/g)].map((m) => m[1]));
+  const dynamic = {
+    "pet.stat.": ["fullness", "mood", "energy", "affection"],
+    "pet.mood.": ["delighted", "happy", "content", "meh", "low"],
+    "pet.need.": ["hungry", "tired", "lonely", "bored"],
+    "pet.status.": ["relaxing", "exploring", "sleeping", "eating", "playing", "purring", "grooming", "hungry", "greeting"],
+    "pet.coat.": ["tabby", "ginger", "black", "white", "grey", "calico"],
+  };
+  for (const [prefix, names] of Object.entries(dynamic)) for (const k of names) keys.add(prefix + k);
+  for (const k of ["pet.todayOne", "pet.todayMany", "pet.treatOne", "pet.treatMany"]) keys.add(k);
+  assert.ok(keys.size > 50);
+  const i18n = readFileSync(path.join(root, "src/lib/i18n.ts"), "utf8");
+  const deStart = i18n.indexOf("const de: Dict");
+  const en = i18n.slice(0, deStart), de = i18n.slice(deStart);
+  for (const k of [...keys, "nav.pet"]) {
+    assert.ok(en.includes(`"${k}":`), `missing English text ${k}`);
+    assert.ok(de.includes(`"${k}":`), `missing German text ${k}`);
+  }
+});

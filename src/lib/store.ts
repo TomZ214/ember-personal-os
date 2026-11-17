@@ -6,6 +6,7 @@ import { dayKey, todayKey } from "./dates";
 import { advanceEnd, nextOccurrence as ruleNext, ruleExhausted, ruleForTask } from "./recurrence";
 import { purgeSeedData } from "./migrations";
 import { cleanProfile, emptyNutrition, type FoodEntry, type Food, type Meal, type NutritionProfile, type NutritionState } from "./nutrition";
+import { actOnPet, COATS, habitRewardKey, newPet, rewardPet, taskRewardKey, withPetDefaults, type PetAction, type PetState } from "./pet";
 import type {
   Alarm, Briefing, EventItem, FileMeta, Folder, Goal, Habit, Mail, Note, Settings, Subscription, Task, Txn,
 } from "./types";
@@ -64,6 +65,8 @@ export interface CloudData {
   alarms?: Alarm[];
   /** calorie tracker: entries, own foods, water, weight, profile */
   nutrition?: NutritionState;
+  /** the cat: its values, name, coat and the treats it has earned */
+  pet?: PetState;
   settings: Settings;
   /** yyyy-MM-dd → how many completed tasks were auto-purged that day, so the
    *  activity chart keeps its history after the tasks themselves are gone */
@@ -88,6 +91,7 @@ interface EmberState {
   files: FileMeta[];
   alarms: Alarm[];
   nutrition: NutritionState;
+  pet: PetState;
 
   briefing: Briefing | null;
   settings: Settings;
@@ -169,6 +173,13 @@ interface EmberState {
   deleteWeight: (day: string) => void;
   updateNutritionProfile: (patch: Partial<NutritionProfile>) => void;
 
+  /** something happened to the cat (fed, stroked, played with…) */
+  petAct: (action: PetAction) => void;
+  /** name and coat */
+  updatePet: (patch: Partial<Pick<PetState, "name" | "coat">>) => void;
+  /** someone looked in on the cat; returns when they last did before */
+  seePet: () => number;
+
   setBriefing: (b: Briefing | null) => void;
 
   updateSettings: (patch: Partial<Settings>) => void;
@@ -195,6 +206,7 @@ export const useEmber = create<EmberState>()(
       files: [],
       alarms: [],
       nutrition: emptyNutrition(),
+      pet: newPet(),
 
       briefing: null,
       completionLog: {},
@@ -226,6 +238,7 @@ export const useEmber = create<EmberState>()(
         // a snapshot from a device on an older version may carry a partial
         // nutrition slice; fill in whatever it lacks instead of crashing on it
         if (data.nutrition) slices.nutrition = withNutritionDefaults(data.nutrition);
+        if (data.pet) slices.pet = withPetDefaults(data.pet);
         set(slices);
       },
 
@@ -247,6 +260,7 @@ export const useEmber = create<EmberState>()(
       updateTask: (id, patch) =>
         set((s) => {
           const spawned: Task[] = [];
+          let pet = s.pet;
           const tasks = s.tasks.map((t) => {
             if (t.id !== id) return t;
             const next = { ...t, ...patch, updatedAt: new Date().toISOString() };
@@ -254,11 +268,13 @@ export const useEmber = create<EmberState>()(
               next.completedAt = new Date().toISOString();
               const repeat = nextTaskOccurrence(next, Math.min(0, ...s.tasks.map((x) => x.order)) - 1);
               if (repeat) spawned.push(repeat);
+              // something done: the cat gets a treat (once per task, ever)
+              pet = rewardPet(pet, taskRewardKey(t.id));
             }
             if (patch.status && patch.status !== "done") next.completedAt = undefined;
             return next;
           });
-          return { tasks: [...spawned, ...tasks] };
+          return pet === s.pet ? { tasks: [...spawned, ...tasks] } : { tasks: [...spawned, ...tasks], pet };
         }),
       deleteTask: (id) => set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) })),
       purgeCompletedTasks: () => {
@@ -311,12 +327,14 @@ export const useEmber = create<EmberState>()(
             status === "done" && moving.status !== "done"
               ? nextTaskOccurrence(dropped, Math.min(0, ...s.tasks.map((x) => x.order)) - 1)
               : null;
+          const finished = status === "done" && moving.status !== "done";
           return {
             tasks: [
               ...(repeat ? [repeat] : []),
               ...rest.filter((t) => t.status !== status),
               ...reordered,
             ],
+            ...(finished ? { pet: rewardPet(s.pet, taskRewardKey(moving.id)) } : {}),
           };
         }),
 
@@ -347,15 +365,22 @@ export const useEmber = create<EmberState>()(
           habits: [...s.habits, { ...h, id: uid(), log: {}, createdAt: new Date().toISOString() }],
         })),
       toggleHabit: (id, day) =>
-        set((s) => ({
-          habits: s.habits.map((h) => {
+        set((s) => {
+          let kept = false;
+          const habits = s.habits.map((h) => {
             if (h.id !== id) return h;
             const log = { ...h.log };
             if (log[day]) delete log[day];
-            else log[day] = true;
+            else {
+              log[day] = true;
+              kept = true;
+            }
             return { ...h, log };
-          }),
-        })),
+          });
+          // a habit kept today earns a treat; back-filling old days does not,
+          // and unticking never takes one away
+          return kept && day === todayKey() ? { habits, pet: rewardPet(s.pet, habitRewardKey(id, day)) } : { habits };
+        }),
       deleteHabit: (id) => set((s) => ({ habits: s.habits.filter((h) => h.id !== id) })),
 
       addGoal: (g) => set((s) => ({ goals: [...s.goals, { ...g, id: uid() }] })),
@@ -494,6 +519,26 @@ export const useEmber = create<EmberState>()(
       updateNutritionProfile: (patch) =>
         set((s) => ({ nutrition: { ...s.nutrition, profile: cleanProfile({ ...s.nutrition.profile, ...patch }) } })),
 
+      petAct: (action) =>
+        set((s) => {
+          const pet = actOnPet(s.pet, action);
+          return pet === s.pet ? s : { pet };
+        }),
+      updatePet: (patch) =>
+        set((s) => {
+          // a blank name or an unknown coat keeps what the cat already has
+          const name = patch.name?.trim() ? patch.name : s.pet.name;
+          const coat = patch.coat && COATS.includes(patch.coat) ? patch.coat : s.pet.coat;
+          return { pet: withPetDefaults({ ...s.pet, name, coat }) };
+        }),
+      seePet: () => {
+        const before = get().pet.lastSeen;
+        const now = Date.now();
+        // a glance is not news: only write (and sync) when it has been a while
+        if (now - before > 5 * 60_000) set((s) => ({ pet: { ...s.pet, lastSeen: now } }));
+        return before;
+      },
+
       setBriefing: (b) => set({ briefing: b }),
 
       updateSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
@@ -537,7 +582,7 @@ export const useEmber = create<EmberState>()(
       // older shape; deep-fill that one slice
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<EmberState>;
-        return { ...current, ...p, nutrition: withNutritionDefaults(p.nutrition) };
+        return { ...current, ...p, nutrition: withNutritionDefaults(p.nutrition), pet: withPetDefaults(p.pet) };
       },
       onRehydrateStorage: () => (state) => {
         state?.setHydrated();
