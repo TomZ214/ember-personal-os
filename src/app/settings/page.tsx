@@ -207,7 +207,7 @@ function ConnectionsLink() {
 
   return (
     <Link href="/settings/connections" className="panel panel-hover flex items-center gap-4 p-5">
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-accent/12 text-accent">
+      <span className="icon-tile flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-accent/12 text-accent">
         <Link2 size={19} />
       </span>
       <span className="min-w-0 flex-1">

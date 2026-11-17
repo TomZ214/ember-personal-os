@@ -12,6 +12,7 @@ import { ResizeHandles } from "@/components/desktop/ResizeHandles";
 import { AlarmEngine } from "@/components/alarm/AlarmEngine";
 import { AmbientParticles } from "./AmbientParticles";
 import { LightingProvider } from "./LightingProvider";
+import { DepthProvider } from "./DepthProvider";
 import { Wallpaper } from "./Wallpaper";
 import { Shortcuts } from "./Shortcuts";
 import { BootSequence } from "./BootSequence";
@@ -48,6 +49,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       {/* the slowest parallax layer — the wash or picture everything sits on */}
       <Wallpaper />
       <LightingProvider />
+      <DepthProvider />
       <AmbientParticles />
       <TopBar />
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 pb-32 pt-6 sm:px-6 md:pb-[calc(6.5rem+max(1rem,env(safe-area-inset-bottom)))]">

@@ -97,6 +97,17 @@ are the last section of `globals.css`:
   pill buttons, the open dock app as a piece of coloured clay.
 
 Both have a light and a dark field and take a little of the theme colour.
+
+Depth (the "Depth" section after them) is what makes the solid styles read
+as objects: icon tiles, the empty-state glyph and the dock keys are little
+3D keys (`.icon-tile`, `.empty-glyph`, `.dock-key`); rings sit on a raised
+disc with a sunken middle (`.ring-3d`), bars and progress fills are shaded
+like cylinders, the switch knob is a ball and a ticked box a glossy bead.
+Cards tilt in 3D (`DepthProvider`): `.panel-hover` and `[data-tilt]` turn
+toward a hovering pointer and go in under a press or a held finger (80 ms,
+so a scroll never tilts). Never reading panes: a 3D-transformed layer
+renders its text softly. Off in Liquid Glass (the blur would have to be
+redone every frame), with reduced effects and with reduced motion.
 Controls are shaped through hooks, not component styles: `data-variant` on
 `Button`, `.segmented` / `.segmented-pill` on every segmented control,
 `.switch-track`. Every rule there starts with `:root[data-style=…]` (a test

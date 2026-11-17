@@ -226,7 +226,7 @@ function EntryCard({ entry, onDelete }: { entry: VaultEntry; onDelete: () => voi
       className="panel panel-hover group p-4"
     >
       <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-muted">
+        <span className="icon-tile flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-muted">
           <Icon size={17} />
         </span>
         <div className="min-w-0 flex-1">

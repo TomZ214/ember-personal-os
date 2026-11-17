@@ -120,7 +120,7 @@ export function MobileTabs() {
                         onClick={() => setAppsOpen(false)}
                         className="pressable flex flex-col items-center gap-2 rounded-2xl py-3 active:bg-white/[0.07]"
                       >
-                        <span className="flex h-12 w-12 items-center justify-center rounded-[15px] border border-white/[0.10] bg-white/[0.06]">
+                        <span className="icon-tile flex h-12 w-12 items-center justify-center rounded-[15px] border border-white/[0.10] bg-white/[0.06]">
                           <Icon size={21} strokeWidth={1.8} />
                         </span>
                         <span className="text-[11px] text-muted">{t(`nav.${nav.key}`)}</span>

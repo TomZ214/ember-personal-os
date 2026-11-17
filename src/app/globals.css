@@ -1103,6 +1103,11 @@ html[data-nav="back"] .page-enter .rise {
   .boot-curtain { display: none; }
 }
 
+/* a checked tick glows in its own colour (CheckMark) */
+[data-check][data-checked] {
+  box-shadow: 0 0 14px -2px var(--check-color);
+}
+
 /* ---- data settling in -------------------------------------------------------
    Bars grow out of their baseline when a chart appears: a transform on the
    compositor, staggered by --i. Animating `height` or `width` instead re-laid
@@ -2036,4 +2041,144 @@ select.glass-input {
   :root:is([data-style="neo"], [data-style="clay"]) :is(.panel, .glass, .glass-strong, .tile, .glass-input) {
     border-color: color-mix(in oklab, var(--ink) 40%, transparent);
   }
+}
+
+/* ---- Depth: real 3D in the solid styles --------------------------------
+   Liquid Glass gets its depth from light; the solid styles get it from
+   form. Everything here is static paint or a transform, so it costs nothing
+   while the page is still:
+   • icon tiles, the empty-state glyph and the dock keys are little 3D keys;
+   • rings sit on a raised disc with a sunken middle, bars and progress
+     fills are shaded like cylinders, the switch knob is a ball, a ticked
+     box a glossy bead;
+   • cards tilt in 3D (DepthProvider): toward a hovering pointer, and in
+     under a pressing one or a held finger.                                 */
+@property --tilt-x { syntax: "<number>"; inherits: false; initial-value: 0; }
+@property --tilt-y { syntax: "<number>"; inherits: false; initial-value: 0; }
+@property --tilt-sign { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --tilt-z { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --tilt-max { syntax: "<angle>"; inherits: false; initial-value: 4deg; }
+
+:root:is([data-style="neo"], [data-style="clay"]) [data-tilt] {
+  transition: transform var(--spring-smooth-ms) var(--spring-smooth), box-shadow var(--dur-base) var(--ease-out);
+}
+:root:is([data-style="neo"], [data-style="clay"]) [data-tilting] {
+  transform: perspective(900px)
+    rotateX(calc(var(--tilt-y) * var(--tilt-max) * var(--tilt-sign)))
+    rotateY(calc(var(--tilt-x) * var(--tilt-max) * var(--tilt-sign) * -1))
+    translateZ(var(--tilt-z));
+  transition: transform 160ms var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
+  will-change: transform;
+}
+
+/* ---- neumorphism ---- */
+:root[data-style="neo"] {
+  --neo-out-xs: 2px 2px 4px var(--neo-lo), -2px -2px 4px var(--neo-hi);
+  --neo-in-xs: inset 1.5px 1.5px 3px var(--neo-lo), inset -1.5px -1.5px 3px var(--neo-hi);
+}
+:root[data-style="neo"] :is(.icon-tile, .dock-key) {
+  background: var(--neo-bg);
+  border-color: transparent;
+  box-shadow: var(--neo-out-sm);
+}
+:root[data-style="neo"] .empty-glyph {
+  display: flex;
+  width: 3rem;
+  height: 3rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  background: var(--neo-bg);
+  box-shadow: var(--neo-out-sm);
+}
+:root[data-style="neo"] .ring-3d {
+  border-radius: 9999px;
+  background: var(--neo-bg);
+  box-shadow: var(--neo-out);
+}
+:root[data-style="neo"] .ring-3d::before {
+  content: "";
+  position: absolute;
+  inset: calc(var(--ring-stroke, 6px) + 4px);
+  border-radius: 9999px;
+  box-shadow: var(--neo-in);
+}
+:root[data-style="neo"] .bar-track {
+  background: var(--neo-bg);
+  box-shadow: var(--neo-in-xs);
+}
+:root[data-style="neo"] [data-check] {
+  border-color: transparent;
+  box-shadow: var(--neo-in-xs);
+}
+:root[data-style="neo"] [data-check][data-checked] {
+  box-shadow: var(--neo-out-xs);
+}
+
+/* ---- claymorphism ---- */
+:root[data-style="clay"] :is(.icon-tile, .empty-glyph) {
+  background: color-mix(in oklab, var(--primary) 16%, var(--clay-surface));
+  border-color: transparent;
+  box-shadow: var(--clay-raise-sm);
+}
+:root[data-style="clay"] .empty-glyph {
+  display: flex;
+  width: 3.25rem;
+  height: 3.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1.1rem;
+}
+:root[data-style="clay"] .dock-key {
+  background: var(--clay-surface);
+  border-color: transparent;
+  box-shadow: var(--clay-raise-sm);
+}
+:root[data-style="clay"] .ring-3d {
+  border-radius: 9999px;
+  background: var(--clay-surface);
+  box-shadow: var(--clay-raise);
+}
+:root[data-style="clay"] .ring-3d::before {
+  content: "";
+  position: absolute;
+  inset: calc(var(--ring-stroke, 6px) + 4px);
+  border-radius: 9999px;
+  box-shadow: var(--clay-press);
+}
+:root[data-style="clay"] .bar-track {
+  background: var(--well-bg);
+  box-shadow: var(--clay-press);
+}
+:root[data-style="clay"] [data-check] {
+  border-color: transparent;
+  box-shadow: var(--clay-press);
+}
+:root[data-style="clay"] [data-check][data-checked] {
+  box-shadow: 0 4px 6px -3px oklch(0 0 0 / 0.35);
+}
+
+/* ---- shared: balls, beads and cylinders ---- */
+/* the switch knob is a ball lit from the top left */
+:root:is([data-style="neo"], [data-style="clay"]) .switch-knob {
+  background: radial-gradient(circle at 34% 28%, #fff 0 18%, #eef0f5 48%, #c9cdd8 100%);
+}
+/* a ticked box is a glossy bead of its colour */
+:root:is([data-style="neo"], [data-style="clay"]) [data-check][data-checked] {
+  background-image:
+    radial-gradient(circle at 32% 26%, oklch(1 0 0 / 0.65), oklch(1 0 0 / 0) 52%),
+    linear-gradient(165deg, oklch(1 0 0 / 0.12), oklch(0 0 0 / 0.22));
+}
+/* progress fills and horizontal bars: lit along the top, shaded underneath */
+:root:is([data-style="neo"], [data-style="clay"]) :is(.bar-fill, .grow-x) {
+  box-shadow:
+    inset 0 1.5px 1.5px -0.5px oklch(1 0 0 / 0.55),
+    inset 0 -2px 2px -1px oklch(0 0 0 / 0.28);
+}
+/* columns: lit on the left, shaded on the right, standing on the panel */
+:root:is([data-style="neo"], [data-style="clay"]) .grow-y {
+  box-shadow:
+    inset 3px 0 4px -1px oklch(1 0 0 / 0.45),
+    inset -4px 0 5px -2px oklch(0 0 0 / 0.3),
+    2px 3px 6px -2px oklch(0 0 0 / 0.35);
 }

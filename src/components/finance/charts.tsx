@@ -21,7 +21,7 @@ export function SummaryCard({ label, value, amount, format, tone, icon, blur }: 
   blur?: boolean;
 }) {
   return (
-    <div className="panel p-4">
+    <div data-tilt className="panel p-4">
       <p className="flex items-center gap-1.5 text-xs font-medium text-muted">
         {icon && <span style={{ color: tone }}>{icon}</span>}
         {label}

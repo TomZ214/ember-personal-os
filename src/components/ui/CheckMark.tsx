@@ -36,11 +36,18 @@ export function CheckMark({ checked, color = "var(--success)", shape = "box", si
       className={`relative flex shrink-0 items-center justify-center border transition-[background-color,border-color,box-shadow] duration-200 ${
         shape === "round" ? "rounded-full" : "rounded-md"
       } ${checked ? "border-transparent" : "border-white/25"} ${className}`}
-      style={{
-        width: size,
-        height: size,
-        ...(checked ? { background: color, boxShadow: `0 0 14px -2px ${color}` } : null),
-      }}
+      // the fill is a colour, not a `background` shorthand, and the glow
+      // lives in CSS: that leaves room for the solid styles to shade the
+      // tick into a little sphere (globals.css, "Depth")
+      data-checked={checked || undefined}
+      style={
+        {
+          width: size,
+          height: size,
+          "--check-color": color,
+          ...(checked ? { backgroundColor: color } : null),
+        } as React.CSSProperties
+      }
     >
       <AnimatePresence initial={false}>
         {checked && (

@@ -103,7 +103,7 @@ function HabitRow({ habit }: { habit: Habit }) {
     <div className="panel p-5">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
         <div className="flex min-w-44 flex-1 items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-[14px] text-xl"
+          <span className="icon-tile flex h-11 w-11 items-center justify-center rounded-[14px] text-xl"
             style={{ background: `color-mix(in oklch, ${c} 14%, transparent)` }}>
             {habit.emoji}
           </span>
