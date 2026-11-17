@@ -36,16 +36,16 @@ export function CheckMark({ checked, color = "var(--success)", shape = "box", si
       className={`relative flex shrink-0 items-center justify-center border transition-[background-color,border-color,box-shadow] duration-200 ${
         shape === "round" ? "rounded-full" : "rounded-md"
       } ${checked ? "border-transparent" : "border-white/25"} ${className}`}
-      // the fill is a colour, not a `background` shorthand, and the glow
-      // lives in CSS: that leaves room for the solid styles to shade the
-      // tick into a little sphere (globals.css, "Depth")
+      // fill and glow come from CSS ([data-check][data-checked], globals.css)
+      // through --check-color, so a surface style can replace them: a bead
+      // in claymorphism, a pressed-in box with a coloured tick in
+      // neumorphism
       data-checked={checked || undefined}
       style={
         {
           width: size,
           height: size,
           "--check-color": color,
-          ...(checked ? { backgroundColor: color } : null),
         } as React.CSSProperties
       }
     >

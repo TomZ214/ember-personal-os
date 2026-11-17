@@ -90,11 +90,19 @@ set `data-glass="off"`, so every glass rule, the cursor light and the magnets
 are gone, and wallpaper, ambient glow and particles are hidden. The materials
 are the last section of `globals.css`:
 
-- Neumorphism: the page and every surface share one cool grey; raised
-  surfaces and buttons, sunken inputs, tracks and switches, the open dock app
-  pressed in.
-- Claymorphism: a pastel field, puffy surfaces with inner light and shade,
-  pill buttons, the open dock app as a piece of coloured clay.
+- Neumorphism is monochrome and quiet: the page and every surface share one
+  cool grey, shape comes only from an equal pair of light and shade. No
+  coloured surfaces, the main action included: a raised grey key whose label
+  carries the accent. Sunken inputs, tracks, ticked boxes and the open dock
+  app.
+- Claymorphism is the opposite, colour and volume: a field of three colour
+  clouds, chunky, very round surfaces that look inflated and stand on a solid
+  lip with a coloured shadow under them, colourful dock keys and tiles, the
+  selection and main action as coloured clay that goes down onto its lip
+  when pressed, and a rounded typeface (SF Pro Rounded on Apple devices).
+
+The two must never drift together: if a change makes neumorphism colourful
+or claymorphism grey, it is in the wrong style.
 
 Both have a light and a dark field and take a little of the theme colour.
 
