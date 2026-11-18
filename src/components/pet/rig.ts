@@ -266,14 +266,14 @@ export class CatRig {
     const side = f.wrapSide;
     const gaitBob = Math.sin(f.phase * 2) * 0.25 * walk;
 
-    const pelvisDy = -14.5 * sit - 12.6 * P.loaf - 16.5 * P.curl + 1.2 * P.stretch - 8.5 * P.crouch - 1.2 * P.eat + gaitBob;
+    const pelvisDy = -14.5 * sit - 10.5 * P.loaf - 11 * P.curl + 1.2 * P.stretch - 8.5 * P.crouch - 1.2 * P.eat - 2.5 * run + gaitBob;
     const pelvisDz = 1.5 * sit + 1 * P.loaf - 1.5 * P.stretch + 2 * P.curl;
     b.pelvis.position.y += pelvisDy * CM + f.lift;
     b.pelvis.position.z += pelvisDz * CM;
     b.pelvis.position.x += Math.sin(t * 160) * 0.03 * CM * P.purr;
     this.setRot(
       b.pelvis,
-      -0.76 * sit + 0.03 * P.loaf + 0.36 * P.stretch + 0.07 * P.crouch + 0.1 * P.eat - 0.12 * P.leap + Math.sin(f.phase) * 0.08 * run,
+      -0.55 * sit + 0.03 * P.loaf + 0.36 * P.stretch + 0.07 * P.crouch + 0.1 * P.eat - 0.12 * P.leap + Math.sin(f.phase) * 0.08 * run,
       Math.sin(t * 17) * 0.12 * f.wiggle,
       // asleep: on its side, and curled belly-in into a ring
       1.15 * P.curl * side,
@@ -282,7 +282,7 @@ export class CatRig {
     const curlYaw = 0.12 * P.curl * side;
     this.setRot(b.spine1, -0.1 * sit + 0.06 * P.stretch - 0.04 * P.crouch + curl - Math.sin(f.phase) * 0.06 * run, curlYaw + Math.sin(f.phase) * 0.03 * walk, 0);
     this.setRot(b.spine2, -0.08 * sit + 0.08 * P.stretch + curl + breath * 0.008, curlYaw, 0);
-    this.setRot(b.chest, 0.28 * sit + 0.05 * P.loaf - 0.05 * P.stretch + 0.06 * P.eat + 0.05 * P.crouch + curl, curlYaw, 0);
+    this.setRot(b.chest, 0.18 * sit + 0.05 * P.loaf - 0.05 * P.stretch + 0.06 * P.eat + 0.05 * P.crouch + curl, curlYaw, 0);
 
     /* ---- head: posture, then where it is looking ---- */
     this.root.updateMatrixWorld(true);
@@ -303,8 +303,8 @@ export class CatRig {
 
     const chew = P.eat * Math.max(0, Math.sin(t * 10)) * 0.08;
     const lick = P.groom * Math.sin(t * 8.5) * 0.07;
-    const neckPitch = 0.4 * sit + 0.1 * P.loaf - 0.4 * P.stretch + 0.28 * P.crouch + 0.95 * P.eat + 0.42 * P.groom + 0.8 * P.curl;
-    const headPitch = 0.25 * sit - 0.2 * P.stretch - 0.3 * P.crouch + 0.35 * P.eat + 0.3 * P.groom + 0.45 * P.curl + P.headPitch + chew + lick;
+    const neckPitch = 0.33 * sit + 0.1 * P.loaf - 0.4 * P.stretch + 0.28 * P.crouch + 0.95 * P.eat + 0.42 * P.groom + 0.8 * P.curl;
+    const headPitch = 0.22 * sit - 0.2 * P.stretch - 0.3 * P.crouch + 0.35 * P.eat + 0.3 * P.groom + 0.45 * P.curl + P.headPitch + chew + lick;
     const neckYaw = 0.15 * P.curl * side - 0.35 * P.groom;
     const headYaw = 0.1 * P.curl * side - 0.2 * P.groom + P.headYaw;
     this.setRot(b.neck, neckPitch + this.lookPitch * 0.4, neckYaw + this.lookYaw * 0.4, 0);
@@ -321,13 +321,17 @@ export class CatRig {
     /* ---- legs: each paw reaches for its place ---- */
     const sitW = clamp01(sit + P.loaf + P.curl);
     // a planted paw sweeps back half a stride while the body moves over it
-    const strideCm = ((strideFor(f.speed) / 4) * walk) / CM;
+    const strideCm = ((strideFor(f.speed) / 4) * clamp01(f.speed / 0.08)) / CM;
     const rootQ = this.root.getWorldQuaternion(this.q3);
     for (const leg of this.legs) {
       const u = (f.phase / (Math.PI * 2) + mix(leg.walk, leg.bound, run)) * Math.PI * 2;
       // swing (paw in the air, going forward) for the first half, stance after
-      const along = -Math.cos(u) * strideCm;
-      const lift = Math.max(0, Math.sin(u)) * (2.2 + 2 * run) * walk;
+      const um = ((u % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+      const swing = um < Math.PI;
+      // in the air the paw swings forward (eased); on the ground it sweeps back at
+      // the body's own pace, so it does not slide
+      const along = swing ? -Math.cos(um) * strideCm : strideCm * (1 - (2 * (um - Math.PI)) / Math.PI);
+      const lift = swing ? Math.sin(um) * (2.2 + 2 * run) * walk : 0;
       // turning on the spot: little steps in place
       const shuffle = Math.max(0, Math.sin(t * 9 + leg.walk * 6.3)) * 1.2 * clamp01(Math.abs(f.turn) / 2) * (1 - walk);
 
@@ -391,7 +395,7 @@ export class CatRig {
       // almond, not round: the lids never open all the way
       e.upper.rotation.x = -0.74 * lidOpen;
       e.lower.rotation.x = 0.34 * lidOpen;
-      e.ball.rotation.set(-this.lookPitch * 0.25, this.lookYaw * 0.25, 0);
+      e.ball.rotation.set(this.lookPitch * 0.25, this.lookYaw * 0.25, 0);
     }
     this.dilate.value = clamp01(P.pupil);
 
@@ -431,15 +435,31 @@ export class CatRig {
       const yaw = side * (0.07 * (1 - wrap) * (1 - up01 * 0.5) + 0.3 * wrap) + wave;
       this.setRot(this.bone[`tail${i}`], pitch, yaw, 0);
     }
-    // a tail lies on the floor, it does not go through it
+    // a tail lies on the floor, it does not go through it: each segment that
+    // dips below is turned up (in the vertical plane it points in) until its
+    // far end rests on the floor, tip included
     this.root.updateMatrixWorld(true);
     this.inv.copy(this.root.matrixWorld).invert();
-    for (let i = 0; i < TAIL_BONES - 1; i++) {
+    const rootQ = this.root.getWorldQuaternion(this.q3);
+    const floor = 1.6 * CM;
+    for (let i = 0; i < TAIL_BONES; i++) {
       const bone = this.bone[`tail${i}`];
-      const next = this.bone[`tail${i + 1}`].getWorldPosition(this.va).applyMatrix4(this.inv);
-      const floor = 1.6 * CM;
-      if (next.y < floor) {
-        bone.rotateX(Math.asin(Math.min(1, (floor - next.y) / (2.9 * CM))));
+      for (let pass = 0; pass < 3; pass++) {
+        const joint = bone.getWorldPosition(this.vb).applyMatrix4(this.inv);
+        const end = (i < TAIL_BONES - 1 ? this.bone[`tail${i + 1}`].getWorldPosition(this.vc) : bone.localToWorld(this.vc.set(0, 0, -2.3 * CM))).applyMatrix4(this.inv);
+        if (end.y >= floor - 1e-5) break;
+        const seg = this.vd.copy(end).sub(joint);
+        const len = seg.length();
+        if (len < 1e-6) break;
+        seg.divideScalar(len);
+        const axis = this.ve.set(-seg.z, 0, seg.x);
+        if (axis.lengthSq() < 1e-8) break;
+        axis.normalize().applyQuaternion(rootQ);
+        const now = Math.asin(Math.max(-1, Math.min(1, seg.y)));
+        const want = Math.asin(Math.max(-1, Math.min(1, (floor - joint.y) / len)));
+        const turn = this.q.setFromAxisAngle(axis, want - now);
+        const world = bone.getWorldQuaternion(this.q2);
+        bone.quaternion.copy(bone.parent!.getWorldQuaternion(this.qp).invert().multiply(turn.multiply(world)));
         bone.updateMatrixWorld(true);
       }
     }

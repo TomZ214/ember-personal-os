@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Cookie, Megaphone, MousePointer2, UtensilsCrossed, Volleyball } from "lucide-react";
 import { useEmber, useHydrated } from "@/lib/store";
 import { useT } from "@/lib/i18n";
-import { todayKey } from "@/lib/dates";
+import { dayKey, todayKey } from "@/lib/dates";
 import { swap } from "@/lib/motion";
 import { MAX_TREATS } from "@/lib/pet";
 import { PageHeader } from "@/components/ui/misc";
@@ -28,17 +28,22 @@ function PetRoom() {
   const controls = useRef<PetControls | null>(null);
   const [status, setStatus] = useState<CatStatus>("relaxing");
   const [laser, setLaser] = useState(false);
-  const doneToday = useEmber((s) => s.tasks.filter((x) => x.completedAt?.slice(0, 10) === todayKey()).length);
+  // completedAt is an ISO time in UTC: compare by the local calendar day
+  const doneToday = useEmber((s) => s.tasks.filter((x) => x.completedAt && dayKey(new Date(x.completedAt)) === todayKey()).length);
+  const petAct = useEmber((s) => s.petAct);
   const name = pet.name;
 
   const say = (key: string) => t(key).replace("{name}", name);
 
+  // without the 3D room (no WebGL, still loading) the cat is fed all the same
   const feed = () => {
-    if (controls.current && !controls.current.feed()) toast(say("pet.bowlFull"), "info");
+    if (!controls.current) return petAct({ kind: "feed" });
+    if (!controls.current.feed()) toast(say("pet.bowlFull"), "info");
   };
   const treat = () => {
     if (pet.treats <= 0) return toast(say("pet.noTreats"), "info");
-    controls.current?.treat();
+    if (controls.current) controls.current.treat();
+    else petAct({ kind: "treat" });
   };
 
   return (

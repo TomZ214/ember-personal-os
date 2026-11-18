@@ -43,9 +43,9 @@ export const restPose = (): Pose => ({
 /**
  * Distance covered by one full gait cycle (all four paws once) at a speed,
  * in scene units. The brain advances the gait by it and the rig sweeps the
- * paws by it, so a planted paw never slides.
+ * planted paws back by it at an even pace, so they stay put on the floor.
  */
-export const strideFor = (speed: number) => 0.42 + speed * 0.25;
+export const strideFor = (speed: number) => 0.3 + speed * 0.2;
 
 /** what changes every frame and is not smoothed */
 export interface Frame {

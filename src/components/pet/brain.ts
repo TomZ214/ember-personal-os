@@ -219,7 +219,7 @@ export class CatBrain {
       this.enter("toTreat");
     } else if (s.bowl && s.bowl.food > 0.02 && s.stats.fullness < 99 && !["toBowl", "eat", "toTreat", "treat", "purr", "leap"].includes(this.act)) {
       this.enter("toBowl");
-    } else if (s.laser && !["chase", "crouch", "leap", "watch", "purr", "toTreat", "treat", "eat"].includes(this.act)) {
+    } else if (s.laser && !["chase", "crouch", "leap", "watch", "purr", "toTreat", "treat", "eat", "toBowl"].includes(this.act)) {
       this.enter(s.stats.energy < 15 ? "watch" : "chase");
     } else if (s.ball?.live && !s.laser && !["ball", "bat", "purr", "toTreat", "treat", "eat", "toBowl", "leap"].includes(this.act)) {
       this.bats = 0;
@@ -447,6 +447,7 @@ export class CatBrain {
         const e = u * u * (3 - 2 * u);
         this.x = this.leapFrom.x + (this.leapTo.x - this.leapFrom.x) * e;
         this.z = this.leapFrom.z + (this.leapTo.z - this.leapFrom.z) * e;
+        this.contain();
         this.lift = Math.sin(u * Math.PI) * 0.2;
         this.speed = 0;
         T.leap = u < 0.85 ? 1 : 0;
@@ -493,6 +494,12 @@ export class CatBrain {
         this.hasLook = true;
         const paws = { x: this.x + Math.sin(this.heading) * 0.36, z: this.z + Math.cos(this.heading) * 0.36 };
         const near = dist(paws.x, paws.z, ball.x, ball.z) < 0.12;
+        // a ball it cannot get to (or has lost interest in) is left alone after a while
+        if (this.at > 15) {
+          ball.live = false;
+          this.enter("sit", rand(2, 4));
+          break;
+        }
         if (near) {
           if (this.bats >= this.batBudget || s.stats.energy < 15) {
             ball.live = false;
@@ -500,7 +507,8 @@ export class CatBrain {
           } else this.enter("bat", 0.42);
         } else {
           const spot = this.approach(ax, az, 0.36);
-          this.moveTo(spot.x, spot.z, s.stats.energy < 35 ? 0.8 : 1.25, dt, 0.03);
+          // arrived beside it: turn to face it, so the paws can reach
+          if (this.moveTo(spot.x, spot.z, s.stats.energy < 35 ? 0.8 : 1.25, dt, 0.03)) this.face(ball.x, ball.z, dt);
         }
         break;
       }
@@ -744,9 +752,9 @@ export class CatBrain {
     }
     if (s.bowl && this.act !== "eat") {
       const d = dist(this.x, this.z, s.bowl.x, s.bowl.z);
-      if (d < 0.3 && d > 1e-4) {
-        this.x = s.bowl.x + ((this.x - s.bowl.x) / d) * 0.3;
-        this.z = s.bowl.z + ((this.z - s.bowl.z) / d) * 0.3;
+      if (d < 0.36 && d > 1e-4) {
+        this.x = s.bowl.x + ((this.x - s.bowl.x) / d) * 0.36;
+        this.z = s.bowl.z + ((this.z - s.bowl.z) / d) * 0.36;
       }
     }
   }

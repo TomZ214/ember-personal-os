@@ -3,11 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Environment, Lightformer, PerformanceMonitor } from "@react-three/drei";
+import { Environment, Lightformer } from "@react-three/drei";
 import { useEmber } from "@/lib/store";
 import type { CatStatus } from "./brain";
 import { LAYOUT, Room, type RoomMode } from "./room";
 import { loadCatGeometry } from "./catGeometry";
+import { stopPurr } from "./catSounds";
 
 /**
  * The 3D view of the cat's room. Loaded only on the client and only when
@@ -46,8 +47,8 @@ export default function PetScene({ mode, laser = false, onReady, onStatus }: Pet
   // reduced effects (Settings): fewer pixels, for battery and older iPads
   const reduced = useEmber((s) => s.settings.reducedEffects ?? false);
   const maxDpr = reduced ? 1 : mode === "widget" ? 1.5 : 1.75;
-  const [measured, setDpr] = useState(() => Math.min(maxDpr, window.devicePixelRatio || 1));
-  const dpr = Math.min(measured, maxDpr);
+  // sharp on a retina screen, capped: the fur is many layers deep
+  const dpr = Math.min(maxDpr, window.devicePixelRatio || 1);
   const L = LAYOUT[mode];
 
   useEffect(() => {
@@ -78,12 +79,6 @@ export default function PetScene({ mode, laser = false, onReady, onStatus }: Pet
         gl={{ antialias: true, alpha: true, powerPreference: mode === "widget" ? "low-power" : "default", toneMapping: THREE.NeutralToneMapping }}
         style={{ background: "transparent" }}
       >
-        <PerformanceMonitor
-          onDecline={() => setDpr(1)}
-          onIncline={() => setDpr(Math.min(maxDpr, window.devicePixelRatio || 1))}
-          flipflops={3}
-          onFallback={() => setDpr(1)}
-        />
         <hemisphereLight args={["#fff5ec", "#a89a94", 1.05]} />
         <directionalLight position={[2.4, 4, 3.6]} intensity={1.9} color="#fff0e0" />
         <directionalLight position={[-3, 2.4, -3]} intensity={1.3} color="#d6e4ff" />
@@ -189,6 +184,11 @@ function World({ mode, laser = false, onReady, onStatus, active }: PetSceneProps
   }, [theme, appearance, style, invalidate]);
 
   useFrame((state, dt) => room.current?.frame(state, dt));
+
+  // out of sight (scrolled away, another tab): no purring into the void
+  useEffect(() => {
+    if (!active) stopPurr();
+  }, [active]);
 
   return <Driver active={active} sleepy={() => !!room.current?.sleepy} />;
 }

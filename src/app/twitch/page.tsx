@@ -4,7 +4,7 @@ import { useState, useSyncExternalStore } from "react";
 import { MessageSquare, MessageSquareOff, Plus, Star, Tv, X } from "lucide-react";
 import { useEmber, useHydrated } from "@/lib/store";
 import { useT } from "@/lib/i18n";
-import { chatUrl, MAX_CHANNELS, parseChannel, playerUrl, type TwitchSettings } from "@/lib/twitch";
+import { chatUrl, MAX_CHANNELS, parseChannel, playerUrl, readHere, writeHere, type TwitchHere } from "@/lib/twitch";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/inputs";
 import { EmptyState, PageHeader } from "@/components/ui/misc";
@@ -19,6 +19,19 @@ const noop = () => () => {};
 /** the host Twitch must be told it is embedded in */
 const useHost = () => useSyncExternalStore(noop, () => window.location.hostname, () => "");
 
+const DARK = "(prefers-color-scheme: dark)";
+const subscribeScheme = (cb: () => void) => {
+  const m = window.matchMedia(DARK);
+  m.addEventListener("change", cb);
+  return () => m.removeEventListener("change", cb);
+};
+/** the chat in the app's light or dark, "system" included */
+function useDark() {
+  const appearance = useEmber((s) => s.settings.appearance ?? "dark");
+  const system = useSyncExternalStore(subscribeScheme, () => window.matchMedia(DARK).matches, () => true);
+  return appearance === "dark" || (appearance === "system" && system);
+}
+
 export default function TwitchPage() {
   const hydrated = useHydrated();
   if (!hydrated) return <div className="skeleton h-[70vh]" style={{ borderRadius: 18 }} />;
@@ -28,20 +41,25 @@ export default function TwitchPage() {
 function TwitchRoom() {
   const t = useT();
   const host = useHost();
-  const saved = useEmber((s) => s.settings.twitch);
-  const dark = useEmber((s) => s.settings.appearance !== "light");
+  const channels = useEmber((s) => s.settings.twitch?.channels ?? []);
+  const dark = useDark();
   const updateSettings = useEmber((s) => s.updateSettings);
-  const tw: TwitchSettings = { channels: [], chat: true, ...saved };
-  const channel = tw.last;
+  const [here, setHereState] = useState<TwitchHere>(readHere);
+  const channel = here.last;
   const [draft, setDraft] = useState("");
 
-  const save = (patch: Partial<TwitchSettings>) => updateSettings({ twitch: { ...tw, ...patch } });
-  const watch = (c: string) => save({ last: c });
-  const isFav = !!channel && tw.channels.includes(channel);
-  const toggleFav = (c: string) =>
-    save({
-      channels: tw.channels.includes(c) ? tw.channels.filter((x) => x !== c) : [...tw.channels, c].slice(-MAX_CHANNELS),
-    });
+  const setHere = (patch: Partial<TwitchHere>) => {
+    const next = { ...here, ...patch };
+    setHereState(next);
+    writeHere(next);
+  };
+  const watch = (c: string) => setHere({ last: c });
+  const isFav = !!channel && channels.includes(channel);
+  // read the newest list at the moment of the change, so two quick taps never lose one
+  const toggleFav = (c: string) => {
+    const now = useEmber.getState().settings.twitch?.channels ?? [];
+    updateSettings({ twitch: { channels: now.includes(c) ? now.filter((x) => x !== c) : [...now, c].slice(-MAX_CHANNELS) } });
+  };
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,9 +90,9 @@ function TwitchRoom() {
         </Button>
       </form>
 
-      {tw.channels.length > 0 && (
+      {channels.length > 0 && (
         <ul className="mb-4 flex flex-wrap gap-1.5" aria-label={t("tw.favourites")}>
-          {tw.channels.map((c) => (
+          {channels.map((c) => (
             <li key={c} className="flex items-center">
               <button
                 type="button"
@@ -106,7 +124,7 @@ function TwitchRoom() {
           <EmptyState icon={<Tv />} title={t("tw.empty")} hint={t("tw.emptySub")} />
         </section>
       ) : (
-        <div className={`grid grid-cols-1 gap-4 ${tw.chat ? "lg:grid-cols-[minmax(0,1fr)_340px]" : ""}`}>
+        <div className={`grid grid-cols-1 gap-4 ${here.chat ? "lg:grid-cols-[minmax(0,1fr)_340px]" : ""}`}>
           <section className="panel overflow-hidden p-0" aria-label={t("tw.player")}>
             <div className="relative aspect-video w-full bg-black">
               <iframe
@@ -125,16 +143,16 @@ function TwitchRoom() {
                   {isFav ? <Star size={14} className="fill-current text-accent" /> : <Plus size={14} />}
                   {isFav ? t("tw.favourite") : t("tw.addFavourite")}
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => save({ chat: !tw.chat })} aria-pressed={!!tw.chat}>
-                  {tw.chat ? <MessageSquareOff size={14} /> : <MessageSquare size={14} />}
-                  {tw.chat ? t("tw.hideChat") : t("tw.showChat")}
+                <Button size="sm" variant="ghost" onClick={() => setHere({ chat: !here.chat })} aria-pressed={!!here.chat}>
+                  {here.chat ? <MessageSquareOff size={14} /> : <MessageSquare size={14} />}
+                  {here.chat ? t("tw.hideChat") : t("tw.showChat")}
                 </Button>
               </div>
             </div>
           </section>
 
-          {tw.chat && (
-            <section className="panel h-[520px] overflow-hidden p-0 lg:h-auto lg:min-h-[480px]" aria-label={t("tw.chat")}>
+          {here.chat && (
+            <section className="panel h-[520px] overflow-hidden p-0 lg:h-auto lg:min-h-[480px]" aria-label={t("here.chat")}>
               <iframe
                 key={`${channel}-chat-${dark}`}
                 src={chatUrl(channel, host, dark)}

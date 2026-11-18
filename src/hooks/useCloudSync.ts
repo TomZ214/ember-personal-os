@@ -232,13 +232,32 @@ function startEngine(sb: SupabaseClient): () => void {
     const ownGeneration = generation;
     const isCurrent = () => !disposed && generation === ownGeneration && currentUserId === uid;
 
+    // Nothing is uploaded until the first pull has settled: a change made in
+    // the first seconds (a cleanup, the cat being looked at) must not reach
+    // the cloud first and win over a newer snapshot from another device.
+    let settled = false;
+    let pending = false;
+    const schedulePush = () => {
+      if (pushTimer) clearTimeout(pushTimer);
+      pushTimer = setTimeout(() => void push(uid), 2500);
+    };
+
     // Claim family tasks only after the initial snapshot has been applied.
     // Otherwise the pull can erase tasks already deleted from the inbox.
-    void reconcile(uid, isCurrent).then(() => {
-      if (isCurrent()) return drainInbox(uid);
-    }).catch((e) => {
-      if (isCurrent()) set({ error: e instanceof Error ? e.message : String(e) });
-    });
+    void reconcile(uid, isCurrent)
+      .finally(() => {
+        settled = true;
+        if (pending && isCurrent()) {
+          pending = false;
+          schedulePush();
+        }
+      })
+      .then(() => {
+        if (isCurrent()) return drainInbox(uid);
+      })
+      .catch((e) => {
+        if (isCurrent()) set({ error: e instanceof Error ? e.message : String(e) });
+      });
     // keep this device's push subscription alive server-side
     void refreshPushSubscription(uid).catch(() => {});
 
@@ -272,8 +291,11 @@ function startEngine(sb: SupabaseClient): () => void {
     // local changes → debounced push
     unsubStore = useEmber.subscribe(() => {
       if (applyingRemote) return;
-      if (pushTimer) clearTimeout(pushTimer);
-      pushTimer = setTimeout(() => void push(uid), 2500);
+      if (!settled) {
+        pending = true;
+        return;
+      }
+      schedulePush();
     });
   };
 

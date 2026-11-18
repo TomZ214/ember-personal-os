@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useEmber } from "@/lib/store";
 import { useT } from "@/lib/i18n";
+import { lastLocalReward } from "@/lib/pet";
 import { toast } from "@/components/ui/toast";
 
 const SHOWN_KEY = "ember-pet-note";
@@ -31,7 +32,9 @@ export function PetRewardNote() {
       return;
     }
     seen.current = value;
-    if (Date.now() - value > 10_000 || pathname === "/pet") return;
+    // only for a treat earned here and now, never for one that came in by sync
+    const age = Date.now() - value;
+    if (value !== lastLocalReward() || age < 0 || age > 10_000 || pathname === "/pet") return;
     let last = 0;
     try {
       last = Number(localStorage.getItem(SHOWN_KEY) || 0);

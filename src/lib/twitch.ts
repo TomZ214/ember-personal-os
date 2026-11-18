@@ -8,13 +8,23 @@
 /** Twitch user names: 3–25 letters, digits or underscores */
 const LOGIN = /^[a-z0-9_]{3,25}$/;
 
+/** first path segments of twitch.tv links that are pages, not channels */
+const RESERVED = new Set([
+  "about", "bits", "clip", "clips", "directory", "downloads", "drops", "embed", "following", "friends", "inventory",
+  "jobs", "login", "messages", "moderator", "p", "payments", "popout", "prime", "privacy", "products", "schedule",
+  "search", "security", "settings", "signup", "store", "subscriptions", "team", "turbo", "u", "user", "videos", "wallet",
+]);
+
 /** a channel from whatever was typed or pasted: "Name", "@name", a twitch.tv link */
 export function parseChannel(input: string): string | null {
-  let s = input.trim().toLowerCase();
-  const link = s.match(/twitch\.tv\/(?:popout\/)?([a-z0-9_]{3,25})(?:[/?#]|$)/);
-  if (link) s = link[1];
-  s = s.replace(/^@/, "");
-  return LOGIN.test(s) ? s : null;
+  const s = input.trim().toLowerCase();
+  const link = s.match(/^(?:https?:\/\/)?(?:www\.|m\.)?twitch\.tv\/(?:popout\/)?([a-z0-9_]+)(?:[/?#]|$)/);
+  let name: string;
+  if (link) name = link[1];
+  // some other link or address: not a channel
+  else if (/[/.:]/.test(s)) return null;
+  else name = s.replace(/^@/, "");
+  return LOGIN.test(name) && !RESERVED.has(name) ? name : null;
 }
 
 export function playerUrl(channel: string, host: string): string {
@@ -28,13 +38,36 @@ export function chatUrl(channel: string, host: string, dark: boolean): string {
   return `https://www.twitch.tv/embed/${encodeURIComponent(channel)}/chat?${q}`;
 }
 
+/** synced: the favourite channels, in the order they were added */
 export interface TwitchSettings {
-  /** favourite channels, in the order they were added */
   channels: string[];
-  /** the channel last watched */
+}
+
+/**
+ * Kept on this device only: what is playing here and whether the chat is
+ * open. Synced, choosing a channel on the iPad would switch the stream
+ * playing on the desktop.
+ */
+export interface TwitchHere {
   last?: string;
-  /** chat beside the player */
-  chat?: boolean;
+  chat: boolean;
+}
+
+const HERE_KEY = "ember-twitch-here";
+
+export function readHere(): TwitchHere {
+  try {
+    const v = JSON.parse(localStorage.getItem(HERE_KEY) ?? "{}") as Partial<TwitchHere>;
+    return { last: typeof v.last === "string" ? (parseChannel(v.last) ?? undefined) : undefined, chat: v.chat !== false };
+  } catch {
+    return { chat: true };
+  }
+}
+
+export function writeHere(here: TwitchHere) {
+  try {
+    localStorage.setItem(HERE_KEY, JSON.stringify(here));
+  } catch {}
 }
 
 export const MAX_CHANNELS = 30;

@@ -195,12 +195,18 @@ export function actOnPet(prev: PetState, action: PetAction, now = Date.now()): P
   }
 }
 
+let localRewardAt = 0;
+/** when a treat was last earned on this device (rewards arriving by sync don't count) */
+export const lastLocalReward = () => localRewardAt;
+
 /**
  * A treat for something done. Idempotent per key: the same completion never
- * pays twice, whichever device sees it first.
+ * pays twice, whichever device sees it first. Only this device's own
+ * actions call it, so it also notes the moment for `lastLocalReward`.
  */
 export function rewardPet(prev: PetState, key: string, now = Date.now()): PetState {
   if (prev.rewarded.includes(key)) return prev;
+  localRewardAt = now;
   const p = tickPet(prev, now);
   return {
     ...p,

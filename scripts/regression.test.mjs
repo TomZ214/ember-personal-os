@@ -157,6 +157,24 @@ test("the initial cloud pull completes before family tasks are claimed", async (
   cleanup();
 });
 
+test("nothing is uploaded before the first pull settles; changes made meanwhile follow it", async () => {
+  const f = syncFixture();
+  let resolvePull;
+  f.setPull(() => new Promise((resolve) => { resolvePull = resolve; }));
+  const cleanup = f.setup();
+  await f.run(0);
+  // something changes locally while the pull is still on its way
+  f.change();
+  await f.run(2500);
+  assert.equal(f.counters().pushes, 0, "no upload ahead of the pull");
+  resolvePull(null);
+  await f.run(0);
+  const afterPull = f.counters().pushes;
+  await f.run(2500);
+  assert.equal(f.counters().pushes, afterPull + 1, "the held-back change goes up once the pull has settled");
+  cleanup();
+});
+
 test("a pull finishing after sign-out cannot replace local data or claim tasks", async () => {
   const f = syncFixture();
   let resolvePull;
@@ -1008,6 +1026,11 @@ test("twitch: channels from names and links, embedded the official way", () => {
   assert.equal(tw.parseChannel("ab"), null);
   assert.equal(tw.parseChannel("not a name"), null);
   assert.equal(tw.parseChannel("https://example.com/x"), null);
+  // pages that are not channels
+  assert.equal(tw.parseChannel("https://www.twitch.tv/videos/123456"), null);
+  assert.equal(tw.parseChannel("https://www.twitch.tv/directory/category/chess"), null);
+  assert.equal(tw.parseChannel("https://clips.twitch.tv/SomeClipSlug"), null);
+  assert.equal(tw.parseChannel("https://m.twitch.tv/somestreamer/clip/xyz"), "somestreamer");
   const player = new URL(tw.playerUrl("monstercat", "ember-os.netlify.app"));
   assert.equal(player.host, "player.twitch.tv");
   assert.equal(player.searchParams.get("parent"), "ember-os.netlify.app");
@@ -1027,4 +1050,38 @@ test("twitch: channels from names and links, embedded the official way", () => {
     assert.ok(i18n.slice(0, deStart).includes(`"${k}":`), `missing English text ${k}`);
     assert.ok(i18n.slice(deStart).includes(`"${k}":`), `missing German text ${k}`);
   }
+});
+
+test("pet: the cat's mind settles — food before the laser, a ball is reached or let go", () => {
+  const THREE = require("three");
+  const { CatBrain } = sourceLoader()("src/components/pet/brain.ts");
+  const noop = () => {};
+  const voice = { meow: noop, purr: noop, ateTreat: noop, ateFood: noop, played: noop, caught: noop, bat: noop, slowBlink: noop };
+  const senses = (t, extra) => ({
+    t, dt: 1 / 30, stats: { fullness: 50, mood: 70, energy: 90, affection: 50 }, petting: false, pointer: null,
+    laser: null, ball: null, bowl: null, bed: null, treat: null, idleFor: 0, camera: new THREE.Vector3(0, 1, 3), radius: 1.1, ...extra,
+  });
+
+  // laser on and food in the bowl: it walks to the bowl and eats, without flipping every frame
+  const a = new CatBrain(voice, { x: 0, z: 0 });
+  const bowl = { x: 0.8, z: 0, food: 1 };
+  let flips = 0, prev = a.act, ate = false;
+  for (let i = 0; i < 30 * 20; i++) {
+    a.update(senses(i / 30, { laser: { x: -0.6, z: 0.4 }, bowl }));
+    if (a.act !== prev) flips++;
+    prev = a.act;
+    if (a.act === "eat") ate = true;
+  }
+  assert.ok(ate, "it got to the bowl");
+  assert.ok(flips < 12, `${flips} changes of mind in 20 s`);
+
+  // a ball lying still: it goes over, turns to it and bats it — or gives up after a while
+  const b = new CatBrain(voice, { x: 0, z: 0, heading: Math.PI });
+  const ball = { x: 0.5, z: 0.2, vx: 0, vz: 0, live: true };
+  let batted = false;
+  for (let i = 0; i < 30 * 20 && ball.live; i++) {
+    b.update(senses(i / 30, { ball }));
+    if (b.act === "bat") batted = true;
+  }
+  assert.ok(batted || !ball.live, "the ball is batted or let go");
 });

@@ -56,6 +56,7 @@ export class Room {
   private stats = tickPet(useEmber.getState().pet);
   private statsAt = 0;
   private pending = { stroke: 0, play: 0, at: 0 };
+  private wasEngaged = false;
   private bowl: { x: number; z: number; food: number } | null;
   private treatDrop: { x: number; z: number; y: number; vy: number; landed?: boolean } | null = null;
   private ballState: (Ball & { y: number; vy: number }) | null = null;
@@ -70,7 +71,9 @@ export class Room {
   // what the person is doing
   private ndc = new THREE.Vector2();
   private input = { inside: false, down: false, type: "mouse", lastMove: -1e9, lastAct: performance.now() };
-  private stroke = { acc: 0, x: 0, y: 0, at: 0, last: -1e9, downX: 0, downY: 0, moved: 0 };
+  private stroke = { acc: 0, last: -1e9 };
+  /** every pointer on the canvas, by id: two fingers are two strokes */
+  private pointers = new Map<number, { x: number; y: number; at: number; downX: number; downY: number; moved: number; down: boolean }>();
 
   // three.js bits that live as long as the room
   private disposables: { dispose(): void }[] = [];
@@ -333,7 +336,7 @@ export class Room {
     el.addEventListener("pointermove", this.onMove, { passive: true });
     el.addEventListener("pointerdown", this.onDown, { passive: true });
     window.addEventListener("pointerup", this.onUp, { passive: true });
-    el.addEventListener("pointercancel", this.onLeave, { passive: true });
+    el.addEventListener("pointercancel", this.onCancel, { passive: true });
     el.addEventListener("pointerleave", this.onLeave, { passive: true });
   }
 
@@ -354,38 +357,50 @@ export class Room {
     i.type = e.pointerType;
     i.lastMove = i.lastAct = performance.now();
     this.toNdc(e);
-    const s = this.stroke;
     const now = performance.now();
-    const fresh = now - s.at < 150;
-    const dx = e.clientX - s.x;
-    const dy = e.clientY - s.y;
-    s.x = e.clientX;
-    s.y = e.clientY;
-    s.at = now;
-    if (i.down) s.moved += Math.hypot(dx, dy);
+    let p = this.pointers.get(e.pointerId);
+    if (!p) {
+      p = { x: e.clientX, y: e.clientY, at: now, downX: e.clientX, downY: e.clientY, moved: 0, down: false };
+      this.pointers.set(e.pointerId, p);
+    }
+    const fresh = now - p.at < 150;
+    const dx = e.clientX - p.x;
+    const dy = e.clientY - p.y;
+    p.x = e.clientX;
+    p.y = e.clientY;
+    p.at = now;
+    if (p.down) p.moved += Math.hypot(dx, dy);
     const over = this.overCat();
     this.dom.style.cursor = over && !this.laser ? "grab" : "";
     if (!fresh || this.laser || !over) return;
     // a mouse strokes by moving over the fur; a finger by sliding along it
-    if (e.pointerType === "touch" && !i.down) return;
-    s.acc += Math.hypot(dx, dy);
-    s.last = now;
+    if (e.pointerType === "touch" && !p.down) return;
+    this.stroke.acc += Math.hypot(dx, dy);
+    this.stroke.last = now;
   };
 
   private onDown = (e: PointerEvent) => {
+    const now = performance.now();
+    this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, at: now, downX: e.clientX, downY: e.clientY, moved: 0, down: true });
     this.input.down = true;
-    this.stroke.moved = 0;
-    this.stroke.downX = e.clientX;
-    this.stroke.downY = e.clientY;
     this.onMove(e);
   };
 
+  private release(e: PointerEvent) {
+    const p = this.pointers.get(e.pointerId);
+    // a mouse stays (it can still hover); a finger is gone once it lifts
+    if (e.pointerType === "mouse" && p) p.down = false;
+    else this.pointers.delete(e.pointerId);
+    this.input.down = [...this.pointers.values()].some((x) => x.down);
+    return p?.down ? p : null;
+  }
+
   private onUp = (e: PointerEvent) => {
-    const i = this.input;
-    if (!i.down) return;
-    i.down = false;
-    // a tap on the cat (not a stroke): it notices you
-    if (this.stroke.moved < 8 && !this.laser && e.target instanceof Node && this.dom.contains(e.target)) {
+    const p = this.release(e);
+    if (!p) return;
+    // a tap on the cat (it barely moved since it went down): the cat notices you
+    const travel = Math.hypot(e.clientX - p.downX, e.clientY - p.downY);
+    if (travel < 10 && p.moved < 16 && !this.laser && e.target instanceof Node && this.dom.contains(e.target)) {
       this.toNdc(e);
       if (this.overCat()) {
         this.brain.boop();
@@ -397,10 +412,16 @@ export class Room {
     }
   };
 
-  private onLeave = () => {
-    this.input.inside = false;
-    this.input.down = false;
-    this.dom.style.cursor = "";
+  private onCancel = (e: PointerEvent) => {
+    this.release(e);
+  };
+
+  private onLeave = (e: PointerEvent) => {
+    if (e.pointerType === "mouse") {
+      this.input.inside = false;
+      this.dom.style.cursor = "";
+    }
+    this.release(e);
   };
 
   /* ---- the loop ---- */
@@ -458,7 +479,7 @@ export class Room {
       bowl: this.bowl,
       bed: LAYOUT[this.mode].bed,
       // once it has hit the floor, a little bounce does not hide it
-      treat: tr?.landed && tr.y < 0.08 ? tr : null,
+      treat: tr?.landed ? tr : null,
       idleFor: (now - i.lastAct) / 1000,
       camera: this.camera.position,
       radius: R,
@@ -509,12 +530,15 @@ export class Room {
       this.onStatus(brain.status);
     }
 
-    // bank stroking and play now and then, not every frame
+    // bank stroking and play when the moment is over (or every half
+    // minute in a long one): each write is a cloud upload
     const pd = this.pending;
-    if (t - pd.at > 3) {
+    const engaged = ["purr", "chase", "crouch", "leap", "watch", "ball", "bat"].includes(brain.act);
+    if ((this.wasEngaged && !engaged) || t - pd.at > 30) {
       pd.at = t;
       this.flush();
     }
+    this.wasEngaged = engaged;
   }
 
   /** frame the room whatever the shape of the box */
@@ -660,7 +684,7 @@ export class Room {
     el.removeEventListener("pointermove", this.onMove);
     el.removeEventListener("pointerdown", this.onDown);
     window.removeEventListener("pointerup", this.onUp);
-    el.removeEventListener("pointercancel", this.onLeave);
+    el.removeEventListener("pointercancel", this.onCancel);
     el.removeEventListener("pointerleave", this.onLeave);
     el.style.cursor = "";
     this.group.parent?.remove(this.group);
