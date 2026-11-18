@@ -15,6 +15,8 @@ const eslintConfig = defineConfig([
     "src/lib/reports/vendor/**",
     ".claude/skills/**",
     ".github/skills/**",
+    // the offline model build (its own package and dependencies)
+    "scripts/cat-model/**",
   ]),
 ]);
 

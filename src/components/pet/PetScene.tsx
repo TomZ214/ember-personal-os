@@ -7,7 +7,7 @@ import { Environment, Lightformer } from "@react-three/drei";
 import { useEmber } from "@/lib/store";
 import type { CatStatus } from "./brain";
 import { LAYOUT, Room, type RoomMode } from "./room";
-import { loadCatGeometry } from "./catGeometry";
+import { loadCatModel, loadCoat } from "./catModel";
 import { stopPurr } from "./catSounds";
 
 /**
@@ -47,9 +47,13 @@ export default function PetScene({ mode, laser = false, onReady, onStatus }: Pet
   // reduced effects (Settings): fewer pixels, for battery and older iPads
   const reduced = useEmber((s) => s.settings.reducedEffects ?? false);
   const maxDpr = reduced ? 1 : mode === "widget" ? 1.5 : 1.75;
-  // sharp on a retina screen, capped: the fur is many layers deep
+  // sharp on a retina screen, capped for the battery
   const dpr = Math.min(maxDpr, window.devicePixelRatio || 1);
+  // a real shadow from the key light, unless effects are turned down
+  const shadows = !reduced;
+  const shadowSize = mode === "widget" ? 512 : 1024;
   const L = LAYOUT[mode];
+  const reach = L.radius + 0.5;
 
   useEffect(() => {
     const el = wrap.current;
@@ -75,12 +79,28 @@ export default function PetScene({ mode, laser = false, onReady, onStatus }: Pet
       <Canvas
         frameloop="demand"
         dpr={dpr}
+        shadows={shadows ? "percentage" : false}
         camera={{ position: [L.camera[0], L.camera[1], L.camera[2]], fov: L.fov, near: 0.1, far: 40 }}
         gl={{ antialias: true, alpha: true, powerPreference: mode === "widget" ? "low-power" : "default", toneMapping: THREE.NeutralToneMapping }}
         style={{ background: "transparent" }}
       >
         <hemisphereLight args={["#fff5ec", "#a89a94", 1.05]} />
-        <directionalLight position={[2.4, 4, 3.6]} intensity={1.9} color="#fff0e0" />
+        <directionalLight
+          position={[1.6, 4, 2.4]}
+          intensity={1.9}
+          color="#fff0e0"
+          castShadow={shadows}
+          shadow-mapSize={[shadowSize, shadowSize]}
+          shadow-bias={-0.0004}
+          shadow-normalBias={0.02}
+          shadow-radius={4}
+          shadow-camera-left={-reach}
+          shadow-camera-right={reach}
+          shadow-camera-top={reach}
+          shadow-camera-bottom={-reach}
+          shadow-camera-near={1}
+          shadow-camera-far={10}
+        />
         <directionalLight position={[-3, 2.4, -3]} intensity={1.3} color="#d6e4ff" />
         <Environment resolution={64} frames={1} environmentIntensity={0.55}>
           <Lightformer form="rect" intensity={2.4} position={[0, 4, 1.5]} rotation-x={Math.PI / 2} scale={[6, 3, 1]} />
@@ -131,11 +151,12 @@ function World({ mode, laser = false, onReady, onStatus, active }: PetSceneProps
   });
 
   // the room lives as long as the canvas; a new coat is the same cat.
-  // The body is built in a worker first (once per page load).
+  // The model and the coat load first (once per page load), side by side.
   useEffect(() => {
     let r: Room | null = null;
     let gone = false;
-    void loadCatGeometry().then(() => {
+    const coat = useEmber.getState().pet.coat;
+    void Promise.all([loadCatModel(), loadCoat(coat).catch(() => null)]).then(([model]) => {
       if (gone) return;
       r = new Room({
         mode,
@@ -143,6 +164,7 @@ function World({ mode, laser = false, onReady, onStatus, active }: PetSceneProps
         camera: camera as THREE.PerspectiveCamera,
         dom: gl.domElement.parentElement ?? gl.domElement,
         coat: useEmber.getState().pet.coat,
+        model,
       });
       const room_ = r;
       room_.onStatus = (s) => status.current?.(s);
@@ -156,6 +178,8 @@ function World({ mode, laser = false, onReady, onStatus, active }: PetSceneProps
         call: () => room_.call(),
       });
       invalidate();
+    }).catch(() => {
+      // offline and never loaded: the room stays empty, the page around it still works
     });
     return () => {
       gone = true;

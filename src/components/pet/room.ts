@@ -3,6 +3,7 @@ import { useEmber } from "@/lib/store";
 import { tickPet, type CoatId } from "@/lib/pet";
 import { CatBrain, type Ball, type CatStatus } from "./brain";
 import { CatRig } from "./rig";
+import type { CatModel } from "./catModel";
 import { glyphTexture, yarnTexture } from "./coats";
 import { meow, startPurr, stopPurr } from "./catSounds";
 
@@ -64,8 +65,6 @@ export class Room {
   private nextFx = 0;
   private boopAt = 0;
   private framedFor = "";
-  /** fur layers: fewer in the small widget, where nobody sees single hairs */
-  private shells: number;
   private debugCam: string | null = null;
 
   // what the person is doing
@@ -91,9 +90,8 @@ export class Room {
   private facing = new THREE.Plane();
   private v = { hit: new THREE.Vector3(), look: new THREE.Vector3(), head: new THREE.Vector3(), dir: new THREE.Vector3(), axis: new THREE.Vector3(), tmp: new THREE.Vector3() };
 
-  constructor(opts: { mode: RoomMode; scene: THREE.Scene; camera: THREE.PerspectiveCamera; dom: HTMLElement; coat: CoatId }) {
+  constructor(opts: { mode: RoomMode; scene: THREE.Scene; camera: THREE.PerspectiveCamera; dom: HTMLElement; coat: CoatId; model: CatModel }) {
     this.mode = opts.mode;
-    this.shells = opts.mode === "widget" ? 9 : 14;
     this.camera = opts.camera;
     this.dom = opts.dom;
     const L = LAYOUT[this.mode];
@@ -120,6 +118,13 @@ export class Room {
     rug.rotation.x = -Math.PI / 2;
     rug.renderOrder = -2;
     this.group.add(rug);
+    // the floor catches the key light's shadow (when shadows are on) and is otherwise invisible
+    const catcher = new THREE.Mesh(keep(new THREE.CircleGeometry(this.R + 0.6, 48)), keep(new THREE.ShadowMaterial({ opacity: 0.22, depthWrite: false })));
+    catcher.rotation.x = -Math.PI / 2;
+    catcher.position.y = 0.001;
+    catcher.receiveShadow = true;
+    catcher.renderOrder = -1;
+    this.group.add(catcher);
 
     /* ---- bed ---- */
     if (L.bed) {
@@ -136,6 +141,8 @@ export class Room {
       rim.scale.set(1, 1, 0.72);
       const cushion = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.315, 0.315, 0.05, 48)), fabric(0.72));
       cushion.position.y = 0.025;
+      rim.castShadow = cushion.castShadow = true;
+      cushion.receiveShadow = true;
       bed.add(rim, cushion);
       this.group.add(bed);
     }
@@ -152,7 +159,9 @@ export class Room {
       ].map(([x, y]) => new THREE.Vector2(x, y));
       const glaze = keep(new THREE.MeshPhysicalMaterial({ roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.1, side: THREE.DoubleSide }));
       this.accentMats.push({ mat: glaze, toWhite: 0 });
-      bowl.add(new THREE.Mesh(keep(new THREE.LatheGeometry(profile, 48)), glaze));
+      const dish = new THREE.Mesh(keep(new THREE.LatheGeometry(profile, 48)), glaze);
+      dish.castShadow = true;
+      bowl.add(dish);
       const n = 22;
       this.kibble = new THREE.InstancedMesh(keep(new THREE.SphereGeometry(1, 10, 8)), keep(new THREE.MeshStandardMaterial({ color: "#a0633a", roughness: 0.7 })), n);
       const o = new THREE.Object3D();
@@ -176,6 +185,7 @@ export class Room {
       keep(new THREE.MeshPhysicalMaterial({ map: keep(yarnTexture("#ff8fa3")), roughness: 0.9, sheen: 1, sheenColor: new THREE.Color("#ffd0da") })),
     );
     this.ballMesh.visible = false;
+    this.ballMesh.castShadow = true;
 
     this.treatMesh = new THREE.Group();
     const fishBody = new THREE.Mesh(keep(new THREE.SphereGeometry(1, 14, 10)), keep(new THREE.MeshPhysicalMaterial({ color: "#f2a65a", roughness: 0.4, clearcoat: 0.6 })));
@@ -202,7 +212,7 @@ export class Room {
 
     /* ---- the cat ---- */
     this.coat = opts.coat;
-    this.rig = new CatRig(this.coat, { shells: this.shells });
+    this.rig = new CatRig(opts.model, this.coat);
     this.group.add(this.rig.root);
     this.brain = this.makeBrain();
 
@@ -276,10 +286,7 @@ export class Room {
   setCoat(coat: CoatId) {
     if (coat === this.coat) return;
     this.coat = coat;
-    this.group.remove(this.rig.root);
-    this.rig.dispose();
-    this.rig = new CatRig(coat, { shells: this.shells });
-    this.group.add(this.rig.root);
+    this.rig.setCoat(coat);
   }
 
   setAccent(color: THREE.Color) {

@@ -1,0 +1,10 @@
+node_modules/
+source/
+coats/
+*.glb
+*.bin
+*.jpg
+*.png
+eyes.json
+lids.json
+out/
