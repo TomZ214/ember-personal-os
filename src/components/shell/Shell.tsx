@@ -10,6 +10,7 @@ import { useIsDesktop } from "@/lib/desktop";
 import { DesktopProvider } from "@/components/desktop/DesktopProvider";
 import { ResizeHandles } from "@/components/desktop/ResizeHandles";
 import { AlarmEngine } from "@/components/alarm/AlarmEngine";
+import { PetRewardNote } from "@/components/pet/PetRewardNote";
 import { AmbientParticles } from "./AmbientParticles";
 import { LightingProvider } from "./LightingProvider";
 import { DepthProvider } from "./DepthProvider";
@@ -69,6 +70,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <SoundEngine />
       <NavOriginTracker />
       <AlarmEngine />
+      <PetRewardNote />
       {desktop && <ResizeHandles />}
     </DesktopProvider>
     </MotionConfig>

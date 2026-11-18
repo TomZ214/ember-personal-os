@@ -141,6 +141,20 @@ function audio(): AudioContext | null {
 }
 
 /**
+ * The app's one AudioContext, for sounds made elsewhere (the cat's), so the
+ * page never holds two. Null when audio is unavailable or not yet unlocked.
+ */
+export function audioContext(): AudioContext | null {
+  const c = audio();
+  return c && c.state === "running" ? c : null;
+}
+
+/** the master volume, 0..1, as set in Settings → Sound */
+export function soundVolume(): number {
+  return volume;
+}
+
+/**
  * Unlock audio on the first real user gesture. Autoplay policy blocks the
  * context before that, so the boot cue is simply skipped rather than queued —
  * a sound arriving seconds late is worse than no sound.

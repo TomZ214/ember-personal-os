@@ -83,9 +83,21 @@ interface Wave {
  * transform. The earlier version resized boxes every frame, which re-laid
  * out the row and made the frosted bar re-blur on every frame.
  */
+/** the window's width, kept current (the server assumes a laptop) */
+const subscribeWidth = (cb: () => void) => {
+  window.addEventListener("resize", cb);
+  return () => window.removeEventListener("resize", cb);
+};
+const useViewportWidth = () => useSyncExternalStore(subscribeWidth, () => window.innerWidth, () => 1280);
+
 export function Dock() {
   const touch = useTouchOnly();
-  const base = touch ? 46 : 40;
+  const width = useViewportWidth();
+  // every app fits in one row: on a narrow screen (an iPad upright) the icons
+  // shrink a little rather than run off the edges. 32 px of margin, 20 px of
+  // padding and the 6 px gaps between icons come off the width first.
+  const fit = Math.floor((width - 32 - 20 - (NAV.length - 1) * 6) / NAV.length);
+  const base = Math.max(34, Math.min(touch ? 46 : 40, fit));
   const pointer = useMotionValue(0);
   const strengthTarget = useMotionValue(0);
   // the wave rises and falls softly; the pointer itself is followed instantly

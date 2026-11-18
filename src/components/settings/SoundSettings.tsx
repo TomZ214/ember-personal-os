@@ -5,6 +5,7 @@ import { useEmber } from "@/lib/store";
 import { useT } from "@/lib/i18n";
 import { playCue } from "@/lib/sound";
 import { Switch } from "@/components/ui/Switch";
+import { PetSoundSwitch } from "@/components/pet/PetUI";
 
 /** Settings → Sound effects: on/off plus a master volume that previews itself. */
 export function SoundSettings() {
@@ -56,6 +57,11 @@ export function SoundSettings() {
           </span>
         </label>
       )}
+
+      {/* the cat's own voice: separate, and off unless asked for */}
+      <div className="mt-4 border-t border-white/[0.06] pt-4">
+        <PetSoundSwitch bare />
+      </div>
     </section>
   );
 }

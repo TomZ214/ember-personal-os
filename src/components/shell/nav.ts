@@ -1,5 +1,5 @@
 import {
-  Apple, BookOpen, CalendarDays, CheckSquare, CloudSun, Coins, FileBox, Flag, Flame, LayoutGrid, Mail, NotebookPen,
+  Apple, BookOpen, CalendarDays, Cat, CheckSquare, Tv, CloudSun, Coins, FileBox, Flag, Flame, LayoutGrid, Mail, NotebookPen,
   Repeat, Settings, ShieldCheck, } from "lucide-react";
 
 export interface NavItem {
@@ -22,6 +22,8 @@ export const NAV: NavItem[] = [
   { href: "/nutrition", label: "Nutrition", key: "nutrition", icon: Apple },
   { href: "/habits", label: "Habits", key: "habits", icon: Repeat },
   { href: "/goals", label: "Goals", key: "goals", icon: Flag },
+  { href: "/pet", label: "Pet", key: "pet", icon: Cat },
+  { href: "/twitch", label: "Twitch", key: "twitch", icon: Tv },
   { href: "/finance", label: "Finance", key: "finance", icon: Coins },
   { href: "/vault", label: "Vault", key: "vault", icon: ShieldCheck },
   { href: "/files", label: "Files", key: "files", icon: FileBox },

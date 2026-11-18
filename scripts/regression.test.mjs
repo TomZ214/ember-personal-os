@@ -157,6 +157,24 @@ test("the initial cloud pull completes before family tasks are claimed", async (
   cleanup();
 });
 
+test("nothing is uploaded before the first pull settles; changes made meanwhile follow it", async () => {
+  const f = syncFixture();
+  let resolvePull;
+  f.setPull(() => new Promise((resolve) => { resolvePull = resolve; }));
+  const cleanup = f.setup();
+  await f.run(0);
+  // something changes locally while the pull is still on its way
+  f.change();
+  await f.run(2500);
+  assert.equal(f.counters().pushes, 0, "no upload ahead of the pull");
+  resolvePull(null);
+  await f.run(0);
+  const afterPull = f.counters().pushes;
+  await f.run(2500);
+  assert.equal(f.counters().pushes, afterPull + 1, "the held-back change goes up once the pull has settled");
+  cleanup();
+});
+
 test("a pull finishing after sign-out cannot replace local data or claim tasks", async () => {
   const f = syncFixture();
   let resolvePull;
@@ -811,4 +829,259 @@ test("depth: 3D tilt only in the solid styles, and cheap to drive", () => {
   assert.match(provider, /pointercancel/);
   // the tilt itself is scoped to the solid styles
   assert.ok(css.includes(':root:is([data-style="neo"], [data-style="clay"]) [data-tilting] {'));
+});
+
+/* ---- the cat ------------------------------------------------------------ */
+
+test("pet: time is kind — values fall to their floors and never past them", () => {
+  const pet = sourceLoader()("src/lib/pet.ts");
+  const t0 = Date.UTC(2026, 10, 1, 12);
+  const p = pet.newPet(t0);
+  // a month away: hungry, a bit lonely and low, but there, and rested
+  const later = pet.tickPet(p, t0 + 30 * 86_400_000);
+  assert.equal(later.fullness, pet.FLOOR.fullness);
+  assert.ok(later.mood >= pet.FLOOR.mood && later.affection >= pet.FLOOR.affection);
+  assert.equal(later.energy, 100);
+  // a few hours: a little hungrier, nothing dramatic
+  const hours = pet.tickPet(p, t0 + 3 * 3_600_000);
+  assert.ok(hours.fullness < p.fullness && hours.fullness > 50);
+  // a clock that went backwards changes nothing
+  assert.equal(pet.tickPet(p, t0 - 3_600_000), p);
+  // one meal and a stroke and things are looking up
+  const fed = pet.actOnPet(later, { kind: "feed" }, later.updatedAt);
+  assert.ok(fed.fullness >= 40 && fed.mood > later.mood);
+  const stroked = pet.actOnPet(fed, { kind: "stroke", seconds: 10 }, fed.updatedAt);
+  assert.ok(stroked.affection > fed.affection);
+  // a full cat leaves most of the bowl
+  assert.ok(pet.actOnPet({ ...fed, fullness: 95 }, { kind: "feed" }, fed.updatedAt).fullness <= 100);
+  // playing tires; it never takes energy below its floor
+  let tired = fed;
+  for (let i = 0; i < 20; i++) tired = pet.actOnPet(tired, { kind: "play", seconds: 30 }, fed.updatedAt);
+  assert.equal(tired.energy, pet.FLOOR.energy);
+  // no treat to give, nothing changes
+  const none = { ...fed, treats: 0 };
+  assert.equal(pet.actOnPet(none, { kind: "treat" }, fed.updatedAt), none);
+});
+
+test("pet: stored records are cleaned, whatever they hold", () => {
+  const pet = sourceLoader()("src/lib/pet.ts");
+  const clean = pet.withPetDefaults({ name: "  " + "x".repeat(60), coat: "dragon", fullness: Number.NaN, mood: 500, energy: -9, treats: 999, rewarded: ["t:1", 7] });
+  assert.equal(clean.name.length, 24);
+  assert.equal(clean.coat, "tabby");
+  assert.equal(clean.mood, 100);
+  assert.equal(clean.energy, pet.FLOOR.energy);
+  assert.equal(clean.treats, pet.MAX_TREATS);
+  assert.deepEqual([...clean.rewarded], ["t:1"]);
+  assert.ok(Number.isFinite(clean.fullness));
+  assert.equal(pet.withPetDefaults(undefined).name, "Mochi");
+});
+
+test("pet: finishing things earns treats, once each, and never costs one", () => {
+  const { useEmber } = sourceLoader({}, { window: {} })("src/lib/store.ts");
+  const { todayKey } = sourceLoader()("src/lib/dates.ts");
+  const s = () => useEmber.getState();
+  const start = s().pet.treats;
+  s().addTask({ title: "Write report" });
+  const id = s().tasks[0].id;
+  s().updateTask(id, { status: "done" });
+  assert.equal(s().pet.treats, start + 1);
+  // unticked and ticked again: no second treat, and the first one stays
+  s().updateTask(id, { status: "todo" });
+  assert.equal(s().pet.treats, start + 1);
+  s().updateTask(id, { status: "done" });
+  assert.equal(s().pet.treats, start + 1);
+  // dragged into Done on the board counts too
+  s().addTask({ title: "Second" });
+  s().moveTask(s().tasks[0].id, "done");
+  assert.equal(s().pet.treats, start + 2);
+  // a habit kept today earns one; back-filling an old day does not
+  s().addHabit({ name: "Read", color: "sky", icon: "book" });
+  const h = s().habits[0].id;
+  s().toggleHabit(h, "2020-01-01");
+  assert.equal(s().pet.treats, start + 2);
+  s().toggleHabit(h, todayKey());
+  s().toggleHabit(h, todayKey());
+  s().toggleHabit(h, todayKey());
+  assert.equal(s().pet.treats, start + 3);
+  // giving a treat takes it from the jar
+  s().petAct({ kind: "treat" });
+  assert.equal(s().pet.treats, start + 2);
+  // the jar has a lid
+  for (let i = 0; i < 60; i++) {
+    s().addTask({ title: `t${i}` });
+    s().updateTask(s().tasks[0].id, { status: "done" });
+  }
+  assert.equal(s().pet.treats, 30);
+  // a snapshot from another device brings its cat along, cleaned
+  s().applyCloudState({ pet: { name: "Luna", coat: "calico", treats: 4 } });
+  assert.equal(s().pet.name, "Luna");
+  assert.equal(s().pet.coat, "calico");
+  assert.equal(s().pet.fullness, 75);
+  // and one from an older version without a cat leaves this one alone
+  s().applyCloudState({ tasks: s().tasks });
+  assert.equal(s().pet.name, "Luna");
+  // name and coat are checked on the way in
+  s().updatePet({ name: "", coat: "unicorn" });
+  assert.equal(s().pet.name, "Luna");
+  assert.equal(s().pet.coat, "calico");
+});
+
+test("pet: the cat syncs, its sounds start off, and three.js loads only on demand", () => {
+  const cloud = readFileSync(path.join(root, "src/lib/cloud.ts"), "utf8");
+  assert.match(cloud, /pet: s\.pet,/);
+  const store = readFileSync(path.join(root, "src/lib/store.ts"), "utf8");
+  assert.match(store, /pet: withPetDefaults\(p\.pet\)/, "older saves get a cat");
+  assert.ok(!/petSounds:\s*true/.test(store), "cat sounds are off unless switched on");
+  assert.match(readFileSync(path.join(root, "src/components/pet/catSounds.ts"), "utf8"), /settings\.petSounds/);
+
+  // three.js and the 3D modules are reachable only through the lazy, client-only import
+  const lazy = readFileSync(path.join(root, "src/components/pet/LazyPetScene.tsx"), "utf8");
+  assert.match(lazy, /dynamic\(\(\) => import\("\.\/PetScene"\), \{ ssr: false/);
+  const { readdirSync, statSync } = require("node:fs");
+  const files = [];
+  const walk = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const full = path.join(dir, name);
+      if (statSync(full).isDirectory()) walk(full);
+      else if (/\.tsx?$/.test(name)) files.push(full);
+    }
+  };
+  walk(path.join(root, "src"));
+  const threeInside = new Set(
+    ["PetScene.tsx", "room.ts", "rig.ts", "brain.ts", "coats.ts", "fur.ts", "catGeometry.ts", "anatomy.ts", "anatomy.worker.ts", "pose.ts"]
+      .map((f) => path.join(root, "src/components/pet", f)),
+  );
+  const offenders = [];
+  for (const file of files) {
+    const text = readFileSync(file, "utf8");
+    if (/^import (?!type )[^;]*from "(three|@react-three\/[\w-]+)"/m.test(text) && !threeInside.has(file)) offenders.push(path.relative(root, file));
+    // anything else may only take types from the 3D modules
+    if (!threeInside.has(file) && /^import (?!type )[^;]*from "(@\/components\/pet|\.)\/(PetScene|room|rig|brain|coats|fur|catGeometry|anatomy|pose)"/m.test(text)) offenders.push(`${path.relative(root, file)} imports a 3D module`);
+  }
+  // (coats.ts paints with three.js: the coat picker takes its colours from palettes.ts instead)
+  assert.deepEqual(offenders, []);
+});
+
+test("pet: every text exists in English and German", () => {
+  const files = ["src/app/pet/page.tsx", "src/components/pet/PetUI.tsx", "src/components/widgets/PetWidget.tsx", "src/components/pet/PetRewardNote.tsx"];
+  const src = files.map((f) => readFileSync(path.join(root, f), "utf8")).join("\n");
+  const keys = new Set([...src.matchAll(/(?:t|say)\("((?:pet|w)\.[\w.]+)"/g)].map((m) => m[1]));
+  const dynamic = {
+    "pet.stat.": ["fullness", "mood", "energy", "affection"],
+    "pet.mood.": ["delighted", "happy", "content", "meh", "low"],
+    "pet.need.": ["hungry", "tired", "lonely", "bored"],
+    "pet.status.": ["relaxing", "exploring", "sleeping", "eating", "playing", "purring", "grooming", "hungry", "greeting"],
+    "pet.coat.": ["tabby", "ginger", "black", "white", "grey", "calico"],
+  };
+  for (const [prefix, names] of Object.entries(dynamic)) for (const k of names) keys.add(prefix + k);
+  for (const k of ["pet.todayOne", "pet.todayMany", "pet.treatOne", "pet.treatMany"]) keys.add(k);
+  assert.ok(keys.size > 50);
+  const i18n = readFileSync(path.join(root, "src/lib/i18n.ts"), "utf8");
+  const deStart = i18n.indexOf("const de: Dict");
+  const en = i18n.slice(0, deStart), de = i18n.slice(deStart);
+  for (const k of [...keys, "nav.pet"]) {
+    assert.ok(en.includes(`"${k}":`), `missing English text ${k}`);
+    assert.ok(de.includes(`"${k}":`), `missing German text ${k}`);
+  }
+});
+
+test("pet: the body is one closed mesh, bound to the skeleton, cat-sized", () => {
+  const anatomy = sourceLoader({}, { performance, Float32Array, Float64Array, Int32Array, Uint16Array, Uint32Array })("src/components/pet/anatomy.ts");
+  const a = anatomy.buildCatArrays();
+  const n = a.position.length / 3;
+  assert.ok(n > 8000 && n < 40000, `vertex count ${n}`);
+  // every edge shared by exactly two triangles: no holes, no flaps
+  const edges = new Map();
+  for (let t = 0; t < a.index.length; t += 3) {
+    for (const [x, y] of [[a.index[t], a.index[t + 1]], [a.index[t + 1], a.index[t + 2]], [a.index[t + 2], a.index[t]]]) {
+      const k = x < y ? `${x},${y}` : `${y},${x}`;
+      edges.set(k, (edges.get(k) ?? 0) + 1);
+    }
+  }
+  const open = [...edges.values()].filter((c) => c !== 2).length;
+  assert.ok(open <= edges.size * 0.001, `${open} edges not shared by two triangles`);
+  // weights: four per vertex, summing to one, pointing at real bones
+  for (let v = 0; v < n; v++) {
+    const w = a.skinWeight[v * 4] + a.skinWeight[v * 4 + 1] + a.skinWeight[v * 4 + 2] + a.skinWeight[v * 4 + 3];
+    assert.ok(Math.abs(w - 1) < 1e-4);
+    for (let q = 0; q < 4; q++) assert.ok(a.skinIndex[v * 4 + q] < anatomy.BONES.length);
+  }
+  // a cat's size: standing on the floor, about 40 cm tall at the ears, 80 cm nose to tail tip
+  let minY = Infinity, maxY = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  for (let v = 0; v < n; v++) {
+    minY = Math.min(minY, a.rest[v * 3 + 1]); maxY = Math.max(maxY, a.rest[v * 3 + 1]);
+    minZ = Math.min(minZ, a.rest[v * 3 + 2]); maxZ = Math.max(maxZ, a.rest[v * 3 + 2]);
+  }
+  assert.ok(minY > -0.5 && minY < 1.5, `paws on the floor (${minY})`);
+  assert.ok(maxY > 34 && maxY < 42, `height ${maxY} cm`);
+  assert.ok(maxZ - minZ > 70 && maxZ - minZ < 90, `length ${maxZ - minZ} cm`);
+});
+
+test("twitch: channels from names and links, embedded the official way", () => {
+  const tw = sourceLoader({}, { URLSearchParams })("src/lib/twitch.ts");
+  assert.equal(tw.parseChannel("Monstercat"), "monstercat");
+  assert.equal(tw.parseChannel("  @some_streamer "), "some_streamer");
+  assert.equal(tw.parseChannel("https://www.twitch.tv/Monstercat?x=1"), "monstercat");
+  assert.equal(tw.parseChannel("twitch.tv/popout/abc_123/chat"), "abc_123");
+  assert.equal(tw.parseChannel("ab"), null);
+  assert.equal(tw.parseChannel("not a name"), null);
+  assert.equal(tw.parseChannel("https://example.com/x"), null);
+  // pages that are not channels
+  assert.equal(tw.parseChannel("https://www.twitch.tv/videos/123456"), null);
+  assert.equal(tw.parseChannel("https://www.twitch.tv/directory/category/chess"), null);
+  assert.equal(tw.parseChannel("https://clips.twitch.tv/SomeClipSlug"), null);
+  assert.equal(tw.parseChannel("https://m.twitch.tv/somestreamer/clip/xyz"), "somestreamer");
+  const player = new URL(tw.playerUrl("monstercat", "ember-os.netlify.app"));
+  assert.equal(player.host, "player.twitch.tv");
+  assert.equal(player.searchParams.get("parent"), "ember-os.netlify.app");
+  const chat = new URL(tw.chatUrl("monstercat", "localhost", true));
+  assert.equal(chat.host, "www.twitch.tv");
+  assert.equal(chat.pathname, "/embed/monstercat/chat");
+  assert.ok(chat.searchParams.has("darkpopout"));
+  // only Twitch's own embeds: no other way into Twitch
+  const page = readFileSync(path.join(root, "src/app/twitch/page.tsx"), "utf8") + readFileSync(path.join(root, "src/lib/twitch.ts"), "utf8");
+  assert.ok(!/gql\.twitch\.tv|usher\.ttvnw|client[-_]id/i.test(page));
+  // every text in both languages
+  const keys = new Set([...page.matchAll(/t\("(tw\.[\w.]+)"/g)].map((m) => m[1]));
+  assert.ok(keys.size > 10);
+  const i18n = readFileSync(path.join(root, "src/lib/i18n.ts"), "utf8");
+  const deStart = i18n.indexOf("const de: Dict");
+  for (const k of [...keys, "nav.twitch"]) {
+    assert.ok(i18n.slice(0, deStart).includes(`"${k}":`), `missing English text ${k}`);
+    assert.ok(i18n.slice(deStart).includes(`"${k}":`), `missing German text ${k}`);
+  }
+});
+
+test("pet: the cat's mind settles — food before the laser, a ball is reached or let go", () => {
+  const THREE = require("three");
+  const { CatBrain } = sourceLoader()("src/components/pet/brain.ts");
+  const noop = () => {};
+  const voice = { meow: noop, purr: noop, ateTreat: noop, ateFood: noop, played: noop, caught: noop, bat: noop, slowBlink: noop };
+  const senses = (t, extra) => ({
+    t, dt: 1 / 30, stats: { fullness: 50, mood: 70, energy: 90, affection: 50 }, petting: false, pointer: null,
+    laser: null, ball: null, bowl: null, bed: null, treat: null, idleFor: 0, camera: new THREE.Vector3(0, 1, 3), radius: 1.1, ...extra,
+  });
+
+  // laser on and food in the bowl: it walks to the bowl and eats, without flipping every frame
+  const a = new CatBrain(voice, { x: 0, z: 0 });
+  const bowl = { x: 0.8, z: 0, food: 1 };
+  let flips = 0, prev = a.act, ate = false;
+  for (let i = 0; i < 30 * 20; i++) {
+    a.update(senses(i / 30, { laser: { x: -0.6, z: 0.4 }, bowl }));
+    if (a.act !== prev) flips++;
+    prev = a.act;
+    if (a.act === "eat") ate = true;
+  }
+  assert.ok(ate, "it got to the bowl");
+  assert.ok(flips < 12, `${flips} changes of mind in 20 s`);
+
+  // a ball lying still: it goes over, turns to it and bats it — or gives up after a while
+  const b = new CatBrain(voice, { x: 0, z: 0, heading: Math.PI });
+  const ball = { x: 0.5, z: 0.2, vx: 0, vz: 0, live: true };
+  let batted = false;
+  for (let i = 0; i < 30 * 20 && ball.live; i++) {
+    b.update(senses(i / 30, { ball }));
+    if (b.act === "bat") batted = true;
+  }
+  assert.ok(batted || !ball.live, "the ball is batted or let go");
 });
