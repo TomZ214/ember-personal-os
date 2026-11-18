@@ -27,8 +27,13 @@ export function parseChannel(input: string): string | null {
   return LOGIN.test(name) && !RESERVED.has(name) ? name : null;
 }
 
+/**
+ * The player starts on its own, muted: iPhone and iPad only play video by
+ * themselves without sound (with sound it would sit waiting for a tap). A tap
+ * on the player's speaker turns the sound on.
+ */
 export function playerUrl(channel: string, host: string): string {
-  const q = new URLSearchParams({ channel, parent: host, autoplay: "true", muted: "false" });
+  const q = new URLSearchParams({ channel, parent: host, autoplay: "true", muted: "true" });
   return `https://player.twitch.tv/?${q}`;
 }
 

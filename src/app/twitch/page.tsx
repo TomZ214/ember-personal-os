@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
-import { MessageSquare, MessageSquareOff, Plus, Star, Tv, X } from "lucide-react";
+import { ExternalLink, MessageSquare, MessageSquareOff, Plus, RotateCw, Star, Tv, X } from "lucide-react";
 import { useEmber, useHydrated } from "@/lib/store";
 import { useT } from "@/lib/i18n";
 import { chatUrl, MAX_CHANNELS, parseChannel, playerUrl, readHere, writeHere, type TwitchHere } from "@/lib/twitch";
@@ -14,6 +14,9 @@ import { toast } from "@/components/ui/toast";
  * Twitch in a tab: the official player and chat, a channel box, and a row
  * of favourites that travels with the cloud sync.
  */
+
+/** one shared empty list: a store selector must not hand back a new [] each time */
+const NO_CHANNELS: string[] = [];
 
 const noop = () => () => {};
 /** the host Twitch must be told it is embedded in */
@@ -41,12 +44,14 @@ export default function TwitchPage() {
 function TwitchRoom() {
   const t = useT();
   const host = useHost();
-  const channels = useEmber((s) => s.settings.twitch?.channels ?? []);
+  const channels = useEmber((s) => s.settings.twitch?.channels ?? NO_CHANNELS);
   const dark = useDark();
   const updateSettings = useEmber((s) => s.updateSettings);
   const [here, setHereState] = useState<TwitchHere>(readHere);
   const channel = here.last;
   const [draft, setDraft] = useState("");
+  // bumped by "reload": a fresh player and chat
+  const [reload, setReload] = useState(0);
 
   const setHere = (patch: Partial<TwitchHere>) => {
     const next = { ...here, ...patch };
@@ -125,10 +130,12 @@ function TwitchRoom() {
         </section>
       ) : (
         <div className={`grid grid-cols-1 gap-4 ${here.chat ? "lg:grid-cols-[minmax(0,1fr)_340px]" : ""}`}>
-          <section className="panel overflow-hidden p-0" aria-label={t("tw.player")}>
-            <div className="relative aspect-video w-full bg-black">
+          <section aria-label={t("tw.player")}>
+            {/* Not inside a glass pane: Safari can leave an embedded page
+                blank under a backdrop blur. A plain black frame instead. */}
+            <div className="relative aspect-video w-full overflow-hidden rounded-[18px] bg-black ring-1 ring-white/[0.1]">
               <iframe
-                key={`${channel}-player`}
+                key={`${channel}-player-${reload}`}
                 src={playerUrl(channel, host)}
                 title={`Twitch: ${channel}`}
                 allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
@@ -136,9 +143,20 @@ function TwitchRoom() {
                 className="absolute inset-0 h-full w-full border-0"
               />
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-1 py-3">
               <p className="min-w-0 truncate text-[15px] font-semibold">{channel}</p>
-              <div className="flex items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Button size="sm" variant="ghost" onClick={() => setReload((n) => n + 1)}>
+                  <RotateCw size={14} /> {t("tw.reload")}
+                </Button>
+                <a
+                  href={`https://www.twitch.tv/${encodeURIComponent(channel)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-[9px] px-3 text-[13px] font-medium text-muted hover:bg-white/[0.06] hover:text-ink"
+                >
+                  <ExternalLink size={14} /> {t("tw.open")}
+                </a>
                 <Button size="sm" variant={isFav ? "subtle" : "ghost"} onClick={() => toggleFav(channel)} aria-pressed={isFav}>
                   {isFav ? <Star size={14} className="fill-current text-accent" /> : <Plus size={14} />}
                   {isFav ? t("tw.favourite") : t("tw.addFavourite")}
@@ -152,9 +170,12 @@ function TwitchRoom() {
           </section>
 
           {here.chat && (
-            <section className="panel h-[520px] overflow-hidden p-0 lg:h-auto lg:min-h-[480px]" aria-label={t("here.chat")}>
+            <section
+              className="h-[520px] overflow-hidden rounded-[18px] bg-[#18181b] ring-1 ring-white/[0.1] lg:h-auto lg:min-h-[480px]"
+              aria-label={t("tw.chat")}
+            >
               <iframe
-                key={`${channel}-chat-${dark}`}
+                key={`${channel}-chat-${dark}-${reload}`}
                 src={chatUrl(channel, host, dark)}
                 title={`Twitch Chat: ${channel}`}
                 className="h-full w-full border-0"
