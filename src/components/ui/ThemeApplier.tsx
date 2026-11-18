@@ -7,7 +7,7 @@ import { useEmber } from "@/lib/store";
  * Mirrors the saved appearance onto <html>, which is what every CSS override in
  * globals.css keys off:
  *
- *   data-theme  sunset (absent) | tide | crimson | orchid | moss | dusk
+ *   data-theme  sunset (absent) | tide | crimson | orchid | fog | apricot | moss | dusk
  *   data-style  glass | neo | clay — the surface material
  *   data-glass  on | off        — the Liquid Glass material system; off
  *                                 whenever the style is not glass

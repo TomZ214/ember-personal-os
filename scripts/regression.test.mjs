@@ -1085,3 +1085,25 @@ test("pet: the cat's mind settles — food before the laser, a ball is reached o
   }
   assert.ok(batted || !ball.live, "the ball is batted or let go");
 });
+
+test("themes: every theme has its colours, its glow in dark and light, and a name in both languages", () => {
+  const types = readFileSync(path.join(root, "src/lib/types.ts"), "utf8");
+  const ids = [...types.matchAll(/\{ id: "(\w+)", from: "#[0-9a-f]{6}", to: "#[0-9a-f]{6}" \}/g)].map((m) => m[1]);
+  for (const id of ["fog", "apricot", "moss", "dusk"]) assert.ok(ids.includes(id), `${id} is offered`);
+  const css = readFileSync(path.join(root, "src/app/globals.css"), "utf8");
+  const i18n = readFileSync(path.join(root, "src/lib/i18n.ts"), "utf8");
+  const deStart = i18n.indexOf("const de: Dict");
+  for (const id of ids) {
+    assert.ok(i18n.slice(0, deStart).includes(`"theme.${id}":`), `English name for ${id}`);
+    assert.ok(i18n.slice(deStart).includes(`"theme.${id}":`), `German name for ${id}`);
+    if (id === "sunset") continue; // the default: no attribute
+    for (const sel of [`[data-theme="${id}"] {`, `[data-theme="${id}"] .ambient {`, `[data-appearance="light"][data-theme="${id}"] .ambient {`]) {
+      assert.ok(css.includes(sel), `${sel} is defined`);
+    }
+    const block = css.slice(css.indexOf(`[data-theme="${id}"] {`));
+    const body = block.slice(0, block.indexOf("}"));
+    for (const v of ["--sunset-from", "--sunset-to", "--on-sunset", "--primary:", "--primary-bright", "--accent"]) {
+      assert.ok(body.includes(v), `${id} sets ${v}`);
+    }
+  }
+});

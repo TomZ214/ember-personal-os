@@ -232,13 +232,15 @@ export type Language = "en" | "de";
 export type SurfaceStyle = "glass" | "neo" | "clay";
 export const SURFACE_STYLES: SurfaceStyle[] = ["glass", "neo", "clay"];
 
-export type Theme = "sunset" | "tide" | "crimson" | "orchid" | "moss" | "dusk";
+export type Theme = "sunset" | "tide" | "crimson" | "orchid" | "fog" | "apricot" | "moss" | "dusk";
 
 export const THEMES: { id: Theme; from: string; to: string }[] = [
   { id: "sunset", from: "#ffd59e", to: "#ff6b9d" },
   { id: "tide", from: "#2c3e50", to: "#4ca1af" },
   { id: "crimson", from: "#95122c", to: "#100c08" },
   { id: "orchid", from: "#ff0080", to: "#00e5ff" },
+  { id: "fog", from: "#eceef1", to: "#8e97a3" },
+  { id: "apricot", from: "#fde4cc", to: "#e07a47" },
   { id: "moss", from: "#e3e9d6", to: "#5f7a52" },
   { id: "dusk", from: "#8d99ae", to: "#23253a" },
 ];
