@@ -233,6 +233,50 @@
   --glass-spec-strength: 0.44;
 }
 
+/* Fog — pale mist settling into cool grey. Soft, neutral, overcast morning. */
+[data-theme="fog"] {
+  --sunset-from: #eceef1;
+  --sunset-to: #8e97a3;
+  --on-sunset: #1d2128; /* dark text: the ramp is light all the way */
+
+  /* the ramp's grey is too dim on a dark page; one step lighter */
+  --primary: #a9b2bd;
+  --primary-bright: #cdd3da;
+  --primary-glow: rgba(169, 178, 189, 0.42);
+  --accent: oklch(0.86 0.02 250);
+
+  --c-ember: #a9b2bd;
+
+  /* clear, cool glass, as if breathed on */
+  --glass-blur: 20px;
+  --glass-lens: oklch(0.96 0.01 250 / 0.16);
+  --lens-peak: oklch(0.98 0.01 250 / 0.6);
+  --glass-spec-strength: 0.3;
+  --lens-from: oklch(0.9 0.015 250);
+  --lens-to: var(--primary-bright);
+}
+
+/* Apricot — soft peach ripening into apricot. Warm, friendly, late summer. */
+[data-theme="apricot"] {
+  --sunset-from: #fde4cc;
+  --sunset-to: #e07a47;
+  --on-sunset: #3a1a0b; /* dark text: the ramp starts very light */
+
+  --primary: #ec9461;
+  --primary-bright: #f6b88f;
+  --primary-glow: rgba(236, 148, 97, 0.45);
+  --accent: oklch(0.84 0.08 60);
+
+  --c-ember: #ec9461;
+
+  /* warm glass with a peach cast */
+  --glass-lens: oklch(0.95 0.04 60 / 0.16);
+  --lens-peak: oklch(0.98 0.03 60 / 0.6);
+  --glass-spec-strength: 0.32;
+  --lens-from: oklch(0.92 0.05 65);
+  --lens-to: var(--primary-bright);
+}
+
 /* Moss — pale sage settling into moss green. Quiet, organic, daylight. */
 [data-theme="moss"] {
   --sunset-from: #e3e9d6;
@@ -1376,6 +1420,14 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   --glow-a: oklch(0.32 0.15 340 / 0.34);
   --glow-b: oklch(0.34 0.11 215 / 0.24);
 }
+[data-theme="fog"] .ambient {
+  --glow-a: oklch(0.32 0.015 250 / 0.36);
+  --glow-b: oklch(0.36 0.01 230 / 0.22);
+}
+[data-theme="apricot"] .ambient {
+  --glow-a: oklch(0.32 0.07 50 / 0.36);
+  --glow-b: oklch(0.36 0.05 70 / 0.22);
+}
 [data-theme="moss"] .ambient {
   --glow-a: oklch(0.31 0.06 140 / 0.34);
   --glow-b: oklch(0.34 0.04 115 / 0.22);
@@ -1725,6 +1777,14 @@ select.glass-input {
   --glow-a: oklch(0.84 0.11 340 / 0.42);
   --glow-b: oklch(0.88 0.08 215 / 0.38);
 }
+[data-appearance="light"][data-theme="fog"] .ambient {
+  --glow-a: oklch(0.88 0.015 250 / 0.42);
+  --glow-b: oklch(0.93 0.01 230 / 0.36);
+}
+[data-appearance="light"][data-theme="apricot"] .ambient {
+  --glow-a: oklch(0.88 0.06 55 / 0.42);
+  --glow-b: oklch(0.93 0.05 75 / 0.38);
+}
 [data-appearance="light"][data-theme="moss"] .ambient {
   --glow-a: oklch(0.87 0.06 135 / 0.42);
   --glow-b: oklch(0.92 0.04 115 / 0.36);
@@ -1733,9 +1793,12 @@ select.glass-input {
   --glow-a: oklch(0.86 0.04 265 / 0.42);
   --glow-b: oklch(0.90 0.03 250 / 0.36);
 }
-/* The light appearance gives every theme one warm accent. These two are cool
-   and green; a rust accent on them reads as a mistake, so they bring their
-   own, dark enough to read on a light page. */
+/* The light appearance gives every theme one warm accent. These are cool or
+   green; a rust accent on them reads as a mistake, so they bring their own,
+   dark enough to read on a light page. (Apricot is warm: the default fits.) */
+[data-appearance="light"][data-theme="fog"] {
+  --accent: oklch(0.42 0.03 255);
+}
 [data-appearance="light"][data-theme="moss"] {
   --accent: oklch(0.43 0.08 140);
 }

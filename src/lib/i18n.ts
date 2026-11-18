@@ -1096,6 +1096,8 @@ const en: Dict = {
   "theme.tide": "Tide",
   "theme.crimson": "Crimson",
   "theme.orchid": "Orchid",
+  "theme.fog": "Fog",
+  "theme.apricot": "Apricot",
   "theme.moss": "Moss",
   "theme.dusk": "Dusk",
 
@@ -2330,6 +2332,8 @@ const de: Dict = {
   "theme.tide": "Gezeiten",
   "theme.crimson": "Purpur",
   "theme.orchid": "Orchidee",
+  "theme.fog": "Nebel",
+  "theme.apricot": "Aprikose",
   "theme.moss": "Moos",
   "theme.dusk": "Dämmerung",
 
