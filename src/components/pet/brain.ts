@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { restPose, type Pose } from "./rig";
+import { restPose, strideFor, type Pose } from "./pose";
 
 /**
  * What the cat does, moment to moment. A small state machine: one act at a
@@ -341,7 +341,7 @@ export class CatBrain {
           this.enter("idle");
           break;
         }
-        const spot = this.approach(bowl.x, bowl.z, 0.4);
+        const spot = this.approach(bowl.x, bowl.z, 0.44);
         T.tailUp = 0.75;
         if (this.moveTo(spot.x, spot.z, 0.55, dt, 0.06) || this.at > 10) {
           if (this.face(bowl.x, bowl.z, dt)) this.enter(bowl.food > 0.02 ? "eat" : "beg");
@@ -372,7 +372,7 @@ export class CatBrain {
           this.enter("idle");
           break;
         }
-        const spot = this.approach(treat.x, treat.z, 0.3);
+        const spot = this.approach(treat.x, treat.z, 0.42);
         T.tailUp = 0.9;
         T.pupil = 0.8;
         if (this.moveTo(spot.x, spot.z, 0.85, dt, 0.06) || this.at > 6) {
@@ -491,15 +491,15 @@ export class CatBrain {
         const az = ball.z + ball.vz * 0.25;
         this.look.set(ball.x, 0.07, ball.z);
         this.hasLook = true;
-        const paws = { x: this.x + Math.sin(this.heading) * 0.33, z: this.z + Math.cos(this.heading) * 0.33 };
-        const near = dist(paws.x, paws.z, ball.x, ball.z) < 0.16;
+        const paws = { x: this.x + Math.sin(this.heading) * 0.36, z: this.z + Math.cos(this.heading) * 0.36 };
+        const near = dist(paws.x, paws.z, ball.x, ball.z) < 0.12;
         if (near) {
           if (this.bats >= this.batBudget || s.stats.energy < 15) {
             ball.live = false;
             this.enter("groom", rand(3, 4.5));
           } else this.enter("bat", 0.42);
         } else {
-          const spot = this.approach(ax, az, 0.33);
+          const spot = this.approach(ax, az, 0.36);
           this.moveTo(spot.x, spot.z, s.stats.energy < 35 ? 0.8 : 1.25, dt, 0.03);
         }
         break;
@@ -599,8 +599,7 @@ export class CatBrain {
     if (this.act !== "bat") this.swipe = damp(this.swipe, 0, 10, dt);
 
     // gait: the legs advance with the distance covered, so paws don't skate
-    const stride = 0.34 + this.speed * 0.22;
-    this.phase += (this.speed * dt * Math.PI * 2) / stride + Math.abs(this.turn) * dt * 1.4;
+    this.phase += (this.speed * dt * Math.PI * 2) / strideFor(this.speed) + Math.abs(this.turn) * dt * 1.4;
 
   }
   private nextBegTrip = 20;
@@ -644,6 +643,12 @@ export class CatBrain {
 
   private decideLook(s: Senses) {
     const T = this.target;
+    if (this.hold) {
+      // a held pose (development) looks at the camera, to be looked at
+      this.look.copy(s.camera);
+      this.hasLook = true;
+      return;
+    }
     // following the pointer wins whenever the cat is awake and free to
     if (s.pointer && T.lookW > 0.5 && !["chase", "crouch", "leap", "ball", "bat", "watch"].includes(this.act)) {
       this.look.copy(s.pointer);
@@ -739,9 +744,9 @@ export class CatBrain {
     }
     if (s.bowl && this.act !== "eat") {
       const d = dist(this.x, this.z, s.bowl.x, s.bowl.z);
-      if (d < 0.36 && d > 1e-4) {
-        this.x = s.bowl.x + ((this.x - s.bowl.x) / d) * 0.36;
-        this.z = s.bowl.z + ((this.z - s.bowl.z) / d) * 0.36;
+      if (d < 0.3 && d > 1e-4) {
+        this.x = s.bowl.x + ((this.x - s.bowl.x) / d) * 0.3;
+        this.z = s.bowl.z + ((this.z - s.bowl.z) / d) * 0.3;
       }
     }
   }

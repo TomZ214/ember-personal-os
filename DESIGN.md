@@ -176,10 +176,13 @@ are transforms; only floating chrome fades, and then on its own element.
 ## The cat
 
 The pet (`/pet`, and a widget on the dashboard) is the one place with real
-3D: three.js through @react-three/fiber, loaded on demand. Its look follows
-the rest of the app rather than a game: soft plush materials (sheen), a
-neutral tone map so the colours stay true, a rug and toys tinted with the
-theme's `--primary`, and the canvas transparent over the pane, so the
+3D: three.js through @react-three/fiber, loaded on demand. The cat itself
+is realistic, not a mascot: a real cat's proportions and anatomy, short
+layered fur, almond eyes with lids and a slit pupil, paws that stay planted
+as it walks. A cartoon cat with big round eyes read as uncanny; realism and
+calm, natural motion read as alive. Around it the room follows the app: a
+neutral tone map so the colours stay true, a rug, bed and bowl tinted with
+the theme's `--primary`, and the canvas transparent over the pane, so the
 surface style shows through. UI over the scene (the status chip, the action
 bar) is ordinary chrome.
 

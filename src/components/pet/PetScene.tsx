@@ -7,6 +7,7 @@ import { Environment, Lightformer, PerformanceMonitor } from "@react-three/drei"
 import { useEmber } from "@/lib/store";
 import type { CatStatus } from "./brain";
 import { LAYOUT, Room, type RoomMode } from "./room";
+import { loadCatGeometry } from "./catGeometry";
 
 /**
  * The 3D view of the cat's room. Loaded only on the client and only when
@@ -126,31 +127,44 @@ function World({ mode, laser = false, onReady, onStatus, active }: PetSceneProps
   const room = useRef<Room | null>(null);
   const status = useRef(onStatus);
   const ready = useRef(onReady);
+  const laserOn = useRef(laser);
 
   useEffect(() => {
     status.current = onStatus;
     ready.current = onReady;
+    laserOn.current = laser;
   });
 
-  // the room lives as long as the canvas; a new coat is the same cat
+  // the room lives as long as the canvas; a new coat is the same cat.
+  // The body is built in a worker first (once per page load).
   useEffect(() => {
-    const r = new Room({
-      mode,
-      scene,
-      camera: camera as THREE.PerspectiveCamera,
-      dom: gl.domElement.parentElement ?? gl.domElement,
-      coat: useEmber.getState().pet.coat,
+    let r: Room | null = null;
+    let gone = false;
+    void loadCatGeometry().then(() => {
+      if (gone) return;
+      r = new Room({
+        mode,
+        scene,
+        camera: camera as THREE.PerspectiveCamera,
+        dom: gl.domElement.parentElement ?? gl.domElement,
+        coat: useEmber.getState().pet.coat,
+      });
+      const room_ = r;
+      room_.onStatus = (s) => status.current?.(s);
+      room_.laser = laserOn.current;
+      room_.setAccent(cssColor("--primary", "#ff8a4c"));
+      room.current = room_;
+      ready.current?.({
+        feed: () => room_.feed(),
+        treat: () => room_.treat(),
+        ball: () => room_.ball(),
+        call: () => room_.call(),
+      });
+      invalidate();
     });
-    r.onStatus = (s) => status.current?.(s);
-    room.current = r;
-    ready.current?.({
-      feed: () => r.feed(),
-      treat: () => r.treat(),
-      ball: () => r.ball(),
-      call: () => r.call(),
-    });
-    invalidate();
     return () => {
+      gone = true;
+      if (!r) return;
       ready.current?.(null);
       room.current = null;
       r.dispose();

@@ -1226,6 +1226,25 @@ const en: Dict = {
   "pet.treatMany": "treats",
   "pet.give": "Give treat",
   "pet.earned": "{name} got a treat for that.",
+
+  // twitch
+  "nav.twitch": "Twitch",
+  "tw.sub": "Live streams and chat, in Twitch's own player.",
+  "tw.channel": "Channel",
+  "tw.placeholder": "Channel name or twitch.tv link",
+  "tw.watch": "Watch",
+  "tw.invalid": "That is not a Twitch channel name.",
+  "tw.favourites": "Favourite channels",
+  "tw.remove": "Remove {name} from favourites",
+  "tw.favourite": "Favourite",
+  "tw.addFavourite": "Add to favourites",
+  "tw.showChat": "Show chat",
+  "tw.hideChat": "Hide chat",
+  "tw.player": "Player",
+  "tw.chat": "Chat",
+  "tw.empty": "Pick a channel",
+  "tw.emptySub": "Type a channel name above, or paste a twitch.tv link. Channels you mark as favourites stay here.",
+  "tw.ads": "The player is Twitch's official one, so Twitch shows its ads in it. To watch without ads, Twitch offers Turbo and channel subscriptions.",
 };
 
 const de: Dict = {
@@ -2441,6 +2460,25 @@ const de: Dict = {
   "pet.treatMany": "Leckerlis",
   "pet.give": "Leckerli geben",
   "pet.earned": "{name} hat dafür ein Leckerli bekommen.",
+
+  // twitch
+  "nav.twitch": "Twitch",
+  "tw.sub": "Livestreams und Chat, im offiziellen Twitch-Player.",
+  "tw.channel": "Kanal",
+  "tw.placeholder": "Kanalname oder twitch.tv-Link",
+  "tw.watch": "Ansehen",
+  "tw.invalid": "Das ist kein Twitch-Kanalname.",
+  "tw.favourites": "Lieblingskanäle",
+  "tw.remove": "{name} aus den Favoriten entfernen",
+  "tw.favourite": "Favorit",
+  "tw.addFavourite": "Zu Favoriten",
+  "tw.showChat": "Chat zeigen",
+  "tw.hideChat": "Chat ausblenden",
+  "tw.player": "Player",
+  "tw.chat": "Chat",
+  "tw.empty": "Wähle einen Kanal",
+  "tw.emptySub": "Gib oben einen Kanalnamen ein oder füge einen twitch.tv-Link ein. Kanäle, die du als Favorit markierst, bleiben hier.",
+  "tw.ads": "Der Player ist der offizielle von Twitch, deshalb zeigt Twitch darin seine Werbung. Werbefrei schauen geht über Twitch Turbo oder ein Kanal-Abo.",
 };
 
 const DICT: Record<Language, Dict> = { en, de };

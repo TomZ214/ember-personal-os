@@ -289,6 +289,8 @@ export interface Settings {
   soundVolume?: number;
   /** the cat's meows and purring; off unless switched on (volume follows soundVolume) */
   petSounds?: boolean;
+  /** the Twitch tab: favourite channels, the last one watched, chat on or off */
+  twitch?: import("./twitch").TwitchSettings;
   /**
    * The material every surface is made of. "glass" is Liquid Glass (and the
    * liquidGlass switch below still turns it solid); "neo" is neumorphism,

@@ -929,13 +929,16 @@ test("pet: the cat syncs, its sounds start off, and three.js loads only on deman
     }
   };
   walk(path.join(root, "src"));
-  const threeInside = new Set(["PetScene.tsx", "room.ts", "rig.ts", "brain.ts", "coats.ts"].map((f) => path.join(root, "src/components/pet", f)));
+  const threeInside = new Set(
+    ["PetScene.tsx", "room.ts", "rig.ts", "brain.ts", "coats.ts", "fur.ts", "catGeometry.ts", "anatomy.ts", "anatomy.worker.ts", "pose.ts"]
+      .map((f) => path.join(root, "src/components/pet", f)),
+  );
   const offenders = [];
   for (const file of files) {
     const text = readFileSync(file, "utf8");
-    if (/from "(three|@react-three\/[\w-]+)"/.test(text) && !threeInside.has(file)) offenders.push(path.relative(root, file));
+    if (/^import (?!type )[^;]*from "(three|@react-three\/[\w-]+)"/m.test(text) && !threeInside.has(file)) offenders.push(path.relative(root, file));
     // anything else may only take types from the 3D modules
-    if (!threeInside.has(file) && /^import (?!type )[^;]*from "(@\/components\/pet|\.)\/(PetScene|room|rig|brain|coats)"/m.test(text)) offenders.push(`${path.relative(root, file)} imports a 3D module`);
+    if (!threeInside.has(file) && /^import (?!type )[^;]*from "(@\/components\/pet|\.)\/(PetScene|room|rig|brain|coats|fur|catGeometry|anatomy|pose)"/m.test(text)) offenders.push(`${path.relative(root, file)} imports a 3D module`);
   }
   // (coats.ts paints with three.js: the coat picker takes its colours from palettes.ts instead)
   assert.deepEqual(offenders, []);
@@ -961,5 +964,67 @@ test("pet: every text exists in English and German", () => {
   for (const k of [...keys, "nav.pet"]) {
     assert.ok(en.includes(`"${k}":`), `missing English text ${k}`);
     assert.ok(de.includes(`"${k}":`), `missing German text ${k}`);
+  }
+});
+
+test("pet: the body is one closed mesh, bound to the skeleton, cat-sized", () => {
+  const anatomy = sourceLoader({}, { performance, Float32Array, Float64Array, Int32Array, Uint16Array, Uint32Array })("src/components/pet/anatomy.ts");
+  const a = anatomy.buildCatArrays();
+  const n = a.position.length / 3;
+  assert.ok(n > 8000 && n < 40000, `vertex count ${n}`);
+  // every edge shared by exactly two triangles: no holes, no flaps
+  const edges = new Map();
+  for (let t = 0; t < a.index.length; t += 3) {
+    for (const [x, y] of [[a.index[t], a.index[t + 1]], [a.index[t + 1], a.index[t + 2]], [a.index[t + 2], a.index[t]]]) {
+      const k = x < y ? `${x},${y}` : `${y},${x}`;
+      edges.set(k, (edges.get(k) ?? 0) + 1);
+    }
+  }
+  const open = [...edges.values()].filter((c) => c !== 2).length;
+  assert.ok(open <= edges.size * 0.001, `${open} edges not shared by two triangles`);
+  // weights: four per vertex, summing to one, pointing at real bones
+  for (let v = 0; v < n; v++) {
+    const w = a.skinWeight[v * 4] + a.skinWeight[v * 4 + 1] + a.skinWeight[v * 4 + 2] + a.skinWeight[v * 4 + 3];
+    assert.ok(Math.abs(w - 1) < 1e-4);
+    for (let q = 0; q < 4; q++) assert.ok(a.skinIndex[v * 4 + q] < anatomy.BONES.length);
+  }
+  // a cat's size: standing on the floor, about 40 cm tall at the ears, 80 cm nose to tail tip
+  let minY = Infinity, maxY = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  for (let v = 0; v < n; v++) {
+    minY = Math.min(minY, a.rest[v * 3 + 1]); maxY = Math.max(maxY, a.rest[v * 3 + 1]);
+    minZ = Math.min(minZ, a.rest[v * 3 + 2]); maxZ = Math.max(maxZ, a.rest[v * 3 + 2]);
+  }
+  assert.ok(minY > -0.5 && minY < 1.5, `paws on the floor (${minY})`);
+  assert.ok(maxY > 34 && maxY < 42, `height ${maxY} cm`);
+  assert.ok(maxZ - minZ > 70 && maxZ - minZ < 90, `length ${maxZ - minZ} cm`);
+});
+
+test("twitch: channels from names and links, embedded the official way", () => {
+  const tw = sourceLoader({}, { URLSearchParams })("src/lib/twitch.ts");
+  assert.equal(tw.parseChannel("Monstercat"), "monstercat");
+  assert.equal(tw.parseChannel("  @some_streamer "), "some_streamer");
+  assert.equal(tw.parseChannel("https://www.twitch.tv/Monstercat?x=1"), "monstercat");
+  assert.equal(tw.parseChannel("twitch.tv/popout/abc_123/chat"), "abc_123");
+  assert.equal(tw.parseChannel("ab"), null);
+  assert.equal(tw.parseChannel("not a name"), null);
+  assert.equal(tw.parseChannel("https://example.com/x"), null);
+  const player = new URL(tw.playerUrl("monstercat", "ember-os.netlify.app"));
+  assert.equal(player.host, "player.twitch.tv");
+  assert.equal(player.searchParams.get("parent"), "ember-os.netlify.app");
+  const chat = new URL(tw.chatUrl("monstercat", "localhost", true));
+  assert.equal(chat.host, "www.twitch.tv");
+  assert.equal(chat.pathname, "/embed/monstercat/chat");
+  assert.ok(chat.searchParams.has("darkpopout"));
+  // only Twitch's own embeds: no other way into Twitch
+  const page = readFileSync(path.join(root, "src/app/twitch/page.tsx"), "utf8") + readFileSync(path.join(root, "src/lib/twitch.ts"), "utf8");
+  assert.ok(!/gql\.twitch\.tv|usher\.ttvnw|client[-_]id/i.test(page));
+  // every text in both languages
+  const keys = new Set([...page.matchAll(/t\("(tw\.[\w.]+)"/g)].map((m) => m[1]));
+  assert.ok(keys.size > 10);
+  const i18n = readFileSync(path.join(root, "src/lib/i18n.ts"), "utf8");
+  const deStart = i18n.indexOf("const de: Dict");
+  for (const k of [...keys, "nav.twitch"]) {
+    assert.ok(i18n.slice(0, deStart).includes(`"${k}":`), `missing English text ${k}`);
+    assert.ok(i18n.slice(deStart).includes(`"${k}":`), `missing German text ${k}`);
   }
 });

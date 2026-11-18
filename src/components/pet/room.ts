@@ -15,9 +15,12 @@ import { meow, startPurr, stopPurr } from "./catSounds";
 
 export type RoomMode = "stage" | "widget";
 
+/** the ball of yarn: about six centimetres across */
+const BALL_R = 0.05;
+
 export const LAYOUT = {
-  stage: { radius: 1.3, camera: [0, 1.5, 3.55], target: [0, 0.3, -0.05], fov: 34, bed: { x: -0.98, z: -0.48 }, bowl: { x: 0.98, z: -0.2 } },
-  widget: { radius: 0.5, camera: [0, 0.95, 2.35], target: [0, 0.36, 0], fov: 31, bed: null, bowl: null },
+  stage: { radius: 1.1, camera: [0, 1.2, 2.85], target: [0, 0.26, -0.05], fov: 34, bed: { x: -0.82, z: -0.42 }, bowl: { x: 0.82, z: -0.18 } },
+  widget: { radius: 0.42, camera: [0, 0.72, 1.75], target: [0, 0.28, 0], fov: 31, bed: null, bowl: null },
 } as const;
 
 interface Particle {
@@ -60,6 +63,8 @@ export class Room {
   private nextFx = 0;
   private boopAt = 0;
   private framedFor = "";
+  /** fur layers: fewer in the small widget, where nobody sees single hairs */
+  private shells: number;
   private debugCam: string | null = null;
 
   // what the person is doing
@@ -85,6 +90,7 @@ export class Room {
 
   constructor(opts: { mode: RoomMode; scene: THREE.Scene; camera: THREE.PerspectiveCamera; dom: HTMLElement; coat: CoatId }) {
     this.mode = opts.mode;
+    this.shells = opts.mode === "widget" ? 9 : 14;
     this.camera = opts.camera;
     this.dom = opts.dom;
     const L = LAYOUT[this.mode];
@@ -121,12 +127,12 @@ export class Room {
         this.accentMats.push({ mat, toWhite });
         return mat;
       };
-      const rim = new THREE.Mesh(keep(new THREE.TorusGeometry(0.38, 0.11, 18, 56)), fabric(0.45));
+      const rim = new THREE.Mesh(keep(new THREE.TorusGeometry(0.31, 0.085, 18, 56)), fabric(0.45));
       rim.rotation.x = Math.PI / 2;
-      rim.position.y = 0.08;
+      rim.position.y = 0.062;
       rim.scale.set(1, 1, 0.72);
-      const cushion = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.39, 0.39, 0.06, 48)), fabric(0.72));
-      cushion.position.y = 0.03;
+      const cushion = new THREE.Mesh(keep(new THREE.CylinderGeometry(0.315, 0.315, 0.05, 48)), fabric(0.72));
+      cushion.position.y = 0.025;
       bed.add(rim, cushion);
       this.group.add(bed);
     }
@@ -135,6 +141,8 @@ export class Room {
     if (L.bowl) {
       const bowl = new THREE.Group();
       bowl.position.set(L.bowl.x, 0, L.bowl.z);
+      // about 15 cm across, like a real cat bowl
+      bowl.scale.setScalar(0.56);
       const profile = [
         [0, 0], [0.17, 0], [0.2, 0.012], [0.235, 0.075], [0.24, 0.092], [0.232, 0.1],
         [0.215, 0.096], [0.185, 0.045], [0.16, 0.032], [0, 0.03],
@@ -161,7 +169,7 @@ export class Room {
 
     /* ---- yarn ball, treat, laser dot ---- */
     this.ballMesh = new THREE.Mesh(
-      keep(new THREE.SphereGeometry(0.075, 24, 18)),
+      keep(new THREE.SphereGeometry(BALL_R, 24, 18)),
       keep(new THREE.MeshPhysicalMaterial({ map: keep(yarnTexture("#ff8fa3")), roughness: 0.9, sheen: 1, sheenColor: new THREE.Color("#ffd0da") })),
     );
     this.ballMesh.visible = false;
@@ -191,7 +199,7 @@ export class Room {
 
     /* ---- the cat ---- */
     this.coat = opts.coat;
-    this.rig = new CatRig(this.coat);
+    this.rig = new CatRig(this.coat, { shells: this.shells });
     this.group.add(this.rig.root);
     this.brain = this.makeBrain();
 
@@ -267,7 +275,7 @@ export class Room {
     this.coat = coat;
     this.group.remove(this.rig.root);
     this.rig.dispose();
-    this.rig = new CatRig(coat);
+    this.rig = new CatRig(coat, { shells: this.shells });
     this.group.add(this.rig.root);
   }
 
@@ -522,6 +530,12 @@ export class Room {
     if (this.debugCam === "close") {
       this.camera.position.set(0, 0.75, 2.1);
       this.camera.lookAt(0, 0.33, 0);
+    } else if (this.debugCam === "top") {
+      this.camera.position.set(0.01, 1.6, 0.35);
+      this.camera.lookAt(0, 0, 0);
+    } else if (this.debugCam === "face") {
+      this.camera.position.set(0.05, 0.56, 1.05);
+      this.camera.lookAt(0, 0.5, 0.33);
     } else if (this.debugCam === "side2") {
       this.camera.position.set(-2.1, 0.6, 0.2);
       this.camera.lookAt(0, 0.33, 0);
@@ -591,9 +605,9 @@ export class Room {
       b.z = nz * edge;
     }
     m.visible = true;
-    m.position.set(b.x, 0.075 + b.y, b.z);
+    m.position.set(b.x, BALL_R + b.y, b.z);
     const speed = Math.hypot(b.vx, b.vz);
-    if (speed > 1e-3) m.rotateOnWorldAxis(this.v.axis.set(b.vz / speed, 0, -b.vx / speed), (speed * dt) / 0.075);
+    if (speed > 1e-3) m.rotateOnWorldAxis(this.v.axis.set(b.vz / speed, 0, -b.vx / speed), (speed * dt) / BALL_R);
   }
 
   private spawn(kind: "heart" | "z" | "spark", at: THREE.Vector3, delay = 0) {

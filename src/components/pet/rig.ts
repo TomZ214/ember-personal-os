@@ -1,533 +1,245 @@
 import * as THREE from "three";
 import type { CoatId } from "@/lib/pet";
-import { bodyTexture, headTexture, shadowTexture } from "./coats";
+import { BONES, CM, TAIL_BONES } from "./anatomy";
+import { catGeometry } from "./catGeometry";
+import { coatUniforms, eyeMaterial, furMaterial } from "./fur";
 import { PALETTES } from "./palettes";
+import { shadowTexture } from "./coats";
+import { strideFor, type Frame, type Pose } from "./pose";
+
+export { restPose } from "./pose";
+export type { Frame, Pose } from "./pose";
 
 /**
- * The cat, built from soft primitives and posed by numbers.
+ * The cat, posed: a skeleton under one skinned, furred body, plus the parts
+ * a skin cannot make — eyes with lids, ears, the nose leather, whiskers.
  *
- * Proportions are a kitten's: a big round head, wide-set eyes, a short
- * body, short legs. Every part is a sphere, capsule or cone with a
- * velvety (sheen) material, so it reads as plush rather than plastic.
+ * Each frame the body is set from the pose amounts (how much it sits, lies,
+ * stretches…), and then each leg reaches for where its paw should be with
+ * two-bone inverse kinematics: the paws stay planted on the floor whatever
+ * the body does, and the gait moves them in the order a walking cat does
+ * (hind, front, other hind, other front).
  *
- * Space: the cat faces +Z, y is up, the floor is y = 0 at the root. The
- * root is placed and turned by the brain; everything else here.
- *
- *   root ── hip (pivot at the haunches: sitting pitches the body up round it)
- *            └ torso ── body, bib, haunches
- *                     ├ neck ── head ── ears, eyes, muzzle, nose, mouth, whiskers
- *                     └ four legs (pivot at shoulder / hip, paws stay on the floor)
- *       ── tail (a chain of spheres laid out in root space, so it can lie on the floor)
- *       ── shadow
+ * Space: the cat faces +z, y is up, the floor is y = 0 at the root. The
+ * root is placed and turned by the room; everything else happens here.
  */
-
-export const STAND_Y = 0.37;
-
-/** smoothed pose amounts: mostly 0..1 blends, a few angle offsets */
-export interface Pose {
-  sit: number;
-  loaf: number;
-  curl: number;
-  stretch: number;
-  crouch: number;
-  eat: number;
-  groom: number;
-  bat: number;
-  leap: number;
-  tailUp: number;
-  tailWrap: number;
-  tailSway: number;
-  tailSpeed: number;
-  earsBack: number;
-  eyeOpen: number;
-  happyEyes: number;
-  mouth: number;
-  purr: number;
-  pupil: number;
-  headPitch: number;
-  headYaw: number;
-  headRoll: number;
-  lookW: number;
-}
-
-export const restPose = (): Pose => ({
-  sit: 0, loaf: 0, curl: 0, stretch: 0, crouch: 0, eat: 0, groom: 0, bat: 0, leap: 0,
-  tailUp: 0.3, tailWrap: 0, tailSway: 0.25, tailSpeed: 1.4,
-  earsBack: 0, eyeOpen: 1, happyEyes: 0, mouth: 0, purr: 0, pupil: 0.3,
-  headPitch: 0, headYaw: 0, headRoll: 0, lookW: 1,
-});
-
-/** what changes every frame and is not smoothed */
-export interface Frame {
-  t: number;
-  dt: number;
-  /** gait phase in radians */
-  phase: number;
-  /** ground speed, units/s */
-  speed: number;
-  /** turning in place, rad/s */
-  turn: number;
-  /** height of a leap */
-  lift: number;
-  /** 0..1 hind-end wiggle before a pounce */
-  wiggle: number;
-  /** 0 paw raised … 1 paw swiped down */
-  swipe: number;
-  /** where to look, in root space, or null */
-  look: THREE.Vector3 | null;
-  /** which side the tail wraps to: 1 or -1 */
-  wrapSide: number;
-}
-
-interface Leg {
-  pivot: THREE.Group;
-  mesh: THREE.Mesh;
-  paw: THREE.Mesh;
-  front: boolean;
-  /** +1 on the cat's left (+x), -1 on its right */
-  side: number;
-  len: number;
-  /** pivot → bottom of the paw, at scale 1 */
-  reach: number;
-  /** gait phase offset (trot) and when bounding */
-  trot: number;
-  bound: number;
-}
-
-interface Eye {
-  group: THREE.Group;
-  open: THREE.Group;
-  closed: THREE.Mesh;
-  pupil: THREE.Mesh;
-  side: number;
-}
-
-const HEAD = new THREE.Vector3(0.235, 0.205, 0.2);
-const TAIL_N = 22;
-const TAIL_SEG = 0.031;
-/** per-segment amounts were tuned for 12 segments; keep the shape when the count changes */
-const PER = 12 / (TAIL_N - 1);
 
 const mix = (a: number, b: number, t: number) => a + (b - a) * t;
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const damp = THREE.MathUtils.damp;
+const cmv = (x: number, y: number, z: number) => new THREE.Vector3(x * CM, y * CM, z * CM);
 
-/** a point on the head's ellipsoid surface, seen from the front, and its normal */
-function onHead(x: number, y: number, sink = 0) {
-  const z = HEAD.z * Math.sqrt(Math.max(0, 1 - (x / HEAD.x) ** 2 - (y / HEAD.y) ** 2));
-  const n = new THREE.Vector3(x / HEAD.x ** 2, y / HEAD.y ** 2, z / HEAD.z ** 2).normalize();
-  const p = new THREE.Vector3(x, y, z).addScaledVector(n, -sink);
-  return { p, q: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), n) };
+interface Eye {
+  group: THREE.Group;
+  ball: THREE.Mesh;
+  upper: THREE.Group;
+  lower: THREE.Group;
+}
+
+interface Leg {
+  front: boolean;
+  /** +1 the cat's left (+x), -1 its right */
+  side: number;
+  a: THREE.Bone;
+  b: THREE.Bone;
+  c: THREE.Bone;
+  /** hind legs: the toes, which the foot aims at */
+  d?: THREE.Bone;
+  /** gait offset, a fraction of a cycle: walking and bounding */
+  walk: number;
+  bound: number;
+}
+
+export interface RigOptions {
+  /** fur layers; fewer for small views */
+  shells?: number;
 }
 
 export class CatRig {
   readonly root = new THREE.Group();
-  readonly hip = new THREE.Group();
-  readonly torso = new THREE.Group();
-  readonly neck = new THREE.Group();
-  readonly head = new THREE.Group();
-  /** every mesh you can stroke */
+  /** what a pointer can stroke: invisible shapes round the body and head */
   readonly touchable: THREE.Object3D[] = [];
 
+  private bone: Record<string, THREE.Bone> = {};
+  private rest = new Map<THREE.Bone, THREE.Vector3>();
+  private skeleton: THREE.Skeleton;
+  private legs: Leg[] = [];
+  private eyes: Eye[] = [];
   private earL = new THREE.Group();
   private earR = new THREE.Group();
-  private eyes: Eye[] = [];
-  private mouthOpen!: THREE.Mesh;
-  private tongue!: THREE.Mesh;
-  private legs: Leg[] = [];
-  private haunches: THREE.Mesh[] = [];
-  private tail: THREE.Mesh[] = [];
-  private tailRadius: number[] = [];
-  private tailBase = new THREE.Object3D();
+  private mouth!: THREE.Mesh;
   private shadow!: THREE.Mesh;
+  private dilate: THREE.IUniform;
   private disposables: { dispose(): void }[] = [];
 
-  // little lives of their own
+  // lives of their own
   private blinkAt = 1.5;
+  private blinkStart = -10;
   private blinkLen = 0.14;
+  private slow = false;
   private twitchAt = 3;
   private twitchSide = 1;
   private twitchStart = -10;
   private lookYaw = 0;
   private lookPitch = 0;
 
-  private tmp = new THREE.Vector3();
-  private tmp2 = new THREE.Vector3();
+  // scratch
+  private q = new THREE.Quaternion();
+  private q2 = new THREE.Quaternion();
+  private q3 = new THREE.Quaternion();
+  private qp = new THREE.Quaternion();
+  private va = new THREE.Vector3();
+  private vb = new THREE.Vector3();
+  private vc = new THREE.Vector3();
+  private vd = new THREE.Vector3();
+  private ve = new THREE.Vector3();
+  private vt = new THREE.Vector3();
+  private vp = new THREE.Vector3();
+  private vw = new THREE.Vector3();
+  private e = new THREE.Euler(0, 0, 0, "YXZ");
   private inv = new THREE.Matrix4();
 
-  constructor(coat: CoatId) {
+  constructor(coat: CoatId, opts: RigOptions = {}) {
     const p = PALETTES[coat];
     const keep = <T extends { dispose(): void }>(x: T) => (this.disposables.push(x), x);
 
-    const sphere = keep(new THREE.SphereGeometry(1, 40, 28));
-    const small = keep(new THREE.SphereGeometry(1, 18, 12));
-    const bodyGeo = keep(new THREE.SphereGeometry(1, 40, 28));
-    // poles along the spine, so the painted stripes run round the body
-    bodyGeo.rotateX(Math.PI / 2);
+    /* ---- skeleton ---- */
+    for (const def of BONES) {
+      const b = new THREE.Bone();
+      b.name = def.name;
+      const parent = def.parent ? BONES.find((x) => x.name === def.parent)! : null;
+      const local = parent
+        ? cmv(def.at[0] - parent.at[0], def.at[1] - parent.at[1], def.at[2] - parent.at[2])
+        : cmv(def.at[0], def.at[1], def.at[2]);
+      b.position.copy(local);
+      this.rest.set(b, local.clone());
+      this.bone[def.name] = b;
+      if (def.parent) this.bone[def.parent].add(b);
+    }
+    this.root.add(this.bone.root);
+    this.root.updateMatrixWorld(true);
+    this.skeleton = new THREE.Skeleton(BONES.map((d) => this.bone[d.name]));
 
-    const furCache = new Map<string, THREE.Material>();
-    const fur = (color: string) => {
-      let m = furCache.get(color);
-      if (!m) {
-        m = keep(
-          new THREE.MeshPhysicalMaterial({
-            color, roughness: 0.88, sheen: 1, sheenRoughness: 0.5, sheenColor: new THREE.Color(p.sheen),
-          }),
-        );
-        furCache.set(color, m);
-      }
-      return m;
-    };
-    const painted = (tex: THREE.Texture) =>
-      keep(
-        new THREE.MeshPhysicalMaterial({
-          map: keep(tex), roughness: 0.88, sheen: 1, sheenRoughness: 0.5, sheenColor: new THREE.Color(p.sheen),
-        }),
-      );
-    const flat = (color: string, extra: THREE.MeshPhysicalMaterialParameters = {}) =>
-      keep(new THREE.MeshPhysicalMaterial({ color, roughness: 0.6, ...extra }));
-
-    const mesh = (geo: THREE.BufferGeometry, mat: THREE.Material, s: [number, number, number], pos: [number, number, number] = [0, 0, 0], touch = true) => {
-      const m = new THREE.Mesh(geo, mat);
-      m.scale.set(...s);
-      m.position.set(...pos);
-      if (touch) this.touchable.push(m);
-      return m;
-    };
-
-    /* ---- body ---- */
-    this.root.add(this.hip);
-    this.hip.add(this.torso);
-    this.torso.position.set(0, 0, 0.17);
-    this.torso.add(mesh(bodyGeo, painted(bodyTexture(coat)), [0.2, 0.19, 0.33], [0, 0, -0.03]));
-    this.torso.add(mesh(sphere, fur(p.bib), [0.135, 0.15, 0.12], [0, -0.035, 0.2]));
-    for (const side of [1, -1]) {
-      const h = mesh(sphere, fur(p.base), [0.085, 0.13, 0.14], [side * 0.112, -0.05, -0.19]);
-      this.haunches.push(h);
-      this.torso.add(h);
+    /* ---- the body: skin plus layers of fur ---- */
+    const geometry = catGeometry();
+    const shared = coatUniforms(coat);
+    const shells = opts.shells ?? 14;
+    for (let i = 0; i <= shells; i++) {
+      const mesh = new THREE.SkinnedMesh(geometry, keep(furMaterial(shared, i / shells)));
+      mesh.frustumCulled = false;
+      mesh.bind(this.skeleton, new THREE.Matrix4());
+      this.root.add(mesh);
     }
 
     /* ---- legs ---- */
-    const legDefs = [
-      { front: true, side: 1, at: [0.097, -0.07, 0.19], r: 0.056, len: 0.238, trot: 0, bound: 0, paw: p.paws[0] },
-      { front: true, side: -1, at: [-0.097, -0.07, 0.19], r: 0.056, len: 0.238, trot: Math.PI, bound: 0.35, paw: p.paws[1] },
-      { front: false, side: 1, at: [0.112, -0.09, -0.21], r: 0.058, len: 0.219, trot: Math.PI, bound: Math.PI, paw: p.paws[2] },
-      { front: false, side: -1, at: [-0.112, -0.09, -0.21], r: 0.058, len: 0.219, trot: 0, bound: Math.PI + 0.35, paw: p.paws[3] },
-    ] as const;
-    for (const d of legDefs) {
-      const geo = keep(new THREE.CapsuleGeometry(d.r, d.len, 6, 14));
-      geo.translate(0, -d.len / 2, 0);
-      const pivot = new THREE.Group();
-      pivot.position.set(d.at[0], d.at[1], d.at[2]);
-      // the leg is the paw's colour toward the bottom only in spirit: a
-      // sock would need a second mesh, the paw carries the colour instead
-      const legMesh = mesh(geo, fur(d.front ? p.base : p.base), [1, 1, 1]);
-      const paw = mesh(sphere, fur(d.paw), [d.r * 1.18, d.r * 0.74, d.r * 1.42], [0, -(d.len + d.r * 0.3), d.r * 0.35]);
-      pivot.add(legMesh, paw);
-      this.torso.add(pivot);
-      this.legs.push({
-        pivot, mesh: legMesh, paw, front: d.front, side: d.side, len: d.len,
-        reach: d.len + d.r * 0.3 + d.r * 0.74, trot: d.trot, bound: d.bound,
-      });
+    for (const s of [1, -1]) {
+      const n = (x: string) => this.bone[`${x}${s > 0 ? "L" : "R"}`];
+      // lateral-sequence walk: left hind, left fore, right hind, right fore
+      this.legs.push(
+        { front: true, side: s, a: n("upperArm"), b: n("forearm"), c: n("paw"), walk: s > 0 ? 0.25 : 0.75, bound: s > 0 ? 0 : 0.08 },
+        { front: false, side: s, a: n("thigh"), b: n("shin"), c: n("foot"), d: n("toes"), walk: s > 0 ? 0 : 0.5, bound: s > 0 ? 0.5 : 0.58 },
+      );
     }
 
-    /* ---- head ---- */
-    this.neck.position.set(0, 0.11, 0.22);
-    this.neck.rotation.order = "YXZ";
-    this.torso.add(this.neck);
-    this.head.position.set(0, 0.12, 0.08);
-    this.neck.add(this.head);
-    this.head.add(mesh(sphere, painted(headTexture(coat)), [HEAD.x, HEAD.y, HEAD.z]));
-    // cheeks: a little fluff at the jaw line widens the face
-    for (const side of [1, -1]) {
-      this.head.add(mesh(sphere, fur(p.base), [0.07, 0.062, 0.075], [side * 0.142, -0.075, 0.05]));
-    }
-
-    // muzzle, chin, nose
-    for (const side of [1, -1]) this.head.add(mesh(sphere, fur(p.muzzle), [0.052, 0.046, 0.05], [side * 0.036, -0.07, 0.165]));
-    this.head.add(mesh(sphere, fur(p.muzzle), [0.036, 0.03, 0.034], [0, -0.112, 0.15]));
-    const nose = mesh(sphere, flat(p.nose, { roughness: 0.35, clearcoat: 0.6 }), [0.026, 0.017, 0.016], [0, -0.032, 0.206]);
-    nose.rotation.x = 0.25;
-    this.head.add(nose);
-
-    // the mouth: ω when closed, a small open mouth beneath it for meows
-    const lineMat = flat(p.line, { roughness: 0.5 });
-    const arc = keep(new THREE.TorusGeometry(0.016, 0.0042, 6, 16, Math.PI));
-    for (const side of [1, -1]) {
-      const a = new THREE.Mesh(arc, lineMat);
-      a.position.set(side * 0.016, -0.08, 0.211);
-      a.rotation.z = Math.PI; // ∪
-      this.head.add(a);
-    }
-    this.mouthOpen = new THREE.Mesh(sphere, flat("#5b2c35", { roughness: 0.7 }));
-    this.mouthOpen.position.set(0, -0.1, 0.196);
-    this.mouthOpen.scale.set(0.03, 0.0001, 0.02);
-    this.tongue = new THREE.Mesh(sphere, flat("#f08b9b", { roughness: 0.45 }));
-    this.tongue.position.set(0, -0.11, 0.203);
-    this.tongue.scale.set(0.019, 0.0001, 0.012);
-    this.head.add(this.mouthOpen, this.tongue);
-
-    // whiskers
-    const whiskerGeo = keep(new THREE.CylinderGeometry(0.0022, 0.0009, 0.21, 4));
-    const whiskerMat = keep(new THREE.MeshBasicMaterial({ color: p.whisker, transparent: true, opacity: 0.85 }));
-    for (const side of [1, -1]) {
-      for (const [dy, dz] of [[0.13, 0.22], [0, 0.16], [-0.12, 0.2]]) {
-        const dir = new THREE.Vector3(side, dy, dz).normalize();
-        const w = new THREE.Mesh(whiskerGeo, whiskerMat);
-        w.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
-        w.position.set(side * 0.07, -0.078, 0.18).addScaledVector(dir, 0.105);
-        this.head.add(w);
-      }
-    }
-
-    // eyes: a dark rim, the iris, a pupil that widens when hunting, two glints
-    const irisMat = flat(p.iris, { roughness: 0.15, clearcoat: 1, clearcoatRoughness: 0.05 });
-    const pupilMat = flat("#0d0b10", { roughness: 0.1, clearcoat: 1, clearcoatRoughness: 0.05 });
-    const rimMat = flat(p.line === "#9a8a84" ? "#6b5d58" : "#1a1519", { roughness: 0.4 });
-    const glint = keep(new THREE.MeshBasicMaterial({ color: "#ffffff" }));
-    const closedGeo = keep(new THREE.TorusGeometry(0.04, 0.0072, 6, 18, Math.PI));
-    for (const side of [1, -1]) {
-      const { p: at, q } = onHead(side * 0.088, 0.008, 0.014);
+    /* ---- eyes, with lids ---- */
+    const head = this.bone.head;
+    const headAt = BONES.find((x) => x.name === "head")!.at;
+    const local = (x: number, y: number, z: number) => cmv(x - headAt[0], y - headAt[1], z - headAt[2]);
+    const { material: eyeMat, dilate } = eyeMaterial(coat);
+    keep(eyeMat);
+    this.dilate = dilate;
+    const R = 1.0 * CM;
+    const ballGeo = keep(new THREE.SphereGeometry(R, 32, 24));
+    const upperGeo = keep(new THREE.SphereGeometry(R * 1.04, 28, 10, 0, Math.PI * 2, 0, Math.PI / 2));
+    const lowerGeo = keep(new THREE.SphereGeometry(R * 1.04, 28, 10, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2));
+    const rimGeo = keep(new THREE.TorusGeometry(R * 1.04, 0.08 * CM, 6, 40));
+    // the lids are fur: the coat's colour, a shade lighter, as the fur round a cat's eyes is
+    const lidColor = new THREE.Color(p.base).lerp(new THREE.Color(p.muzzle), 0.3);
+    const lidMat = keep(new THREE.MeshStandardMaterial({ color: lidColor, roughness: 0.9 }));
+    const rimMat = keep(new THREE.MeshStandardMaterial({ color: p.line, roughness: 0.55 }));
+    for (const s of [1, -1]) {
       const group = new THREE.Group();
-      group.position.copy(at);
-      group.quaternion.copy(q);
-      const open = new THREE.Group();
-      open.add(mesh(sphere, rimMat, [0.056, 0.064, 0.022], [0, 0, -0.004], false));
-      open.add(mesh(sphere, irisMat, [0.05, 0.058, 0.026], [0, 0, 0], false));
-      const pupil = mesh(sphere, pupilMat, [0.022, 0.045, 0.014], [0, 0, 0.016], false);
-      open.add(pupil);
-      open.add(mesh(small, glint, [0.013, 0.013, 0.006], [side * 0.016 + 0.004, 0.022, 0.027], false));
-      open.add(mesh(small, glint, [0.0065, 0.0065, 0.004], [-side * 0.012, -0.018, 0.027], false));
-      const closed = new THREE.Mesh(closedGeo, lineMat);
-      closed.scale.set(1, 0.55, 1);
-      closed.position.z = 0.012;
-      closed.visible = false;
-      group.add(open, closed);
-      this.head.add(group);
-      this.eyes.push({ group, open, closed, pupil, side });
+      group.position.copy(local(1.8 * s, 31.68, 25.12));
+      // cats look straight ahead; the eyes turn out only a touch
+      group.rotation.set(0.04, 0.12 * s, 0, "YXZ");
+      const ball = new THREE.Mesh(ballGeo, eyeMat);
+      const upper = new THREE.Group();
+      const lower = new THREE.Group();
+      upper.add(new THREE.Mesh(upperGeo, lidMat));
+      lower.add(new THREE.Mesh(lowerGeo, lidMat));
+      for (const lid of [upper, lower]) {
+        const rim = new THREE.Mesh(rimGeo, rimMat);
+        rim.rotation.x = Math.PI / 2;
+        lid.add(rim);
+      }
+      group.add(ball, upper, lower);
+      head.add(group);
+      this.eyes.push({ group, ball, upper, lower });
     }
 
-    // ears
-    const earGeo = keep(new THREE.ConeGeometry(0.098, 0.15, 20));
-    earGeo.translate(0, 0.075, 0);
-    const innerGeo = keep(new THREE.ConeGeometry(0.066, 0.108, 16));
-    innerGeo.translate(0, 0.054, 0);
-    for (const [ear, side] of [[this.earL, 1], [this.earR, -1]] as const) {
-      ear.position.set(side * 0.122, 0.13, 0.04);
-      const outer = mesh(earGeo, fur(coat === "calico" ? (side > 0 ? p.mark : p.mark2!) : p.base), [1, 1, 0.48]);
-      const inner = mesh(innerGeo, fur(p.innerEar), [1, 1, 0.36], [0, 0.01, 0.026]);
-      ear.add(outer, inner);
-      this.head.add(ear);
+    /* ---- ears ---- */
+    const earMat = keep(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, side: THREE.DoubleSide }));
+    for (const [ear, s] of [[this.earL, 1], [this.earR, -1]] as const) {
+      ear.position.copy(local(2.85 * s, 33.9, 20.8));
+      ear.add(new THREE.Mesh(keep(earGeometry(coat, s)), earMat));
+      head.add(ear);
     }
 
-    /* ---- tail ---- */
-    this.tailBase.position.set(0, 0.06, -0.34);
-    this.torso.add(this.tailBase);
-    for (let i = 0; i < TAIL_N; i++) {
-      const k = i / (TAIL_N - 1);
-      const r = mix(0.05, 0.031, k * k) * (i === TAIL_N - 1 ? 0.92 : 1);
-      let color = p.base;
-      if (p.ringed && Math.floor(i / 2) % 2 === 1) color = p.mark;
-      if (i >= TAIL_N - 3) color = p.tip;
-      const seg = mesh(sphere, fur(color), [r, r, r]);
-      this.tail.push(seg);
-      this.tailRadius.push(r);
-      this.root.add(seg);
+    /* ---- nose leather, mouth, whiskers ---- */
+    const noseShape = new THREE.Shape();
+    noseShape.moveTo(-0.62, 0.34);
+    noseShape.quadraticCurveTo(0, 0.5, 0.62, 0.34);
+    noseShape.quadraticCurveTo(0.68, 0.2, 0.12, -0.4);
+    noseShape.quadraticCurveTo(0, -0.48, -0.12, -0.4);
+    noseShape.quadraticCurveTo(-0.68, 0.2, -0.62, 0.34);
+    const noseGeo = keep(
+      new THREE.ExtrudeGeometry(noseShape, { depth: 0.2, bevelEnabled: true, bevelThickness: 0.16, bevelSize: 0.14, bevelSegments: 3, curveSegments: 10 }),
+    );
+    noseGeo.scale(CM, CM, CM);
+    const nose = new THREE.Mesh(noseGeo, keep(new THREE.MeshPhysicalMaterial({ color: p.nose, roughness: 0.42, clearcoat: 0.4 })));
+    nose.position.copy(local(0, 30.28, 27.62));
+    nose.rotation.x = -0.4;
+    head.add(nose);
+
+    this.mouth = new THREE.Mesh(keep(new THREE.SphereGeometry(1, 16, 10)), keep(new THREE.MeshStandardMaterial({ color: "#3a1c22", roughness: 0.6 })));
+    const jawAt = BONES.find((x) => x.name === "jaw")!.at;
+    this.mouth.position.copy(cmv(0, 28.8 - jawAt[1], 26.9 - jawAt[2]));
+    this.mouth.scale.set(1.1 * CM, 0.0001, 0.6 * CM);
+    this.mouth.visible = false;
+    this.bone.jaw.add(this.mouth);
+
+    head.add(whiskers(p.whisker, local, keep));
+
+    /* ---- something to stroke ---- */
+    const proxyGeo = keep(new THREE.SphereGeometry(1, 12, 8));
+    const proxyMat = keep(new THREE.MeshBasicMaterial({ visible: false }));
+    const proxies: [string, [number, number, number], [number, number, number]][] = [
+      ["chest", [0, -4, -2], [7, 8, 9]],
+      ["spine1", [0, -4, 0], [6.5, 7.5, 8]],
+      ["pelvis", [0, -2, 0], [6.5, 7.5, 7]],
+      ["head", [0, 1.5, 3], [5, 4.5, 5.5]],
+    ];
+    for (const [bone, at, r] of proxies) {
+      const m = new THREE.Mesh(proxyGeo, proxyMat);
+      m.position.copy(cmv(at[0], at[1], at[2]));
+      m.scale.copy(cmv(r[0], r[1], r[2]));
+      this.bone[bone].add(m);
+      this.touchable.push(m);
     }
 
     /* ---- shadow ---- */
-    const shadowMat = keep(
-      new THREE.MeshBasicMaterial({ map: keep(shadowTexture()), transparent: true, depthWrite: false, opacity: 0.55 }),
-    );
-    const plane = keep(new THREE.PlaneGeometry(1, 1));
-    this.shadow = new THREE.Mesh(plane, shadowMat);
+    const shadowMat = keep(new THREE.MeshBasicMaterial({ map: keep(shadowTexture()), transparent: true, depthWrite: false, opacity: 0.5 }));
+    this.shadow = new THREE.Mesh(keep(new THREE.PlaneGeometry(1, 1)), shadowMat);
     this.shadow.rotation.x = -Math.PI / 2;
     this.shadow.position.y = 0.002;
     this.shadow.renderOrder = -1;
     this.root.add(this.shadow);
   }
 
-  /** the head's position in world space */
+  /** the middle of the face, in world space */
   headWorld(out: THREE.Vector3) {
-    return this.head.getWorldPosition(out);
+    return this.bone.head.localToWorld(out.set(0, 1.5 * CM, 4 * CM));
   }
-
-  apply(P: Pose, f: Frame) {
-    const { t, dt } = f;
-
-    /* ---- the body ---- */
-    const walk = clamp01(f.speed / 0.45);
-    const run = clamp01((f.speed - 0.85) / 0.6);
-    const breath = Math.sin(t * mix(2.5, 1.3, Math.max(P.curl, P.loaf * 0.6)));
-    const bob = Math.abs(Math.sin(f.phase)) * 0.016 * walk * (1 - run * 0.4);
-    const lying = Math.max(P.loaf, P.curl);
-
-    const hipY =
-      STAND_Y - P.sit * 0.2 - P.loaf * 0.18 - P.curl * 0.205 - P.crouch * 0.13 + P.stretch * 0.035 - P.eat * 0.02 + f.lift + bob;
-    const pitch =
-      P.sit * -0.62 + P.stretch * 0.42 + P.eat * 0.2 + P.crouch * 0.06 - P.leap * 0.18 + Math.sin(f.phase) * 0.1 * run;
-    this.hip.position.set(Math.sin(t * 157) * 0.0012 * P.purr, hipY, -0.17);
-    this.hip.rotation.set(pitch, Math.sin(t * 17) * 0.11 * f.wiggle, P.curl * 0.22);
-    this.torso.scale.set(
-      1 + P.curl * 0.1 + breath * 0.006,
-      1 - P.curl * 0.08 + breath * 0.014,
-      1 - P.curl * 0.2,
-    );
-    for (const h of this.haunches) h.scale.y = 0.13 * (1 + P.sit * 0.1);
-
-    // where everything is now, before the legs reach for the floor
-    this.root.updateMatrixWorld(true);
-    this.inv.copy(this.root.matrixWorld).invert();
-
-    /* ---- legs ---- */
-    const amp = 0.42 * walk + 0.25 * run;
-    for (const leg of this.legs) {
-      const ph = f.phase + mix(leg.trot, leg.bound, run);
-      const swing = Math.sin(ph) * amp + Math.sin(f.t * 9 + leg.trot) * 0.08 * clamp01(Math.abs(f.turn) / 2) * (1 - walk);
-      // the swinging leg lifts off the ground on its way forward
-      const lift = Math.max(0, -Math.cos(ph)) * 0.05 * walk;
-      const isRight = leg.side < 0;
-      let world: number;
-      let roll = 0;
-      let plant = 1;
-      if (leg.front) {
-        world = -swing + P.stretch * -1.05 + P.loaf * -1.32 + P.curl * -1.3 + P.leap * -0.95 + P.crouch * -0.3 + P.eat * -0.12;
-        plant -= lying + P.leap + P.stretch * 0.6;
-        if (isRight) {
-          // grooming: the paw comes up to the mouth and back, a lick at a time
-          const g = P.groom;
-          world = mix(world, -2.05 + Math.sin(t * 8.5) * 0.12, g);
-          roll += 0.3 * g;
-          // batting the ball: up, then a quick swipe down and forward
-          world = mix(world, mix(-2.1, -0.75, f.swipe), P.bat);
-          plant -= g + P.bat;
-        }
-      } else {
-        world = swing + P.sit * -1.42 + P.loaf * -1.4 + P.curl * -1.35 + P.leap * 0.85 + P.stretch * 0.32 + P.crouch * -0.35;
-        plant -= lying + P.sit + P.leap;
-      }
-      const tilt = this.hip.rotation.x;
-      leg.pivot.rotation.set(world - tilt, 0, roll * (isRight ? 1 : -1) - P.curl * 0.2 * leg.side);
-
-      // paw planting: stretch or shorten a touch so the paw meets the floor
-      leg.pivot.getWorldPosition(this.tmp).applyMatrix4(this.inv);
-      const cos = Math.cos(world);
-      const need = (this.tmp.y - lift) / Math.max(0.2, leg.reach * cos);
-      const s = mix(1, Math.min(1.28, Math.max(0.78, need)), clamp01(plant));
-      leg.mesh.scale.y = s;
-      leg.paw.position.y = -(leg.reach - leg.paw.scale.y) * s;
-      // sinking into a loaf, the legs fold away under the body
-      const fold = 1 - lying * 0.35;
-      leg.pivot.scale.set(1, fold, 1);
-    }
-
-    /* ---- head ---- */
-    const torsoTilt = this.hip.rotation.x;
-    let yawT = 0;
-    let pitchT = 0;
-    if (f.look && P.lookW > 0.01) {
-      this.head.getWorldPosition(this.tmp).applyMatrix4(this.inv);
-      this.tmp2.copy(f.look).sub(this.tmp);
-      yawT = Math.atan2(this.tmp2.x, this.tmp2.z);
-      pitchT = Math.atan2(-this.tmp2.y, Math.hypot(this.tmp2.x, this.tmp2.z));
-      // something behind the cat: turn as far as a neck turns, no further
-      yawT = Math.max(-1.05, Math.min(1.05, yawT));
-      pitchT = Math.max(-0.55, Math.min(0.6, pitchT));
-    }
-    this.lookYaw = damp(this.lookYaw, yawT * P.lookW, 7, dt);
-    this.lookPitch = damp(this.lookPitch, pitchT * P.lookW, 7, dt);
-
-    const chew = P.eat * Math.max(0, Math.sin(t * 11)) * 0.09;
-    const lick = P.groom * Math.sin(t * 8.5) * 0.08;
-    this.neck.position.set(0, 0.11 - P.curl * 0.12 - P.eat * 0.05 - P.stretch * 0.04, 0.22 + P.eat * 0.03 - P.curl * 0.03);
-    this.neck.rotation.set(
-      -torsoTilt * 0.88 + this.lookPitch + P.headPitch + P.eat * 0.95 + P.groom * 0.2 + P.curl * 0.62 + P.loaf * 0.05 - P.stretch * 0.5 + chew + lick,
-      this.lookYaw + P.headYaw + P.curl * 1.15 + P.groom * -0.45,
-      P.headRoll + P.curl * 0.5 + P.purr * 0.14 * Math.sin(t * 0.9),
-    );
-
-    /* ---- face ---- */
-    // blinks: quick ones at random, and the slow "I trust you" blink on request
-    if (t > this.blinkAt) {
-      this.blinkStart = t;
-      this.blinkLen = this.slow ? 0.75 : 0.13;
-      this.slow = false;
-      this.blinkAt = t + 2 + Math.random() * 4.5;
-    }
-    const bu = (t - this.blinkStart) / this.blinkLen;
-    const lastBlink = bu >= 0 && bu <= 1 ? Math.sin(bu * Math.PI) : 0;
-    const open = P.eyeOpen * (1 - lastBlink);
-    for (const e of this.eyes) {
-      const shut = open < 0.16;
-      e.open.visible = !shut;
-      e.closed.visible = shut;
-      e.open.scale.y = Math.max(0.12, open);
-      // happy ∩, sleepy ∪
-      e.closed.rotation.z = P.happyEyes > 0.5 ? 0 : Math.PI;
-      e.closed.position.y = P.happyEyes > 0.5 ? -0.012 : 0.006;
-      // pupils: wide when hunting, and following the gaze a little
-      e.pupil.scale.x = mix(0.016, 0.034, P.pupil);
-      e.pupil.position.x = Math.max(-0.012, Math.min(0.012, this.lookYaw * 0.014));
-      e.pupil.position.y = Math.max(-0.01, Math.min(0.01, -this.lookPitch * 0.014));
-    }
-    const m = clamp01(P.mouth);
-    this.mouthOpen.scale.y = Math.max(0.0001, 0.03 * m);
-    this.tongue.scale.y = Math.max(0.0001, 0.011 * m);
-    this.mouthOpen.visible = this.tongue.visible = m > 0.03;
-
-    // ears: back when low, an idle twitch now and then
-    if (t > this.twitchAt) {
-      this.twitchStart = t;
-      this.twitchSide = Math.random() < 0.5 ? 1 : -1;
-      this.twitchAt = t + 3 + Math.random() * 6;
-    }
-    const tw = t - this.twitchStart < 0.5 ? Math.sin(((t - this.twitchStart) / 0.5) * Math.PI * 3) * Math.exp(-(t - this.twitchStart) * 5) : 0;
-    const back = clamp01(P.earsBack + P.curl * 0.25);
-    for (const [ear, side] of [[this.earL, 1], [this.earR, -1]] as const) {
-      const twitch = side === this.twitchSide ? tw * 0.5 : 0;
-      ear.rotation.set(0.16 - back * 0.6 + twitch * 0.4, side * back * 0.35, -side * (0.34 + back * 0.55) + twitch * side * 0.2);
-    }
-
-    /* ---- tail ---- */
-    this.tailBase.getWorldPosition(this.tmp).applyMatrix4(this.inv);
-    let px = this.tmp.x, py = this.tmp.y, pz = this.tmp.z;
-    const up = P.tailUp;
-    const wrap = clamp01(P.tailWrap);
-    let pitchA = mix(mix(-0.7, 1.12, clamp01(up)), -0.75, wrap) + Math.min(0, up) * 0.6;
-    let yawA = 0;
-    const upness = clamp01(up);
-    for (let i = 0; i < TAIL_N; i++) {
-      const k = i / (TAIL_N - 1);
-      // a wave travelling down the tail; the tip moves most
-      const wave = Math.sin(t * P.tailSpeed - k * 5) * P.tailSway * (0.25 + k * 0.9);
-      if (i > 0) {
-        // low: a J that sweeps out and curls up; up: straight, the tip hooks over
-        pitchA += mix(0.1, k > 0.62 ? 0.34 : 0.02, upness) * (1 - wrap) * PER;
-        // wrapped: lie down along the floor and curl round the paws
-        pitchA = mix(pitchA, -0.05, wrap * 0.35 * PER);
-        // never a straight stick: always a little curve to one side
-        yawA += f.wrapSide * (0.24 * wrap + 0.07 * (1 - wrap) * (1 - upness * 0.25)) * PER + wave * 0.16 * PER;
-      }
-      const yaw = yawA + wave * 0.3;
-      const cp = Math.cos(pitchA);
-      const seg = this.tail[i];
-      const r = this.tailRadius[i];
-      px += Math.sin(yaw) * cp * (i ? TAIL_SEG : 0);
-      py += Math.sin(pitchA) * (i ? TAIL_SEG : 0);
-      pz += -Math.cos(yaw) * cp * (i ? TAIL_SEG : 0);
-      if (py < r) py = r;
-      seg.position.set(px, py, pz);
-    }
-
-    /* ---- shadow ---- */
-    const spread = 1 + lying * 0.25 + P.sit * 0.05;
-    this.shadow.scale.set(0.72 * spread * (1 + P.curl * 0.2), 1.25 * spread * (1 - P.curl * 0.25) - P.sit * 0.25, 1);
-    this.shadow.position.z = -0.03 - P.sit * 0.1;
-    (this.shadow.material as THREE.MeshBasicMaterial).opacity = Math.max(0.15, 0.6 - f.lift * 1.6);
-  }
-
-  private blinkStart = -10;
-  private slow = false;
 
   /** a slow blink, next time the eyes close: how cats say they feel safe */
   slowBlink() {
@@ -535,8 +247,354 @@ export class CatRig {
     this.blinkAt = 0;
   }
 
+  apply(P: Pose, f: Frame) {
+    const { t, dt } = f;
+    const b = this.bone;
+
+    // from rest, every frame
+    for (const [bone, pos] of this.rest) {
+      bone.position.copy(pos);
+      bone.quaternion.identity();
+    }
+
+    /* ---- the body ---- */
+    const walk = clamp01(f.speed / 0.35);
+    const run = clamp01((f.speed - 0.8) / 0.55);
+    const tuck = Math.max(P.loaf, P.curl);
+    const sit = clamp01(P.sit);
+    const breath = Math.sin(t * mix(2.4, 1.4, tuck));
+    const side = f.wrapSide;
+    const gaitBob = Math.sin(f.phase * 2) * 0.25 * walk;
+
+    const pelvisDy = -14.5 * sit - 12.6 * P.loaf - 16.5 * P.curl + 1.2 * P.stretch - 8.5 * P.crouch - 1.2 * P.eat + gaitBob;
+    const pelvisDz = 1.5 * sit + 1 * P.loaf - 1.5 * P.stretch + 2 * P.curl;
+    b.pelvis.position.y += pelvisDy * CM + f.lift;
+    b.pelvis.position.z += pelvisDz * CM;
+    b.pelvis.position.x += Math.sin(t * 160) * 0.03 * CM * P.purr;
+    this.setRot(
+      b.pelvis,
+      -0.76 * sit + 0.03 * P.loaf + 0.36 * P.stretch + 0.07 * P.crouch + 0.1 * P.eat - 0.12 * P.leap + Math.sin(f.phase) * 0.08 * run,
+      Math.sin(t * 17) * 0.12 * f.wiggle,
+      // asleep: on its side, and curled belly-in into a ring
+      1.15 * P.curl * side,
+    );
+    const curl = 0.6 * P.curl;
+    const curlYaw = 0.12 * P.curl * side;
+    this.setRot(b.spine1, -0.1 * sit + 0.06 * P.stretch - 0.04 * P.crouch + curl - Math.sin(f.phase) * 0.06 * run, curlYaw + Math.sin(f.phase) * 0.03 * walk, 0);
+    this.setRot(b.spine2, -0.08 * sit + 0.08 * P.stretch + curl + breath * 0.008, curlYaw, 0);
+    this.setRot(b.chest, 0.28 * sit + 0.05 * P.loaf - 0.05 * P.stretch + 0.06 * P.eat + 0.05 * P.crouch + curl, curlYaw, 0);
+
+    /* ---- head: posture, then where it is looking ---- */
+    this.root.updateMatrixWorld(true);
+    this.inv.copy(this.root.matrixWorld).invert();
+    let yawT = 0;
+    let pitchT = 0;
+    if (f.look && P.lookW > 0.01) {
+      const h = b.head.getWorldPosition(this.va).applyMatrix4(this.inv);
+      this.vb.copy(f.look).sub(h);
+      yawT = Math.atan2(this.vb.x, this.vb.z) - curlYaw * 3;
+      pitchT = Math.atan2(-this.vb.y, Math.sqrt(this.vb.x * this.vb.x + this.vb.z * this.vb.z));
+      // a cat turns its head so far, then it would turn its body
+      yawT = Math.max(-1.1, Math.min(1.1, yawT));
+      pitchT = Math.max(-0.6, Math.min(0.55, pitchT));
+    }
+    this.lookYaw = damp(this.lookYaw, yawT * P.lookW, 6, dt);
+    this.lookPitch = damp(this.lookPitch, pitchT * P.lookW, 6, dt);
+
+    const chew = P.eat * Math.max(0, Math.sin(t * 10)) * 0.08;
+    const lick = P.groom * Math.sin(t * 8.5) * 0.07;
+    const neckPitch = 0.4 * sit + 0.1 * P.loaf - 0.4 * P.stretch + 0.28 * P.crouch + 0.95 * P.eat + 0.42 * P.groom + 0.8 * P.curl;
+    const headPitch = 0.25 * sit - 0.2 * P.stretch - 0.3 * P.crouch + 0.35 * P.eat + 0.3 * P.groom + 0.45 * P.curl + P.headPitch + chew + lick;
+    const neckYaw = 0.15 * P.curl * side - 0.35 * P.groom;
+    const headYaw = 0.1 * P.curl * side - 0.2 * P.groom + P.headYaw;
+    this.setRot(b.neck, neckPitch + this.lookPitch * 0.4, neckYaw + this.lookYaw * 0.4, 0);
+    this.setRot(b.head, headPitch + this.lookPitch * 0.6, headYaw + this.lookYaw * 0.6, P.headRoll + 0.15 * P.curl * side + P.purr * 0.12 * Math.sin(t * 0.9));
+    const m = clamp01(P.mouth);
+    this.setRot(b.jaw, 0.34 * m, 0, 0);
+    this.mouth.visible = m > 0.04;
+    this.mouth.scale.y = Math.max(0.0001, 0.75 * CM * m);
+
+    /* ---- tail ---- */
+    this.poseTail(P, f);
+    this.root.updateMatrixWorld(true);
+
+    /* ---- legs: each paw reaches for its place ---- */
+    const sitW = clamp01(sit + P.loaf + P.curl);
+    // a planted paw sweeps back half a stride while the body moves over it
+    const strideCm = ((strideFor(f.speed) / 4) * walk) / CM;
+    const rootQ = this.root.getWorldQuaternion(this.q3);
+    for (const leg of this.legs) {
+      const u = (f.phase / (Math.PI * 2) + mix(leg.walk, leg.bound, run)) * Math.PI * 2;
+      // swing (paw in the air, going forward) for the first half, stance after
+      const along = -Math.cos(u) * strideCm;
+      const lift = Math.max(0, Math.sin(u)) * (2.2 + 2 * run) * walk;
+      // turning on the spot: little steps in place
+      const shuffle = Math.max(0, Math.sin(t * 9 + leg.walk * 6.3)) * 1.2 * clamp01(Math.abs(f.turn) / 2) * (1 - walk);
+
+      // the shoulder blade rides with the stride (before the leg reaches, so the paw still lands)
+      if (leg.front) {
+        b[`scapula${leg.side > 0 ? "L" : "R"}`].rotateX(Math.sin(u) * 0.1 * walk);
+        b[`scapula${leg.side > 0 ? "L" : "R"}`].updateMatrixWorld(true);
+      }
+      // the joint at the top of the leg, in cat space
+      const top = leg.a.getWorldPosition(this.vw).applyMatrix4(this.inv);
+      const pole = this.root.localToWorld(this.vc.copy(top).add(leg.front ? cmv(0, -4, -12) : cmv(0, -3, 12)));
+      if (leg.front) {
+        // wrist: under the shoulder on the floor, or tucked under the chest
+        const target = this.vt.set(top.x * 0.96, (3.2 + lift + shuffle) * CM, top.z + (-1.0 + along) * CM);
+        target.z += (9.5 * P.stretch + 7 * P.leap - 1.5 * P.crouch) * CM;
+        target.y += 6 * P.leap * CM;
+        this.root.localToWorld(target);
+        target.lerp(b.chest.localToWorld(this.vp.set(3.2 * leg.side * CM, -10.5 * CM, -2.5 * CM)), tuck);
+        // the right paw: up to the mouth to wash, or out to swat the ball
+        if (leg.side < 0 && (P.groom > 0.01 || P.bat > 0.01)) {
+          target.lerp(b.head.localToWorld(this.vp.set(-0.6 * CM, -2.4 * CM, 6.0 * CM)), P.groom * (0.92 + Math.sin(t * 8.5) * 0.05));
+          const swat = this.root.localToWorld(this.vd.copy(top).add(cmv(0, mix(-2, -13, f.swipe), mix(9, 13, f.swipe))));
+          target.lerp(swat, P.bat);
+        }
+        this.ik(leg.a, leg.b, leg.c, target, pole);
+        // the paw stays flat on the floor, unless it is washing a face
+        this.flat(leg.c, rootQ, leg.side < 0 ? P.groom : 0);
+      } else {
+        // toes on the floor; the hock above and behind them (standing) or down on the floor (sitting)
+        const toes = this.vt.set(top.x, (1.6 + lift + shuffle) * CM, top.z + (-1.3 + 6.5 * sitW + along) * CM);
+        toes.z += (-3 * P.stretch - 6 * P.leap + 1.5 * P.crouch) * CM;
+        toes.y += 2 * P.leap * CM;
+        const hock = this.ve.set(
+          toes.x,
+          toes.y + mix(mix(5.4, 3.0, P.crouch), 0.9, sitW) * CM,
+          toes.z + (mix(mix(-3.8, -5.6, P.crouch), -6.7, sitW) - 3 * P.leap) * CM,
+        );
+        this.root.localToWorld(hock);
+        this.root.localToWorld(toes);
+        hock.lerp(b.pelvis.localToWorld(this.vp.set(4.6 * leg.side * CM, -10.8 * CM, 3.5 * CM)), tuck);
+        toes.lerp(b.pelvis.localToWorld(this.vp.set(4.2 * leg.side * CM, -12.2 * CM, 9.5 * CM)), tuck);
+        this.ik(leg.a, leg.b, leg.c, hock, pole);
+        this.aim(leg.c, leg.d!, toes);
+        this.flat(leg.d!, rootQ, 0);
+      }
+    }
+
+    /* ---- face ---- */
+    if (t > this.blinkAt) {
+      this.blinkStart = t;
+      this.blinkLen = this.slow ? 0.8 : 0.14;
+      this.slow = false;
+      this.blinkAt = t + 2.5 + Math.random() * 4.5;
+    }
+    const bu = (t - this.blinkStart) / this.blinkLen;
+    const blink = bu >= 0 && bu <= 1 ? Math.sin(bu * Math.PI) : 0;
+    const open = clamp01(P.eyeOpen * (1 - blink));
+    // relaxed and content: the lids sit lower, the cat looks at you through slits
+    const lidOpen = open * mix(1, 0.5, clamp01(P.happyEyes));
+    for (const e of this.eyes) {
+      // almond, not round: the lids never open all the way
+      e.upper.rotation.x = -0.74 * lidOpen;
+      e.lower.rotation.x = 0.34 * lidOpen;
+      e.ball.rotation.set(-this.lookPitch * 0.25, this.lookYaw * 0.25, 0);
+    }
+    this.dilate.value = clamp01(P.pupil);
+
+    if (t > this.twitchAt) {
+      this.twitchStart = t;
+      this.twitchSide = Math.random() < 0.5 ? 1 : -1;
+      this.twitchAt = t + 3 + Math.random() * 6;
+    }
+    const since = t - this.twitchStart;
+    const tw = since < 0.5 ? Math.sin((since / 0.5) * Math.PI * 3) * Math.exp(-since * 5) : 0;
+    const back = clamp01(P.earsBack + P.curl * 0.3);
+    for (const [ear, s] of [[this.earL, 1], [this.earR, -1]] as const) {
+      const twitch = s === this.twitchSide ? tw : 0;
+      ear.rotation.set(-0.12 - back * 0.7 + twitch * 0.35, s * (0.32 + back * 0.5), s * (-0.28 - back * 0.45) + twitch * s * 0.15, "YXZ");
+    }
+
+    /* ---- shadow ---- */
+    const spread = 1 + tuck * 0.15;
+    this.shadow.scale.set(0.42 * spread * (1 + P.curl * 0.35), 0.95 * spread * (1 - P.curl * 0.35) - sit * 0.25, 1);
+    this.shadow.position.z = (-2 - sit * 8) * CM;
+    (this.shadow.material as THREE.MeshBasicMaterial).opacity = Math.max(0.15, 0.55 - f.lift * 2.5);
+  }
+
+  private poseTail(P: Pose, f: Frame) {
+    const up = Math.max(-0.5, Math.min(1, P.tailUp));
+    const up01 = clamp01(up);
+    const wrap = clamp01(P.tailWrap);
+    const side = f.wrapSide;
+    for (let i = 0; i < TAIL_BONES; i++) {
+      const k = i / (TAIL_BONES - 1);
+      const wave = Math.sin(f.t * P.tailSpeed - k * 5) * P.tailSway * (0.25 + k) * 0.32;
+      // hanging: a J that curls up at the end; up: straight, then a hook
+      const pitch =
+        i === 0
+          ? mix(mix(-0.95, 1.2, up01), -1.2, wrap) + Math.min(0, up) * 0.5
+          : mix(mix(0.1, k > 0.6 ? 0.34 : 0.03, up01), 0.16, wrap) - 0.42 * P.curl;
+      const yaw = side * (0.07 * (1 - wrap) * (1 - up01 * 0.5) + 0.3 * wrap) + wave;
+      this.setRot(this.bone[`tail${i}`], pitch, yaw, 0);
+    }
+    // a tail lies on the floor, it does not go through it
+    this.root.updateMatrixWorld(true);
+    this.inv.copy(this.root.matrixWorld).invert();
+    for (let i = 0; i < TAIL_BONES - 1; i++) {
+      const bone = this.bone[`tail${i}`];
+      const next = this.bone[`tail${i + 1}`].getWorldPosition(this.va).applyMatrix4(this.inv);
+      const floor = 1.6 * CM;
+      if (next.y < floor) {
+        bone.rotateX(Math.asin(Math.min(1, (floor - next.y) / (2.9 * CM))));
+        bone.updateMatrixWorld(true);
+      }
+    }
+  }
+
+  private setRot(bone: THREE.Bone, x: number, y: number, z: number) {
+    this.e.set(x, y, z, "YXZ");
+    bone.quaternion.setFromEuler(this.e);
+  }
+
+  /**
+   * Two-bone inverse kinematics: turn `a` and `b` so that `c` (the end of the
+   * chain) lands on `target`, bending toward `pole`. All in world space.
+   */
+  private ik(a: THREE.Bone, b: THREE.Bone, c: THREE.Bone, target: THREE.Vector3, pole: THREE.Vector3) {
+    const A = a.getWorldPosition(this.va);
+    const B = b.getWorldPosition(this.vb);
+    const C = c.getWorldPosition(this.vc.clone());
+    const lab = A.distanceTo(B);
+    const lbc = B.distanceTo(C);
+    const toT = this.vd.copy(target).sub(A);
+    const dist = Math.min(Math.max(toT.length(), Math.abs(lab - lbc) + 1e-5), lab + lbc - 1e-5);
+    const dir = toT.normalize();
+    // the bend plane: from the chain's root toward the pole, square to the reach
+    const bend = this.ve.copy(pole).sub(A);
+    bend.addScaledVector(dir, -bend.dot(dir));
+    if (bend.lengthSq() < 1e-14) bend.set(0, 0, 1);
+    bend.normalize();
+    const cosA = Math.max(-1, Math.min(1, (lab * lab + dist * dist - lbc * lbc) / (2 * lab * dist)));
+    const sinA = Math.sqrt(1 - cosA * cosA);
+    const knee = this.vp.copy(A).addScaledVector(dir, lab * cosA).addScaledVector(bend, lab * sinA);
+    const end = A.clone().addScaledVector(dir, dist);
+
+    // the upper bone puts the middle joint on the knee…
+    this.turnToward(a, B.sub(A).normalize(), knee.clone().sub(A).normalize());
+    // …and the lower one puts the end on the target
+    const B2 = b.getWorldPosition(this.vb);
+    const C2 = c.getWorldPosition(this.vc);
+    this.turnToward(b, C2.sub(B2).normalize(), end.sub(B2).normalize());
+  }
+
+  /** point bone `a` so its child `child` sits in the direction of `target` */
+  private aim(a: THREE.Bone, child: THREE.Bone, target: THREE.Vector3) {
+    const A = a.getWorldPosition(this.va);
+    const C = child.getWorldPosition(this.vc);
+    this.turnToward(a, C.sub(A).normalize(), this.vd.copy(target).sub(A).normalize());
+  }
+
+  /** rotate `bone` in world space by the turn that takes `from` to `to` */
+  private turnToward(bone: THREE.Bone, from: THREE.Vector3, to: THREE.Vector3) {
+    const turn = this.q.setFromUnitVectors(from, to);
+    const world = bone.getWorldQuaternion(this.q2);
+    const parent = bone.parent!.getWorldQuaternion(this.qp).invert();
+    bone.quaternion.copy(parent.multiply(turn.multiply(world)));
+    bone.updateMatrixWorld(true);
+  }
+
+  /** a paw flat on the floor (`free` 1: left to follow the leg) */
+  private flat(bone: THREE.Bone, rootQ: THREE.Quaternion, free: number) {
+    if (free > 0.99) return;
+    const want = bone.parent!.getWorldQuaternion(this.qp).invert().multiply(rootQ);
+    bone.quaternion.slerp(want, 1 - free);
+    bone.updateMatrixWorld(true);
+  }
+
   dispose() {
     for (const d of this.disposables) d.dispose();
     this.disposables = [];
+    this.skeleton.dispose();
   }
+}
+
+/* ---- parts ------------------------------------------------------------------ */
+
+/**
+ * An ear: a thin, cupped triangle with a rounded tip, the inside pale and
+ * pink, the back the colour of the coat (darker on a tabby). Built in
+ * centimetres from the base, which sits on the head.
+ */
+function earGeometry(coat: CoatId, side: number) {
+  const p = PALETTES[coat];
+  const H = 4.9, W = 2.35, U = 18, V = 24;
+  const pos: number[] = [];
+  const col: number[] = [];
+  const idx: number[] = [];
+  const inner = new THREE.Color(p.innerEar);
+  const pale = new THREE.Color(p.muzzle);
+  const striped = coat === "tabby" || coat === "ginger";
+  const outer = new THREE.Color(striped ? p.mark : coat === "calico" ? (side > 0 ? p.mark : p.mark2!) : p.base);
+  if (striped) outer.lerp(new THREE.Color(p.base), 0.45);
+  const c = new THREE.Color();
+  for (let i = 0; i <= U; i++) {
+    const u = i / U;
+    const w = W * Math.pow(1 - u, 0.8) + 0.12 * (1 - u);
+    const th = 0.32 * (1 - u * 0.7);
+    const cup = 0.55 * Math.sin(Math.PI * Math.min(1, u * 1.2));
+    for (let j = 0; j <= V; j++) {
+      const phi = (j / V) * Math.PI * 2;
+      const cs = Math.cos(phi), sn = Math.sin(phi);
+      const front = sn > 0;
+      const x = w * cs;
+      const z = th * sn - (front ? cup * sn * sn : 0);
+      // leaning a little forward toward the tip
+      pos.push(x * CM, u * H * CM, (z + u * u * 0.4) * CM);
+      // pink skin inside, paler fur round the rim; the coat outside
+      if (front) c.copy(inner).lerp(outer, 0.25).lerp(pale, Math.pow(Math.abs(cs), 2.5) * 0.75 + u * 0.15);
+      else c.copy(outer);
+      col.push(c.r, c.g, c.b);
+    }
+  }
+  for (let i = 0; i < U; i++) {
+    for (let j = 0; j < V; j++) {
+      const a = i * (V + 1) + j, b = a + V + 1;
+      idx.push(a, b, a + 1, b, b + 1, a + 1);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+
+/** whiskers from the pads, and a few over the eyes, as fine lines */
+function whiskers(color: string, local: (x: number, y: number, z: number) => THREE.Vector3, keep: <T extends { dispose(): void }>(x: T) => T) {
+  const pts: number[] = [];
+  const add = (start: THREE.Vector3, dir: THREE.Vector3, len: number, droop: number) => {
+    const n = 10;
+    let prev = start.clone();
+    for (let k = 1; k <= n; k++) {
+      const t = k / n;
+      const p = start.clone().addScaledVector(dir, len * t);
+      p.y -= droop * t * t * CM;
+      p.z += 0.5 * t * t * CM;
+      pts.push(prev.x, prev.y, prev.z, p.x, p.y, p.z);
+      prev = p;
+    }
+  };
+  for (const s of [1, -1]) {
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 3; c++) {
+        const start = local((1.25 + c * 0.32) * s, 29.65 - r * 0.32, 27.4 - c * 0.35);
+        const spread = (r - 1.5) * 0.16 + (c - 1) * 0.05;
+        const dir = new THREE.Vector3(s, spread, 0.22 + c * 0.1).normalize();
+        add(start, dir, (6.2 + (1.5 - Math.abs(r - 1.5)) * 0.6 - c * 0.4) * CM, 0.6 + r * 0.25);
+      }
+    }
+    for (let k = 0; k < 3; k++) {
+      const start = local((1.6 + k * 0.35) * s, 33.0, 24.9 - k * 0.3);
+      add(start, new THREE.Vector3(0.45 * s, 0.85, 0.3).normalize(), (2.6 - k * 0.3) * CM, -0.2);
+    }
+  }
+  const g = keep(new THREE.BufferGeometry());
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
+  const m = keep(new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.3 }));
+  return new THREE.LineSegments(g, m);
 }
