@@ -948,7 +948,7 @@ test("pet: the cat syncs, its sounds start off, and three.js loads only on deman
   };
   walk(path.join(root, "src"));
   const threeInside = new Set(
-    ["PetScene.tsx", "room.ts", "rig.ts", "brain.ts", "coats.ts", "fur.ts", "catGeometry.ts", "anatomy.ts", "anatomy.worker.ts", "pose.ts"]
+    ["PetScene.tsx", "room.ts", "rig.ts", "brain.ts", "coats.ts", "catModel.ts", "lids.ts", "pose.ts"]
       .map((f) => path.join(root, "src/components/pet", f)),
   );
   const offenders = [];
@@ -956,7 +956,7 @@ test("pet: the cat syncs, its sounds start off, and three.js loads only on deman
     const text = readFileSync(file, "utf8");
     if (/^import (?!type )[^;]*from "(three|@react-three\/[\w-]+)"/m.test(text) && !threeInside.has(file)) offenders.push(path.relative(root, file));
     // anything else may only take types from the 3D modules
-    if (!threeInside.has(file) && /^import (?!type )[^;]*from "(@\/components\/pet|\.)\/(PetScene|room|rig|brain|coats|fur|catGeometry|anatomy|pose)"/m.test(text)) offenders.push(`${path.relative(root, file)} imports a 3D module`);
+    if (!threeInside.has(file) && /^import (?!type )[^;]*from "(@\/components\/pet|\.)\/(PetScene|room|rig|brain|coats|catModel|lids|pose)"/m.test(text)) offenders.push(`${path.relative(root, file)} imports a 3D module`);
   }
   // (coats.ts paints with three.js: the coat picker takes its colours from palettes.ts instead)
   assert.deepEqual(offenders, []);
@@ -985,36 +985,47 @@ test("pet: every text exists in English and German", () => {
   }
 });
 
-test("pet: the body is one closed mesh, bound to the skeleton, cat-sized", () => {
-  const anatomy = sourceLoader({}, { performance, Float32Array, Float64Array, Int32Array, Uint16Array, Uint32Array })("src/components/pet/anatomy.ts");
-  const a = anatomy.buildCatArrays();
-  const n = a.position.length / 3;
-  assert.ok(n > 8000 && n < 40000, `vertex count ${n}`);
-  // every edge shared by exactly two triangles: no holes, no flaps
-  const edges = new Map();
-  for (let t = 0; t < a.index.length; t += 3) {
-    for (const [x, y] of [[a.index[t], a.index[t + 1]], [a.index[t + 1], a.index[t + 2]], [a.index[t + 2], a.index[t]]]) {
-      const k = x < y ? `${x},${y}` : `${y},${x}`;
-      edges.set(k, (edges.get(k) ?? 0) + 1);
-    }
+test("pet: the model and the coats are in place, small, and CC0", () => {
+  const dir = path.join(root, "public/pet");
+  // the model: a binary glTF with a skinned, compressed mesh and no colour map
+  const glb = readFileSync(path.join(dir, "cat.glb"));
+  assert.ok(glb.length < 1.2e6, `cat.glb is ${glb.length} bytes`);
+  assert.equal(glb.toString("ascii", 0, 4), "glTF");
+  assert.equal(glb.readUInt32LE(4), 2);
+  const json = JSON.parse(glb.toString("utf8", 20, 20 + glb.readUInt32LE(12)));
+  for (const ext of ["EXT_meshopt_compression", "KHR_mesh_quantization"]) assert.ok(json.extensionsRequired.includes(ext), ext);
+  const prim = json.meshes[0].primitives[0];
+  for (const a of ["POSITION", "NORMAL", "TEXCOORD_0", "JOINTS_0", "WEIGHTS_0"]) assert.ok(a in prim.attributes, a);
+  const verts = json.accessors[prim.attributes.POSITION].count;
+  assert.ok(verts > 10000 && verts < 60000, `vertex count ${verts}`);
+  assert.equal(json.accessors[prim.attributes.JOINTS_0].count, verts);
+  assert.equal(json.materials[prim.material].pbrMetallicRoughness?.baseColorTexture, undefined, "the coat is chosen at run time");
+  assert.equal(json.nodes.find((n) => n.mesh === 0).extras.license, "CC0-1.0");
+
+  // a coat for every coat the cat can have, each a modest JPEG
+  const coats = [...readFileSync(path.join(root, "src/lib/pet.ts"), "utf8").match(/COATS = \[([^\]]+)\]/)[1].matchAll(/"(\w+)"/g)].map((m) => m[1]);
+  assert.equal(coats.length, 6);
+  const model = readFileSync(path.join(root, "src/components/pet/catModel.ts"), "utf8");
+  for (const id of coats) {
+    const jpg = readFileSync(path.join(dir, `coat-${id}.jpg`));
+    assert.ok(jpg[0] === 0xff && jpg[1] === 0xd8, `coat-${id}.jpg is a JPEG`);
+    assert.ok(jpg.length < 1.3e6, `coat-${id}.jpg is ${jpg.length} bytes`);
+    assert.match(model, new RegExp(`\\b${id}: \\["#[0-9a-f]{6}", "#[0-9a-f]{6}"\\]`), `eyelid colours for ${id}`);
   }
-  const open = [...edges.values()].filter((c) => c !== 2).length;
-  assert.ok(open <= edges.size * 0.001, `${open} edges not shared by two triangles`);
-  // weights: four per vertex, summing to one, pointing at real bones
-  for (let v = 0; v < n; v++) {
-    const w = a.skinWeight[v * 4] + a.skinWeight[v * 4 + 1] + a.skinWeight[v * 4 + 2] + a.skinWeight[v * 4 + 3];
-    assert.ok(Math.abs(w - 1) < 1e-4);
-    for (let q = 0; q < 4; q++) assert.ok(a.skinIndex[v * 4 + q] < anatomy.BONES.length);
-  }
-  // a cat's size: standing on the floor, about 40 cm tall at the ears, 80 cm nose to tail tip
-  let minY = Infinity, maxY = -Infinity, minZ = Infinity, maxZ = -Infinity;
-  for (let v = 0; v < n; v++) {
-    minY = Math.min(minY, a.rest[v * 3 + 1]); maxY = Math.max(maxY, a.rest[v * 3 + 1]);
-    minZ = Math.min(minZ, a.rest[v * 3 + 2]); maxZ = Math.max(maxZ, a.rest[v * 3 + 2]);
-  }
-  assert.ok(minY > -0.5 && minY < 1.5, `paws on the floor (${minY})`);
-  assert.ok(maxY > 34 && maxY < 42, `height ${maxY} cm`);
-  assert.ok(maxZ - minZ > 70 && maxZ - minZ < 90, `length ${maxZ - minZ} cm`);
+  assert.match(model, /"\/pet\/cat\.glb"/);
+  assert.match(model, /`\/pet\/coat-\$\{id\}\.jpg`/);
+
+  // the skeleton: 32 bones, every parent listed before its children, tail bones counted right
+  const bones = [...model.matchAll(/\{ name: "(\w+)", parent: (null|"(\w+)")/g)].map((m) => ({ name: m[1], parent: m[3] ?? null }));
+  assert.equal(bones.length, 32);
+  bones.forEach((b, i) => {
+    if (b.parent) assert.ok(bones.slice(0, i).some((x) => x.name === b.parent), `${b.name} before its parent ${b.parent}`);
+  });
+  assert.equal(Number(model.match(/TAIL_BONES = (\d+)/)[1]), bones.filter((b) => b.name.startsWith("tail")).length);
+
+  // where it came from, and under what terms
+  const readme = readFileSync(path.join(dir, "README.md"), "utf8");
+  for (const s of ["Grab3D", "CC0 1.0", "grab3d.com/models/animals/cat", "AI-assisted", "1f6af2bf9d0cb49765c7fd681f9d94cef0f014ddb1a000a2cb5bcc8dd3a8140c"]) assert.ok(readme.includes(s), s);
 });
 
 test("twitch: channels from names and links, embedded the official way", () => {

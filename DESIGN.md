@@ -177,10 +177,12 @@ are transforms; only floating chrome fades, and then on its own element.
 
 The pet (`/pet`, and a widget on the dashboard) is the one place with real
 3D: three.js through @react-three/fiber, loaded on demand. The cat itself
-is realistic, not a mascot: a real cat's proportions and anatomy, short
-layered fur, almond eyes with lids and a slit pupil, paws that stay planted
-as it walks. A cartoon cat with big round eyes read as uncanny; realism and
-calm, natural motion read as alive. Around it the room follows the app: a
+is realistic, not a mascot: a sculpted, photo-textured domestic cat (a CC0
+model, see `public/pet/README.md`) on our own skeleton, with lids that blink,
+paws that stay planted as it walks and a real shadow from the key light. A
+cartoon cat with big round eyes read as uncanny, and a cat built from shapes
+in code never stopped looking built; a real cat's body with calm, natural
+motion reads as alive. Around it the room follows the app: a
 neutral tone map so the colours stay true, a rug, bed and bowl tinted with
 the theme's `--primary`, and the canvas transparent over the pane, so the
 surface style shows through. UI over the scene (the status chip, the action
