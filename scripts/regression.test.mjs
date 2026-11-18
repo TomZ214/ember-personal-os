@@ -1107,3 +1107,28 @@ test("themes: every theme has its colours, its glow in dark and light, and a nam
     }
   }
 });
+
+test("store selectors never hand back a fresh array or object (that re-renders forever)", () => {
+  const { readdirSync, statSync } = require("node:fs");
+  const files = [];
+  const walk = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const full = path.join(dir, name);
+      if (statSync(full).isDirectory()) walk(full);
+      else if (/\.tsx?$/.test(name)) files.push(full);
+    }
+  };
+  walk(path.join(root, "src"));
+  const offenders = [];
+  for (const file of files) {
+    const text = readFileSync(file, "utf8");
+    for (const m of text.matchAll(/useEmber\(\(s\) => ([^;]*?)\);/g)) {
+      const body = m[1];
+      // `?? []`, `?? {}`, a spread or a new array/object literal is a new value on every call
+      if (/\?\? (\[\]|\{\})|^\(?\{|^\[|\.\.\./.test(body.trim()) || (/\.(filter|map|slice|concat)\(/.test(body) && !/\.length\b|\.some\(|\.every\(|\.includes\(/.test(body))) {
+        offenders.push(`${path.relative(root, file)}: ${body.trim().slice(0, 80)}`);
+      }
+    }
+  }
+  assert.deepEqual(offenders, []);
+});
